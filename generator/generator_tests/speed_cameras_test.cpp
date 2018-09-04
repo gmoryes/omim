@@ -25,6 +25,7 @@
 
 #include "geometry/point2d.hpp"
 
+#include "base/logging.hpp"
 #include "base/macros.hpp"
 #include "base/math.hpp"
 
@@ -114,11 +115,16 @@ bool CheckCameraMapsEquality(CameraMap const & lhs, CameraMap const & rhs)
 
   for (size_t i = 0; i < vectorL.size(); ++i)
   {
-    if (!(vectorL[i].first.m_featureId == vectorR[i].first.m_featureId &&
-          vectorL[i].first.m_segmentId == vectorR[i].first.m_segmentId &&
+    // Don not check feature id because of fake nodes. Data about them placed in ./data/
+    // It can differ on jenknins and local computer.
+    if (!(vectorL[i].first.m_segmentId == vectorR[i].first.m_segmentId &&
           vectorL[i].second.m_maxSpeedKmPH == vectorR[i].second.m_maxSpeedKmPH &&
           my::AlmostEqualAbs(vectorL[i].second.m_coef, vectorR[i].second.m_coef, kCoefEqualityEpsilonM)))
     {
+      LOG(LINFO, ("These should be equals:",
+                  "sId:", vectorL[i].first.m_segmentId, vectorR[i].first.m_segmentId,
+                  "speed:", vectorL[i].second.m_maxSpeedKmPH, vectorR[i].second.m_maxSpeedKmPH,
+                  "coef:", vectorL[i].second.m_coef, vectorR[i].second.m_coef));
       return false;
     }
   }
