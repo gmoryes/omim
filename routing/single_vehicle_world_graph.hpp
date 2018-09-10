@@ -33,6 +33,7 @@ public:
                    std::vector<SegmentEdge> & edges) override;
   bool CheckLength(RouteWeight const &, double) const override { return true; }
   Junction const & GetJunction(Segment const & segment, bool front) override;
+  double ScalarMultiply(Vertex const & v, Vertex const & from, Vertex const & to) const override { return 0; }
   m2::PointD const & GetPoint(Segment const & segment, bool front) override;
   bool IsOneWay(NumMwmId mwmId, uint32_t featureId) override;
   bool IsPassThroughAllowed(NumMwmId mwmId, uint32_t featureId) override;

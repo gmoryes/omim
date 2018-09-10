@@ -177,9 +177,14 @@ void DrawWidget::mousePressEvent(QMouseEvent * e)
   if (IsLeftButton(e))
   {
     if (IsShiftModifier(e))
-      SubmitRoutingPoint(pt);
+    {
+      SubmitRoutingPoint(MercatorBounds::FromLatLon({56.2393108, 42.0764987}));
+      //SubmitRoutingPoint(pt);
+    }
     else if (IsAltModifier(e))
-      SubmitFakeLocationPoint(pt);
+    {
+      SubmitFakeLocationPoint(MercatorBounds::FromLatLon({55.3545481, 34.6346471}));
+    }
     else
       m_framework.TouchEvent(GetTouchEvent(e, df::TouchEvent::TOUCH_DOWN));
   }
@@ -344,7 +349,8 @@ void DrawWidget::SetMapStyle(MapStyle mapStyle)
 void DrawWidget::SubmitFakeLocationPoint(m2::PointD const & pt)
 {
   m_emulatingLocation = true;
-  auto const point = m_framework.P3dtoG(pt);
+  //auto const point = m_framework.P3dtoG(pt);
+  auto const point = pt;
   m_framework.OnLocationUpdate(qt::common::MakeGpsInfo(point));
 
   if (m_framework.GetRoutingManager().IsRoutingActive())
@@ -378,7 +384,8 @@ void DrawWidget::SubmitRoutingPoint(m2::PointD const & pt)
   RouteMarkData point;
   point.m_pointType = m_routePointAddMode;
   point.m_isMyPosition = false;
-  point.m_position = m_framework.P3dtoG(pt);
+  //point.m_position = m_framework.P3dtoG(pt);
+  point.m_position = pt;
   routingManager.AddRoutePoint(std::move(point));
 
   if (routingManager.GetRoutePoints().size() >= 2)

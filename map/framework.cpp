@@ -3003,7 +3003,7 @@ bool Framework::GetEditableMapObject(FeatureID const & fid, osm::EditableMapObje
 
 osm::Editor::SaveResult Framework::SaveEditedMapObject(osm::EditableMapObject emo)
 {
-  if (!m_lastTapEvent)
+  if (!m_lTapEvent)
   {
     // Automatically select newly created objects.
     m_lastTapEvent = MakeTapEvent(emo.GetMercator(), emo.GetID(), TapEvent::Source::Other);

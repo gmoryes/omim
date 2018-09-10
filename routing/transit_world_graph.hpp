@@ -35,6 +35,7 @@ public:
 
   void GetEdgeList(Segment const & segment, bool isOutgoing,
                    std::vector<SegmentEdge> & edges) override;
+  double ScalarMultiply(Vertex const & v, Vertex const & from, Vertex const & to) const { return 0; }
   bool CheckLength(RouteWeight const & weight, double startToFinishDistanceM) const override
   {
     return weight.GetWeight() - weight.GetTransitTime() <=

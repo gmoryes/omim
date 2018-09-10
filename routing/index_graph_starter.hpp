@@ -100,6 +100,16 @@ public:
                                          GetPoint(to, true /* front */));
   }
 
+  double ScalarMultiply(Vertex const & v, Vertex const & from, Vertex const & to) const
+  {
+    auto const & p1 = GetPoint(v, true) - GetPoint(from, true);
+    auto const & p2 = GetPoint(to, true) - GetPoint(from, true);
+    auto p3 = p1.Normalize();
+    auto p4 = p2.Normalize();
+
+    return p3.x * p4.x + p3.y * p4.y;
+  }
+
   RouteWeight CalcSegmentWeight(Segment const & segment) const;
   RouteWeight CalcRouteSegmentWeight(std::vector<Segment> const & route, size_t segmentIndex) const;
   double CalcSegmentETA(Segment const & segment) const;

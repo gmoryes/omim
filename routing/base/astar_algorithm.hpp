@@ -252,6 +252,11 @@ private:
       }
     }
 
+    double ScalarMultiply(Vertex const & v, Vertex const & from, Vertex const & to)
+    {
+      return std::abs(graph.ScalarMultiply(v, from, to));
+    }
+
     void GetAdjacencyList(Vertex const & v, std::vector<Edge> & adj)
     {
       if (forward)
@@ -531,6 +536,14 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
                                      cur->forward ? cur->finalVertex : cur->startVertex);
 
     cur->GetAdjacencyList(stateV.vertex, adj);
+    if (false)
+    {
+      std::sort(adj.begin(), adj.end(), [&cur, &stateV, &finalVertex](auto const & lhs, auto const & rhs) {
+        return cur->ScalarMultiply(lhs.GetTarget(), stateV.vertex, finalVertex) >
+        cur->ScalarMultiply(rhs.GetTarget(), stateV.vertex, finalVertex);
+      });
+    }
+
     for (auto const & edge : adj)
     {
       State stateW(edge.GetTarget(), kZeroDistance);

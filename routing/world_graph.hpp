@@ -43,6 +43,8 @@ public:
   // start to finish of the route.
   virtual bool CheckLength(RouteWeight const & weight, double startToFinishDistanceM) const = 0;
 
+  virtual double ScalarMultiply(Vertex const & v, Vertex const & from, Vertex const & to) const = 0;
+
   virtual Junction const & GetJunction(Segment const & segment, bool front) = 0;
   virtual m2::PointD const & GetPoint(Segment const & segment, bool front) = 0;
   virtual bool IsOneWay(NumMwmId mwmId, uint32_t featureId) = 0;

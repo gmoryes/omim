@@ -529,6 +529,7 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
     }
 
     delegate.OnPointCheck(pointFrom);
+    delegate.OnPointCheck(pointTo);
   };
 
   auto checkLength = [&starter](RouteWeight const & weight) { return starter.CheckLength(weight); };
