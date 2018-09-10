@@ -234,10 +234,10 @@ private:
     // p_f(v) = 0.5*(π_f(v) - π_r(v)) + 0.5*π_r(t)
     // p_r(v) = 0.5*(π_r(v) - π_f(v)) + 0.5*π_f(s)
     // p_r(v) + p_f(v) = const. Note: this condition is called consistence.
-    Weight ConsistentHeuristic(Vertex const & v) const
+    Weight ConsistentHeuristic(Vertex const & from, Vertex const & current) const
     {
-      auto const piF = graph.HeuristicCostEstimate(v, finalVertex);
-      auto const piR = graph.HeuristicCostEstimate(v, startVertex);
+      auto const piF = graph.HeuristicCostEstimate(from, v, finalVertex);
+      auto const piR = graph.HeuristicCostEstimate(from, v, startVertex);
       if (forward)
       {
         /// @todo careful: with this "return" here and below in the Backward case
@@ -254,7 +254,7 @@ private:
 
     double ScalarMultiply(Vertex const & v, Vertex const & from, Vertex const & to)
     {
-      return std::abs(graph.ScalarMultiply(v, from, to));
+      return graph.ScalarMultiply(v, from, to);
     }
 
     void GetAdjacencyList(Vertex const & v, std::vector<Edge> & adj)
@@ -535,14 +535,9 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
     params.m_onVisitedVertexCallback(stateV.vertex,
                                      cur->forward ? cur->finalVertex : cur->startVertex);
 
+    bool boost = false;
+    auto const & final = cur->forward ? cur->finalVertex : cur->startVertex;
     cur->GetAdjacencyList(stateV.vertex, adj);
-    if (false)
-    {
-      std::sort(adj.begin(), adj.end(), [&cur, &stateV, &finalVertex](auto const & lhs, auto const & rhs) {
-        return cur->ScalarMultiply(lhs.GetTarget(), stateV.vertex, finalVertex) >
-        cur->ScalarMultiply(rhs.GetTarget(), stateV.vertex, finalVertex);
-      });
-    }
 
     for (auto const & edge : adj)
     {
@@ -556,7 +551,8 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
       auto const reducedWeight = weight + pW - pV;
 
       CHECK_GREATER_OR_EQUAL(reducedWeight, -kEpsilon, ("Invariant violated."));
-      auto const newReducedDist = stateV.distance + std::max(reducedWeight, kZeroDistance);
+      auto const newReducedDist = stateV.distance + std::max(reducedWeight, kZeroDistance) + (boost ?
+        Weight((1 - cur->ScalarMultiply(stateW.vertex, stateV.vertex, final)) * 1000) : kZeroDistance);
 
       auto const fullLength = weight + stateV.distance + cur->pS - pV;
       if (!params.m_checkLengthCallback(fullLength))
@@ -592,6 +588,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
       cur->bestDistance[stateW.vertex] = newReducedDist;
       cur->parent[stateW.vertex] = stateV.vertex;
       cur->queue.push(stateW);
+
     }
   }
 

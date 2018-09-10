@@ -238,14 +238,14 @@ RoutingManager::RoutingManager(Callbacks && callbacks, Delegate & delegate)
                           static uint64_t counter = 0;
                           if (m_bmManager == nullptr)
                             return;
-                          if (counter % 1 == 0)
+                          if (counter % 128 == 0)
                           {
+                          std::cout << "counter(" << counter << ")" << std::endl;
                           auto editSession = m_bmManager->GetEditSession();
                           editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
                           editSession.CreateUserMark<DebugMarkPoint>(pt);
                           }
                           counter++;
-                          std::cout << "counter(" << counter << ")" << std::endl;
                         }
 #else
                         nullptr

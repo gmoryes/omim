@@ -21,6 +21,10 @@
 #include <utility>
 #include <vector>
 
+//tmp
+#include "geometry/mercator.hpp"
+//end tmp
+
 namespace routing
 {
 class FakeEdgesContainer;
@@ -102,10 +106,18 @@ public:
 
   double ScalarMultiply(Vertex const & v, Vertex const & from, Vertex const & to) const
   {
+    auto const & fromPoint = MercatorBounds::ToLatLon(GetPoint(from, true));
+    auto const & toPoint = MercatorBounds::ToLatLon(GetPoint(to, true));
+    auto const & vPoint = MercatorBounds::ToLatLon(GetPoint(v, true));
+    /*LOG(LDEBUG, ("from:", fromPoint));
+    LOG(LDEBUG, ("to:", toPoint));
+    LOG(LDEBUG, ("v:", vPoint));*/
     auto const & p1 = GetPoint(v, true) - GetPoint(from, true);
     auto const & p2 = GetPoint(to, true) - GetPoint(from, true);
     auto p3 = p1.Normalize();
     auto p4 = p2.Normalize();
+
+    //LOG(LDEBUG, ("result:", p3.x * p4.x + p3.y * p4.y));
 
     return p3.x * p4.x + p3.y * p4.y;
   }
