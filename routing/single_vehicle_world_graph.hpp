@@ -33,7 +33,7 @@ public:
                    std::vector<SegmentEdge> & edges) override;
   bool CheckLength(RouteWeight const &, double) const override { return true; }
   Junction const & GetJunction(Segment const & segment, bool front) override;
-  double ScalarMultiply(Vertex const & v, Vertex const & from, Vertex const & to) const override { return 0; }
+  double ScalarMultiply(m2::PointD const & v, m2::PointD const & from, m2::PointD const & to) const override { return 0; }
   m2::PointD const & GetPoint(Segment const & segment, bool front) override;
   bool IsOneWay(NumMwmId mwmId, uint32_t featureId) override;
   bool IsPassThroughAllowed(NumMwmId mwmId, uint32_t featureId) override;
@@ -51,6 +51,10 @@ public:
   bool LeapIsAllowed(NumMwmId mwmId) const override;
   std::vector<Segment> const & GetTransitions(NumMwmId numMwmId, bool isEnter) override;
   std::unique_ptr<TransitInfo> GetTransitInfo(Segment const & segment) override;
+
+  void SetAstarWeightFunctor(AsterWeightFunctor && functor) override {
+    m_estimator->SetAstarWeightFunctor(std::move(functor));
+  }
 
   // This method should be used for tests only
   IndexGraph & GetIndexGraphForTests(NumMwmId numMwmId)

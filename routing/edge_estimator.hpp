@@ -24,6 +24,10 @@ public:
   EdgeEstimator(double maxWeightSpeedKMpH, double offroadSpeedKMpH);
   virtual ~EdgeEstimator() = default;
 
+  using AstarWeightFunctor = std::function<double(m2::PointD const &, m2::PointD const &, EdgeEstimator const &)>;
+  void SetAstarWeightFunctor(AstarWeightFunctor && functor) {
+    m_astarWeightApplyer = std::move(functor);
+  }
   double CalcHeuristic(m2::PointD const & from, m2::PointD const & to) const;
   // Estimates time in seconds it takes to go from point |from| to point |to| along a leap (fake)
   // edge |from|-|to| using real features.
@@ -53,8 +57,10 @@ public:
                                                VehicleModelInterface const & vehicleModel,
                                                std::shared_ptr<TrafficStash>);
 
+  AstarWeightFunctor m_astarWeightApplyer = [](auto const &, auto const &, auto const &) { return 0.0; };
 private:
   double const m_maxWeightSpeedMpS;
   double const m_offroadSpeedMpS;
+
 };
 }  // namespace routing

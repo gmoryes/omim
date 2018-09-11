@@ -77,6 +77,11 @@ public:
     m_jointIndex.ForEachPoint(jointId, forward<F>(f));
   }
 
+  using AsterWeightFunctor = std::function<double(m2::PointD const &, m2::PointD const &, EdgeEstimator const &)>;
+  void SetAstarWeightFunctor(AsterWeightFunctor && functor) {
+    m_estimator->SetAstarWeightFunctor(std::move(functor));
+  }
+
 private:
   RouteWeight CalcSegmentWeight(Segment const & segment);
   void GetNeighboringEdges(Segment const & from, RoadPoint const & rp, bool isOutgoing,
@@ -95,5 +100,7 @@ private:
   JointIndex m_jointIndex;
   RestrictionVec m_restrictions;
   RoadAccess m_roadAccess;
+
+  AsterWeightFunctor m_astarWeightApplyer;
 };
 }  // namespace routing

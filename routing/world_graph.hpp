@@ -43,7 +43,7 @@ public:
   // start to finish of the route.
   virtual bool CheckLength(RouteWeight const & weight, double startToFinishDistanceM) const = 0;
 
-  virtual double ScalarMultiply(Vertex const & v, Vertex const & from, Vertex const & to) const = 0;
+  virtual double ScalarMultiply(m2::PointD const & v, m2::PointD const & from, m2::PointD const & to) const = 0;
 
   virtual Junction const & GetJunction(Segment const & segment, bool front) = 0;
   virtual m2::PointD const & GetPoint(Segment const & segment, bool front) = 0;
@@ -56,6 +56,9 @@ public:
   virtual void ClearCachedGraphs() = 0;
   virtual void SetMode(Mode mode) = 0;
   virtual Mode GetMode() const = 0;
+
+  using AsterWeightFunctor = std::function<double(m2::PointD const &, m2::PointD const &, EdgeEstimator const &)>;
+  virtual void SetAstarWeightFunctor(AsterWeightFunctor &&) = 0;
 
   // Interface for AStarAlgorithm:
   virtual void GetOutgoingEdgesList(Segment const & segment, std::vector<SegmentEdge> & edges) = 0;

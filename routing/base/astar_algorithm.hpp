@@ -1,7 +1,12 @@
 #pragma once
 
+#include "routing/edge_estimator.hpp"
+
 #include "routing/base/astar_weight.hpp"
 #include "routing/base/routing_result.hpp"
+
+#include "geometry/mercator.hpp"
+#include "geometry/point2d.hpp"
 
 #include "base/assert.hpp"
 #include "base/cancellable.hpp"
@@ -234,10 +239,10 @@ private:
     // p_f(v) = 0.5*(π_f(v) - π_r(v)) + 0.5*π_r(t)
     // p_r(v) = 0.5*(π_r(v) - π_f(v)) + 0.5*π_f(s)
     // p_r(v) + p_f(v) = const. Note: this condition is called consistence.
-    Weight ConsistentHeuristic(Vertex const & from, Vertex const & current) const
+    Weight ConsistentHeuristic(Vertex const & from) const
     {
-      auto const piF = graph.HeuristicCostEstimate(from, v, finalVertex);
-      auto const piR = graph.HeuristicCostEstimate(from, v, startVertex);
+      auto const piF = graph.HeuristicCostEstimate(from, finalVertex);
+      auto const piR = graph.HeuristicCostEstimate(from, startVertex);
       if (forward)
       {
         /// @todo careful: with this "return" here and below in the Backward case
@@ -254,11 +259,33 @@ private:
 
     double ScalarMultiply(Vertex const & v, Vertex const & from, Vertex const & to)
     {
-      return graph.ScalarMultiply(v, from, to);
+      //return graph.ScalarMultiply(v, from, to);
+      return 0;
     }
 
     void GetAdjacencyList(Vertex const & v, std::vector<Edge> & adj)
     {
+      auto const & finalVertex = this->forward ? this->finalVertex : this->startVertex;
+
+      auto const & currentPoint = graph.GetPoint(v, true);
+      auto const & finalPoint = graph.GetPoint(finalVertex, true);
+
+      //LOG(LDEBUG, ("current:", MercatorBounds::ToLatLon(currentPoint)));
+      //LOG(LDEBUG, ("final:", MercatorBounds::ToLatLon(finalPoint)));
+
+      auto applyAstarWeightFeatures =
+        [&currentPoint, &finalPoint, this](m2::PointD const & a, m2::PointD const & b, EdgeEstimator const & estimator)
+      {
+        auto const & adjItem = this->forward ? a : b;
+        auto const heuristicToFinalVertex = estimator.CalcHeuristic(currentPoint, finalPoint);
+        //LOG(LDEBUG, ("adjItem:", MercatorBounds::ToLatLon(adjItem)));
+        auto const x = graph.ScalarMultiply(currentPoint, adjItem, finalPoint);
+        auto const coef = 1.0 - (x + 1.0) / 2.0;
+        return heuristicToFinalVertex * coef;
+      };
+
+      //graph.SetAstarWeightFunctor(std::move(applyAstarWeightFeatures));
+
       if (forward)
         graph.GetOutgoingEdgesList(v, adj);
       else
@@ -535,7 +562,6 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
     params.m_onVisitedVertexCallback(stateV.vertex,
                                      cur->forward ? cur->finalVertex : cur->startVertex);
 
-    bool boost = false;
     auto const & final = cur->forward ? cur->finalVertex : cur->startVertex;
     cur->GetAdjacencyList(stateV.vertex, adj);
 
@@ -551,8 +577,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
       auto const reducedWeight = weight + pW - pV;
 
       CHECK_GREATER_OR_EQUAL(reducedWeight, -kEpsilon, ("Invariant violated."));
-      auto const newReducedDist = stateV.distance + std::max(reducedWeight, kZeroDistance) + (boost ?
-        Weight((1 - cur->ScalarMultiply(stateW.vertex, stateV.vertex, final)) * 1000) : kZeroDistance);
+      auto const newReducedDist = stateV.distance + std::max(reducedWeight, kZeroDistance);
 
       auto const fullLength = weight + stateV.distance + cur->pS - pV;
       if (!params.m_checkLengthCallback(fullLength))

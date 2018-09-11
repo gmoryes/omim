@@ -35,7 +35,8 @@ public:
 
   void GetEdgeList(Segment const & segment, bool isOutgoing,
                    std::vector<SegmentEdge> & edges) override;
-  double ScalarMultiply(Vertex const & v, Vertex const & from, Vertex const & to) const { return 0; }
+  double ScalarMultiply(m2::PointD const & v, m2::PointD const & from, m2::PointD const & to) const override { return 0; }
+  void SetAstarWeightFunctor(AsterWeightFunctor &&) override {}
   bool CheckLength(RouteWeight const & weight, double startToFinishDistanceM) const override
   {
     return weight.GetWeight() - weight.GetTransitTime() <=

@@ -223,6 +223,21 @@ double CarEstimator::CalcSegment(Purpose purpose, Segment const & segment, RoadG
       result *= kTimePenalty;
   }
 
+  // Add additional weight for astar algorithm
+  if (purpose == Purpose::Weight)
+  {
+    auto const & from = road.GetJunction(segment.GetPointId(false)).GetPoint();
+    auto const & to = road.GetJunction(segment.GetPointId(true)).GetPoint();
+
+    auto const & fromPoint = MercatorBounds::ToLatLon(from);
+    auto const & toPoint = MercatorBounds::ToLatLon(to);
+
+    LOG(LDEBUG, ("from:", fromPoint));
+    LOG(LDEBUG, ("to:", toPoint));
+
+    result += m_astarWeightApplyer(to, from, *this);
+  }
+
   return result;
 }
 
