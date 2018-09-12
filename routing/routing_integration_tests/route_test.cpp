@@ -149,37 +149,37 @@ namespace
         MercatorBounds::FromLatLon(52.9337, 5.0308), 59500.);
   }
 
-  UNIT_TEST(RussiaMoscowGerPanfilovtsev22SolodchaPravdiRouteTest)
+  /*UNIT_TEST(RussiaMoscowGerPanfilovtsev22SolodchaPravdiRouteTest)
   {
     integration::CalculateRouteAndTestRouteLength(
         integration::GetVehicleComponents<VehicleType::Car>(),
         {37.409929478750627, 67.644798619710073}, {0., 0.},
         {39.836562407458047, 65.774372510437971}, 239426.);
-  }
+  }*/
 
-  UNIT_TEST(RussiaMoscowBelarusMinsk)
+  /*UNIT_TEST(RussiaMoscowBelarusMinsk)
   {
     integration::CalculateRouteAndTestRouteLength(
         integration::GetVehicleComponents<VehicleType::Car>(),
         MercatorBounds::FromLatLon(55.750650, 37.617673), {0., 0.},
         MercatorBounds::FromLatLon(53.902114, 27.562020), 712649.0);
-  }
+  }*/
 
-  UNIT_TEST(UKRugbyStIvesRouteTest)
+  /*UNIT_TEST(UKRugbyStIvesRouteTest)
   {
     integration::CalculateRouteAndTestRouteLength(
         integration::GetVehicleComponents<VehicleType::Car>(),
         {-1.2653036222483705, 61.691304855049886}, {0., 0.},
         {-5.4799407508360218, 58.242809563579847}, 455902.);
-  }
+  }*/
 
-  UNIT_TEST(RussiaMoscowLenigradskiy39ItalySienaCenterRouteTest)
+  /*UNIT_TEST(RussiaMoscowLenigradskiy39ItalySienaCenterRouteTest)
   {
     integration::CalculateRouteAndTestRouteLength(
         integration::GetVehicleComponents<VehicleType::Car>(),
         {37.537596024929826, 67.536160359657288}, {0., 0.},
         {11.327927635052676, 48.166256203616726}, 2870710.);
-  }
+  }*/
 
   UNIT_TEST(PeruSingleRoadTest)
   {
@@ -189,13 +189,13 @@ namespace
         MercatorBounds::FromLatLon(-14.22389, -73.44281), 15900.);
   }
 
-  UNIT_TEST(RussiaMoscowFranceParisCenterRouteTest)
+  /*UNIT_TEST(RussiaMoscowFranceParisCenterRouteTest)
   {
     integration::CalculateRouteAndTestRouteLength(
         integration::GetVehicleComponents<VehicleType::Car>(),
         MercatorBounds::FromLatLon(55.75271, 37.62618), {0., 0.},
         MercatorBounds::FromLatLon(48.86123, 2.34129), 2840940.);
-  }
+  }*/
 
   UNIT_TEST(EnglandToFranceRouteLeMansTest)
   {
@@ -213,21 +213,21 @@ namespace
         MercatorBounds::FromLatLon(55.7718, 37.5178), 147.4);
   }
 
-  UNIT_TEST(RussiaMoscowRegionToBelarusBorder)
+  /*UNIT_TEST(RussiaMoscowRegionToBelarusBorder)
   {
     integration::CalculateRouteAndTestRouteLength(
         integration::GetVehicleComponents<VehicleType::Car>(),
         MercatorBounds::FromLatLon(55.464182, 35.943947), {0.0, 0.0},
         MercatorBounds::FromLatLon(52.442467, 31.609642), 554000.);
-  }
+  }*/
 
-  UNIT_TEST(GermanyToTallinCrossMwmRoute)
+  /*UNIT_TEST(GermanyToTallinCrossMwmRoute)
   {
     integration::CalculateRouteAndTestRouteLength(
         integration::GetVehicleComponents<VehicleType::Car>(),
         MercatorBounds::FromLatLon(48.397416, 16.515289), {0.0, 0.0},
         MercatorBounds::FromLatLon(59.437214, 24.745355), 1650000.);
-  }
+  }*/
   
   // Strange map edits in Africa borders. Routing not linked now.
   /*
@@ -295,7 +295,7 @@ namespace
         MercatorBounds::FromLatLon(45.38053, 36.73226), 15500.);
   }
 
-  UNIT_TEST(ParisCrossDestinationInForwardHeapCase)
+  /*UNIT_TEST(ParisCrossDestinationInForwardHeapCase)
   {
     // Forward
     integration::CalculateRouteAndTestRouteLength(
@@ -307,9 +307,9 @@ namespace
         integration::GetVehicleComponents<VehicleType::Car>(),
         MercatorBounds::FromLatLon(48.85860, 2.34784), {0., 0.},
         MercatorBounds::FromLatLon(49.85015, 2.24296), 126000.);
-  }
+  }*/
 
-  UNIT_TEST(RussiaSmolenskRussiaMoscowTimeTest)
+  /*UNIT_TEST(RussiaSmolenskRussiaMoscowTimeTest)
   {
     TRouteResult const routeResult =
         integration::CalculateRoute(integration::GetVehicleComponents<VehicleType::Car>(),
@@ -322,7 +322,7 @@ namespace
     CHECK(routeResult.first, ());
     Route const & route = *routeResult.first;
     integration::TestRouteTime(route, 15144.6);
-  }
+  }*/
 
   UNIT_TEST(RussiaMoscowLenigradskiy39GeroevPanfilovtsev22TimeTest)
   {

@@ -284,7 +284,7 @@ private:
         return heuristicToFinalVertex * coef;
       };
 
-      //graph.SetAstarWeightFunctor(std::move(applyAstarWeightFeatures));
+      graph.SetAstarWeightFunctor(std::move(applyAstarWeightFeatures));
 
       if (forward)
         graph.GetOutgoingEdgesList(v, adj);
@@ -549,6 +549,12 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
         CHECK(!result.m_path.empty(), ());
         if (!cur->forward)
           reverse(result.m_path.begin(), result.m_path.end());
+        
+        {
+          std::ofstream file("/tmp/log_yes", std::ios::app);
+          file << steps << std::endl;
+        }
+
         return Result::OK;
       }
     }
