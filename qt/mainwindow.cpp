@@ -54,6 +54,17 @@
 
 #endif // NO_DOWNLOADER
 
+#include <memory>
+#include <sys/resource.h>
+
+void ChangeMaxNumberOfOpenFiles(size_t n)
+{
+  struct rlimit rlp;
+  getrlimit(RLIMIT_NOFILE, &rlp);
+  rlp.rlim_cur = n;
+  setrlimit(RLIMIT_NOFILE, &rlp);
+}
+
 namespace qt
 {
 // Defined in osm_auth_dialog.cpp.
@@ -239,6 +250,7 @@ void FormatMapSize(uint64_t sizeInBytes, string & units, size_t & sizeToDownload
 
 void MainWindow::CreateNavigationBar()
 {
+  ChangeMaxNumberOfOpenFiles(409600);
   QToolBar * pToolBar = new QToolBar(tr("Navigation Bar"), this);
   pToolBar->setOrientation(Qt::Vertical);
   pToolBar->setIconSize(QSize(32, 32));

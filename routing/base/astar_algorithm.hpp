@@ -267,8 +267,8 @@ private:
     {
       auto const & finalVertex = this->forward ? this->finalVertex : this->startVertex;
 
-      auto const & currentPoint = graph.GetPoint(v, true);
-      auto const & finalPoint = graph.GetPoint(finalVertex, true);
+      auto const currentPoint = graph.GetPoint(v, true);
+      auto const finalPoint = graph.GetPoint(finalVertex, true);
 
       //LOG(LDEBUG, ("current:", MercatorBounds::ToLatLon(currentPoint)));
       //LOG(LDEBUG, ("final:", MercatorBounds::ToLatLon(finalPoint)));
@@ -281,7 +281,7 @@ private:
         //LOG(LDEBUG, ("adjItem:", MercatorBounds::ToLatLon(adjItem)));
         auto const x = graph.ScalarMultiply(currentPoint, adjItem, finalPoint);
         auto const coef = 1.0 - (x + 1.0) / 2.0;
-        return heuristicToFinalVertex * coef;
+        return coef;
       };
 
       graph.SetAstarWeightFunctor(std::move(applyAstarWeightFeatures));

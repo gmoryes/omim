@@ -235,7 +235,7 @@ double CarEstimator::CalcSegment(Purpose purpose, Segment const & segment, RoadG
     LOG(LDEBUG, ("from:", fromPoint));
     LOG(LDEBUG, ("to:", toPoint));
 
-    result += m_astarWeightApplyer(to, from, *this);
+    result = result + result * (1 - m_astarWeightApplyer(to, from, *this));
   }
 
   return result;

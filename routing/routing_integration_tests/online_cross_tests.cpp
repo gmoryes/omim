@@ -5,7 +5,7 @@
 namespace
 {
 // Separately tests only fetcher. Other tests will test both fetcher and raw code.
-UNIT_TEST(OnlineCrossFetcherSmokeTest)
+/*UNIT_TEST(OnlineCrossFetcherSmokeTest)
 {
   integration::IRouterComponents & routerComponents =
       integration::GetVehicleComponents<VehicleType::Car>();
@@ -81,5 +81,5 @@ UNIT_TEST(OnlineAustraliaCanberraToPerth)
                     {"Australia_New South Wales", "Australia_Victoria", "Australia_South Australia",
                      "Australia_Western Australia", "Australia_Sydney"},
                     routerComponents);
-}
+}*/
 }  // namespace
