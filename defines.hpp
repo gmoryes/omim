@@ -41,6 +41,7 @@
 #define RESTRICTIONS_FILE_TAG "restrictions"
 #define ROUTING_FILE_TAG "routing"
 #define CROSS_MWM_FILE_TAG "cross_mwm"
+#define LANDMARKS_FILE_TAG "landmarks"
 #define FEATURE_OFFSETS_FILE_TAG "offs"
 #define SEARCH_RANKS_FILE_TAG "ranks"
 #define POPULARITY_RANKS_FILE_TAG "popularity"

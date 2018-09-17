@@ -13,6 +13,10 @@
 #include <queue>
 #include <vector>
 
+//tmp
+#include <fstream>
+//end tmp
+
 namespace routing
 {
 template <typename Graph>
@@ -146,6 +150,18 @@ public:
     std::map<Vertex, Vertex> m_parents;
   };
 
+  // State is what is going to be put in the priority queue. See the
+  // comment for FindPath for more information.
+  struct State
+  {
+    State(Vertex const & vertex, Weight const & distance) : vertex(vertex), distance(distance) {}
+
+    inline bool operator>(State const & rhs) const { return distance > rhs.distance; }
+
+    Vertex vertex;
+    Weight distance;
+  };
+
   // VisitVertex returns true: wave will continue
   // VisitVertex returns false: wave will stop
   template <typename VisitVertex, typename AdjustEdgeWeight, typename FilterStates>
@@ -153,8 +169,10 @@ public:
                      AdjustEdgeWeight && adjustEdgeWeight, FilterStates && filterStates,
                      Context & context) const;
 
-  template <typename VisitVertex>
-  void PropagateWave(Graph & graph, Vertex const & startVertex, VisitVertex && visitVertex,
+  void PropagateWave(Graph & graph, Vertex const & startVertex, std::function<bool(State const &)> && filterStates,
+                     Context & context) const;
+
+  void PropagateWave(Graph & graph, Vertex const & startVertex, std::function<bool(Vertex const &)> && visitVertex,
                      Context & context) const;
 
   template <typename P>
@@ -193,18 +211,6 @@ private:
   private:
     base::Cancellable const & m_cancellable;
     uint32_t count = 0;
-  };
-
-  // State is what is going to be put in the priority queue. See the
-  // comment for FindPath for more information.
-  struct State
-  {
-    State(Vertex const & vertex, Weight const & distance) : vertex(vertex), distance(distance) {}
-
-    inline bool operator>(State const & rhs) const { return distance > rhs.distance; }
-
-    Vertex vertex;
-    Weight distance;
   };
 
   // BidirectionalStepContext keeps all the information that is needed to
@@ -344,15 +350,28 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
 }
 
 template <typename Graph>
-template <typename VisitVertex>
 void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVertex,
-                                          VisitVertex && visitVertex,
+                                          std::function<bool(Vertex const &)> && visitVertex,
                                           AStarAlgorithm<Graph>::Context & context) const
 {
   auto const adjustEdgeWeight = [](Vertex const & /* vertex */, Edge const & edge) {
     return edge.GetWeight();
   };
+
   auto const filterStates = [](State const & /* state */) { return true; };
+  PropagateWave(graph, startVertex, visitVertex, adjustEdgeWeight, filterStates, context);
+}
+
+template <typename Graph>
+void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVertex,
+                                          std::function<bool(State const &)> && filterStates,
+                                          AStarAlgorithm<Graph>::Context & context) const
+{
+  auto const adjustEdgeWeight = [](Vertex const & /* vertex */, Edge const & edge) {
+    return edge.GetWeight();
+  };
+
+  auto const visitVertex = [](Vertex const & /* state */) { return true; };
   PropagateWave(graph, startVertex, visitVertex, adjustEdgeWeight, filterStates, context);
 }
 
@@ -397,7 +416,9 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPath(
     return reducedLength + heuristicDiff(vertexFrom, vertexTo);
   };
 
+  size_t counter = 0;
   auto visitVertex = [&](Vertex const & vertex) {
+    counter++;
     if (periodicCancellable.IsCancelled())
     {
       resultCode = Result::Cancelled;
@@ -408,6 +429,10 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPath(
 
     if (vertex == finalVertex)
     {
+      {
+        std::ofstream output("/tmp/counter", std::ofstream::app);
+        output << counter << std::endl;
+      }
       resultCode = Result::OK;
       return false;
     }

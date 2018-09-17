@@ -447,6 +447,73 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
               foundCount, ", not found:", notFoundCount));
 }
 
+void CalcLandMarks(string const & path, string const & mwmFile, string const & country,
+                   CountryParentNameGetterFn const & countryParentNameGetterFn,
+                   CrossMwmConnector<base::GeoObjectId> & connector,
+                   map<pair<uint32_t, uint32_t>, std::vector<double>> & landmarks)
+{
+  shared_ptr<VehicleModelInterface> vehicleModel =
+    CarModelFactory(countryParentNameGetterFn).GetVehicleModelForCountry(country);
+  IndexGraph graph(
+    make_shared<Geometry>(GeometryLoader::CreateFromFile(mwmFile, vehicleModel)),
+    EdgeEstimator::Create(VehicleType::Car, *vehicleModel, nullptr /* trafficStash */));
+
+  MwmValue mwmValue(LocalCountryFile(path, platform::CountryFile(country), 0 /* version */));
+  DeserializeIndexGraph(mwmValue, VehicleType::Car, graph);
+
+  map<Segment, map<Segment, RouteWeight>> weights;
+
+  static double constexpr kLandMarksNumberPercent = 5 / 100.0;
+  auto const numEnters = connector.GetEnters().size();
+  auto const step = static_cast<size_t>(1.0 / kLandMarksNumberPercent);
+
+  size_t landmarkNumber = 0;
+  for (size_t i = 0; i < numEnters; i += step)
+  {
+    LOG(LINFO, ("start process ", i, "/", numEnters, "landmark"));
+    Segment const & enter = connector.GetEnter(i);
+
+    AStarAlgorithm<DijkstraWrapper> astar;
+    DijkstraWrapper wrapper(graph);
+    AStarAlgorithm<DijkstraWrapper>::Context context;
+
+    ++landmarkNumber;
+    astar.PropagateWave(wrapper, enter,
+                        [&landmarks, landmarkNumber](AStarAlgorithm<DijkstraWrapper>::State const & state)
+                        {
+                          auto it = landmarks.find({state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()});
+                          if (it == landmarks.end())
+                          {
+                            landmarks[{state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()}] =
+                              {state.distance.GetWeight()};
+                          } else if (it->second.size() != landmarkNumber)
+                          {
+                            it->second.emplace_back(state.distance.GetWeight());
+                          }
+
+                          return true;
+                        },
+                        context);
+
+    size_t found = 0;
+    size_t notFound = 0;
+    for (auto & item : landmarks)
+    {
+      if (item.second.size() < landmarkNumber)
+      {
+        item.second.emplace_back(std::numeric_limits<double>::max());
+        ++notFound;
+      }
+      else
+      {
+        ++found;
+      }
+    }
+    LOG(LINFO, ("found/not for current landmark:", found, "/", notFound));
+
+  }
+}
+
 serial::GeometryCodingParams LoadGeometryCodingParams(string const & mwmFile)
 {
   DataHeader const dataHeader(mwmFile);
@@ -505,6 +572,27 @@ void SerializeCrossMwm(string const & mwmFile, string const & sectionName,
   LOG(LINFO, ("Cross mwm section generated, size:", sectionSize, "bytes"));
 }
 
+void SerializeLandMarks(string const & mwmFile, string const & sectionName,
+                        map<pair<uint32_t, uint32_t>, std::vector<double>> const & landmarks)
+{
+  FilesContainerW cont(mwmFile, FileWriter::OP_WRITE_EXISTING);
+  auto writer = cont.GetWriter(sectionName);
+
+  size_t amount = landmarks.size();
+  writer.Write(&amount, sizeof(amount));
+
+  for (auto const & item : landmarks)
+  {
+    writer.Write(&item.first.first, sizeof(item.first.first));  // feature id
+    writer.Write(&item.first.second, sizeof(item.first.second));  // segment id
+
+    size_t size = item.second.size();
+    writer.Write(&size, sizeof(size));  // number of landmarks
+    for (auto distance : item.second)
+      writer.Write(&distance, sizeof(distance));
+  }
+}
+
 void BuildRoutingCrossMwmSection(string const & path, string const & mwmFile,
                                  string const & country,
                                  CountryParentNameGetterFn const & countryParentNameGetterFn,
@@ -525,6 +613,26 @@ void BuildRoutingCrossMwmSection(string const & path, string const & mwmFile,
 
   CHECK(connectors[static_cast<size_t>(VehicleType::Transit)].IsEmpty(), ());
   SerializeCrossMwm(mwmFile, CROSS_MWM_FILE_TAG, connectors, transitions);
+}
+
+void BuildLandmarksSection(string const & path, string const & mwmFile,
+                           string const & country,
+                           CountryParentNameGetterFn const & countryParentNameGetterFn,
+                           string const & osmToFeatureFile)
+{
+  LOG(LINFO, ("Building landmarks section for", country));
+  using CrossMwmId = base::GeoObjectId;
+  CrossMwmConnectorPerVehicleType<CrossMwmId> connectors;
+  vector<CrossMwmConnectorSerializer::Transition<CrossMwmId>> transitions;
+
+  CalcCrossMwmConnectors(path, mwmFile, country, countryParentNameGetterFn, osmToFeatureFile,
+                         transitions, connectors);
+
+  map<pair<uint32_t, uint32_t>, std::vector<double>> landmarks;
+  CalcLandMarks(path, mwmFile, country, countryParentNameGetterFn,
+                connectors[static_cast<size_t>(VehicleType::Car)], landmarks);
+
+  SerializeLandMarks(mwmFile, LANDMARKS_FILE_TAG, landmarks);
 }
 
 void BuildTransitCrossMwmSection(string const & path, string const & mwmFile,

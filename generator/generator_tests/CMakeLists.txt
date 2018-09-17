@@ -10,6 +10,7 @@ set(
   feature_builder_test.cpp
   feature_merger_test.cpp
   intermediate_data_test.cpp
+  landmark_test.cpp
   metadata_parser_test.cpp
   node_mixer_test.cpp
   osm2meta_test.cpp

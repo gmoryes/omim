@@ -112,7 +112,7 @@ if [ "$SOURCE_TYPE" == "o5m" ]; then
   $GENERATOR_TOOL $INTDIR_FLAG --osm_file_type=o5m --osm_file_name="$SOURCE_FILE" --preprocess=true || fail "Preprocessing failed"
   $GENERATOR_TOOL $INTDIR_FLAG --osm_file_type=o5m --osm_file_name="$SOURCE_FILE" --data_path="$TARGET" --user_resource_path="$DATA_PATH" $GENERATE_EVERYTHING --output="$BASE_NAME"
   $GENERATOR_TOOL $INTDIR_FLAG --data_path="$TARGET" --user_resource_path="$DATA_PATH" --cities_boundaries_data="$CITIES_BOUNDARIES_DATA" --make_city_roads --output="$BASE_NAME"
-  $GENERATOR_TOOL $INTDIR_FLAG --data_path="$TARGET" --user_resource_path="$DATA_PATH" ${CROSS_MWM-} ${GENERATE_CAMERA_SECTION-} --make_routing_index --generate_traffic_keys --output="$BASE_NAME"
+  $GENERATOR_TOOL $INTDIR_FLAG --data_path="$TARGET" --user_resource_path="$DATA_PATH" ${CROSS_MWM-} ${GENERATE_CAMERA_SECTION-} --make_routing_index --make_landmarks --generate_traffic_keys --output="$BASE_NAME"
 else
   echo "Unsupported source type: $SOURCE_TYPE" >&2
 fi

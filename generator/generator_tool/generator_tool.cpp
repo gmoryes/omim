@@ -133,6 +133,7 @@ DEFINE_bool(generate_cameras, false, "Generate section with speed cameras info."
 DEFINE_bool(
     make_city_roads, false,
     "Calculates which roads lie inside cities and makes a section with ids of these roads.");
+DEFINE_bool(make_landmarks, false, "Generate landmark for routing.");
 
 // Sponsored-related.
 DEFINE_string(booking_data, "", "Path to booking data in .tsv format.");
@@ -504,6 +505,21 @@ int main(int argc, char ** argv)
 
       if (FLAGS_make_transit_cross_mwm)
         routing::BuildTransitCrossMwmSection(path, datFile, country, *countryParentGetter);
+    }
+
+    if (FLAGS_make_landmarks)
+    {
+      LOG(LINFO, ("Start make landmarks."));
+      if (!countryParentGetter)
+      {
+        // All the mwms should use proper VehicleModels.
+        LOG(LCRITICAL, ("Countries file is needed. Please set countries file name (countries.txt or "
+                        "countries_obsolete.txt). File must be located in data directory."));
+        return -1;
+      }
+
+        routing::BuildLandmarksSection(path, datFile, country, *countryParentGetter,
+                                             osmToFeatureFilename);
     }
 
     if (!FLAGS_ugc_data.empty())

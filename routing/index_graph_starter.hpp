@@ -14,6 +14,10 @@
 
 #include "routing_common/num_mwm_id.hpp"
 
+#include "base/assert.hpp"
+
+#include "geometry/mercator.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -96,14 +100,53 @@ public:
 
   RouteWeight HeuristicCostEstimate(Vertex const & from, Vertex const & to) const
   {
-    return m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */),
-                                         GetPoint(to, true /* front */));
+    //return m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */),
+    //                                     GetPoint(to, true /* front */));
+    if (true)
+    {
+      std::vector<double> fromLandmarks = m_graph.GetLandmarks(from);
+      std::vector<double> toLandmarks = m_graph.GetLandmarks(m_lastSegmentDebug);
+
+      size_t minN = std::min(fromLandmarks.size(), toLandmarks.size());
+      size_t maxN = std::max(fromLandmarks.size(), toLandmarks.size());
+
+      if (minN == 0)
+      {
+        return m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */),
+                                             GetPoint(to, true /* front */));
+      }
+
+      CHECK_EQUAL(minN, maxN, ("WHAT THE FUCK"));
+      double maxi = 0;
+      for (size_t i = 0; i < maxN; ++i)
+      {
+        if (fromLandmarks[i] != std::numeric_limits<double>::max() &&
+            toLandmarks[i] != std::numeric_limits<double>::max())
+        {
+          maxi = std::max(maxi, fromLandmarks[i] - toLandmarks[i]);
+        }
+      }
+
+      auto p1 = MercatorBounds::ToLatLon(GetPoint(from, true));
+      auto p2 = MercatorBounds::ToLatLon(GetPoint(from, true));
+      auto tmp = m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */), GetPoint(to, true /* front */));
+      LOG(LINFO, ("Approximate from:", p1, "to:", p2, "is:", maxi, "silly:", tmp));
+
+      return RouteWeight(maxi / 200.0);
+    }
+    else
+    {
+      return m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */),
+                                           GetPoint(to, true /* front */));
+    }
   }
 
   RouteWeight CalcSegmentWeight(Segment const & segment) const;
   RouteWeight CalcRouteSegmentWeight(std::vector<Segment> const & route, size_t segmentIndex) const;
   double CalcSegmentETA(Segment const & segment) const;
 
+  Segment m_lastSegmentDebug;
+  bool m_hasLastSegment = false;
 private:
   // Start or finish ending information. 
   struct Ending

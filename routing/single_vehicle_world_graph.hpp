@@ -49,6 +49,7 @@ public:
   RouteWeight CalcOffroadWeight(m2::PointD const & from, m2::PointD const & to) const override;
   double CalcSegmentETA(Segment const & segment) override;
   bool LeapIsAllowed(NumMwmId mwmId) const override;
+  std::vector<double> GetLandmarks(Segment const & segment) override;
   std::vector<Segment> const & GetTransitions(NumMwmId numMwmId, bool isEnter) override;
   std::unique_ptr<TransitInfo> GetTransitInfo(Segment const & segment) override;
   std::vector<RouteSegment::SpeedCamera> GetSpeedCamInfo(Segment const & segment) override;

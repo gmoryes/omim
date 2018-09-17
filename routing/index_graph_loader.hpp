@@ -23,9 +23,13 @@ public:
 
   virtual Geometry & GetGeometry(NumMwmId numMwmId) = 0;
   virtual IndexGraph & GetIndexGraph(NumMwmId mwmId) = 0;
+<<<<<<< HEAD
 
   // Because several cameras can lie on one segment we return vector of them.
   virtual std::vector<RouteSegment::SpeedCamera> GetSpeedCameraInfo(Segment const & segment) = 0;
+=======
+  virtual std::vector<double> GetLandmarks(Segment const & segment) = 0;
+>>>>>>> [routing] start add landmarks
   virtual void Clear() = 0;
 
   static std::unique_ptr<IndexGraphLoader> Create(

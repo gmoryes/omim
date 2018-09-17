@@ -143,7 +143,7 @@ private:
                                   ConvertResult<Graph>(algorithm.FindPath(params, routingResult)));
     }
     return ConvertTransitResult(
-        mwmIds, ConvertResult<Graph>(algorithm.FindPathBidirectional(params, routingResult)));
+        mwmIds, ConvertResult<Graph>(algorithm.FindPath(params, routingResult)));
   }
 
   VehicleType m_vehicleType;

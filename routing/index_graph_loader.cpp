@@ -35,6 +35,7 @@ public:
   Geometry & GetGeometry(NumMwmId numMwmId) override;
   IndexGraph & GetIndexGraph(NumMwmId numMwmId) override;
   vector<RouteSegment::SpeedCamera> GetSpeedCameraInfo(Segment const & segment) override;
+  vector<double> GetLandmarks(Segment const & segment) override;
   void Clear() override;
 
 private:
@@ -53,12 +54,19 @@ private:
   shared_ptr<NumMwmIds> m_numMwmIds;
   shared_ptr<VehicleModelFactoryInterface> m_vehicleModelFactory;
   shared_ptr<EdgeEstimator> m_estimator;
+<<<<<<< HEAD
 
   unordered_map<NumMwmId, GraphAttrs> m_graphs;
 
   // TODO (@gmoryes) move this field to |GeometryIndexGraph| after @bykoianko PR
   unordered_map<NumMwmId, map<SegmentCoord, vector<RouteSegment::SpeedCamera>>> m_cachedCameras;
   decltype(m_cachedCameras)::iterator ReceiveSpeedCamsFromMwm(NumMwmId numMwmId);
+=======
+  unordered_map<NumMwmId, GeometryIndexGraph> m_graphs;
+
+  map<Segment, vector<double>> m_landmarks;
+  set<NumMwmId> m_mwmUsedLandmark;
+>>>>>>> [routing] start add landmarks
 };
 
 IndexGraphLoaderImpl::IndexGraphLoaderImpl(
@@ -208,6 +216,63 @@ IndexGraphLoaderImpl::GraphAttrs & IndexGraphLoaderImpl::CreateIndexGraph(
 }
 
 void IndexGraphLoaderImpl::Clear() { m_graphs.clear(); }
+
+vector<double> IndexGraphLoaderImpl::GetLandmarks(Segment const & segment)
+{
+  bool hasCached = m_mwmUsedLandmark.find(segment.GetMwmId()) != m_mwmUsedLandmark.end();
+  if (segment.GetMwmId() == kFakeNumMwmId)
+    return {};
+
+  if (m_landmarks.find(segment) != m_landmarks.end())
+  {
+    //LOG(LINFO, ("landmark:", m_landmarks[segment]));
+    return m_landmarks[segment];
+  }
+
+  if (hasCached)
+  {
+    //LOG(LINFO, ("Data has cached, but no info about segment:", segment));
+    return {};
+  }
+
+  platform::CountryFile const & file = m_numMwmIds->GetFile(segment.GetMwmId());
+  MwmSet::MwmHandle handle = m_dataSource.GetMwmHandleByCountryFile(file);
+  if (!handle.IsAlive())
+    MYTHROW(RoutingException, ("Can't get mwm handle for", file));
+
+  MwmValue const & mwmValue = *handle.GetValue<MwmValue>();
+  if (!mwmValue.m_cont.IsExist(LANDMARKS_FILE_TAG))
+  {
+    LOG(LINFO, ("No section about landmarks."));
+    return {};
+  }
+
+  FilesContainerR::TReader reader(mwmValue.m_cont.GetReader(LANDMARKS_FILE_TAG));
+  ReaderSource<FilesContainerR::TReader> src(reader);
+
+  size_t amount;
+  ReadPrimitiveFromSource(src, amount);
+  for (size_t i = 0; i < amount; ++i)
+  {
+    uint32_t featureId, segmentId;
+    size_t landmarksNumber;
+
+    ReadPrimitiveFromSource(src, featureId);
+    ReadPrimitiveFromSource(src, segmentId);
+    ReadPrimitiveFromSource(src, landmarksNumber);
+
+    std::vector<double> d(landmarksNumber);
+    for (size_t j = 0; j < landmarksNumber; ++j)
+      src.Read(&d[j], sizeof(double));
+
+    Segment newSegment(segment.GetMwmId(), featureId, segmentId, true);
+    m_landmarks.emplace(newSegment, std::move(d));
+  }
+
+  m_mwmUsedLandmark.insert(segment.GetMwmId());
+
+  return GetLandmarks(segment);
+}
 
 bool ReadRoadAccessFromMwm(MwmValue const & mwmValue, VehicleType vehicleType,
                            RoadAccess & roadAccess)

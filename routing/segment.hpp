@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <sstream>
 #include <string>
+#include <vector>
 
 namespace routing
 {
@@ -82,6 +83,7 @@ private:
   uint32_t m_featureId = 0;
   uint32_t m_segmentIdx = 0;
   NumMwmId m_mwmId = kFakeNumMwmId;
+
   bool m_forward = false;
 };
 

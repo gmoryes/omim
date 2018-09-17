@@ -1,4 +1,6 @@
 #include "routing/single_vehicle_world_graph.hpp"
+#include "single_vehicle_world_graph.hpp"
+
 
 #include <utility>
 
@@ -133,5 +135,10 @@ void SingleVehicleWorldGraph::GetTwinsInner(Segment const & segment, bool isOutg
                                             vector<Segment> & twins)
 {
   m_crossMwmGraph->GetTwins(segment, isOutgoing, twins);
+}
+
+vector<double> SingleVehicleWorldGraph::GetLandmarks(Segment const & segment)
+{
+  return m_loader->GetLandmarks(segment);
 }
 }  // namespace routing

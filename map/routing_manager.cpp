@@ -226,15 +226,20 @@ RoutingManager::RoutingManager(Callbacks && callbacks, Delegate & delegate)
     alohalytics::LogEvent("Routing_CalculatingRoute", statistics);
     GetPlatform().GetMarketingService().SendMarketingEvent(marketing::kRoutingCalculatingRoute, {});
   };
-
+static size_t counter = 0;
   m_routingSession.Init(routingStatisticsFn,
 #ifdef SHOW_ROUTE_DEBUG_MARKS
                         [this](m2::PointD const & pt) {
                           if (m_bmManager == nullptr)
                             return;
                           auto editSession = m_bmManager->GetEditSession();
-                          editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
-                          editSession.CreateUserMark<DebugMarkPoint>(pt);
+                          if (counter % 128 == 0)
+                          {
+                            editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+                            editSession.CreateUserMark<DebugMarkPoint>(pt);
+                          }
+
+                          counter++;
                         }
 #else
                         nullptr

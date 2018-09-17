@@ -62,7 +62,7 @@ public:
   std::vector<Segment> const & GetTransitions(NumMwmId numMwmId, bool isEnter) override;
   std::unique_ptr<TransitInfo> GetTransitInfo(Segment const & segment) override;
   std::vector<RouteSegment::SpeedCamera> GetSpeedCamInfo(Segment const & segment) override;
-
+  std::vector<double> GetLandmarks(Segment const & segment) override { return {}; }
 private:
   // WorldGraph overrides:
   void GetTwinsInner(Segment const & s, bool isOutgoing, std::vector<Segment> & twins) override;
