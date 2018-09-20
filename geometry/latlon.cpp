@@ -15,7 +15,7 @@ double const LatLon::kMaxLon = 180;
 string DebugPrint(LatLon const & t)
 {
   ostringstream out;
-  out.precision(20);
+  out.precision(10);
   out << "ms::LatLon(" << t.lat << ", " << t.lon << ")";
   return out.str();
 }

@@ -517,7 +517,9 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                           {
                             if (startLog)
                             {
-                              LOG(LINFO, ("No info before, add item for", MercatorBounds::ToLatLon(graph.GetPoint(state.vertex, true))));
+                              LOG(LINFO, ("No info before, add item for",
+                                          MercatorBounds::ToLatLon(graph.GetPoint(state.vertex, true)),
+                                          "or:", MercatorBounds::ToLatLon(graph.GetPoint(state.vertex, false))));
                             }
                             auto emptyVector = std::vector<std::pair<double, double>>(landmarksAmount, {kMax, kMax});
                             pair<uint32_t, uint32_t> newPair = {state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()};
