@@ -35,7 +35,7 @@ public:
   Geometry & GetGeometry(NumMwmId numMwmId) override;
   IndexGraph & GetIndexGraph(NumMwmId numMwmId) override;
   vector<RouteSegment::SpeedCamera> GetSpeedCameraInfo(Segment const & segment) override;
-  vector<double> GetLandmarks(Segment const & segment) override;
+  vector<pair<double, double>> GetLandmarks(Segment const & segment) override;
   void Clear() override;
 
 private:
@@ -54,19 +54,16 @@ private:
   shared_ptr<NumMwmIds> m_numMwmIds;
   shared_ptr<VehicleModelFactoryInterface> m_vehicleModelFactory;
   shared_ptr<EdgeEstimator> m_estimator;
-<<<<<<< HEAD
 
   unordered_map<NumMwmId, GraphAttrs> m_graphs;
 
   // TODO (@gmoryes) move this field to |GeometryIndexGraph| after @bykoianko PR
   unordered_map<NumMwmId, map<SegmentCoord, vector<RouteSegment::SpeedCamera>>> m_cachedCameras;
   decltype(m_cachedCameras)::iterator ReceiveSpeedCamsFromMwm(NumMwmId numMwmId);
-=======
   unordered_map<NumMwmId, GeometryIndexGraph> m_graphs;
 
-  map<Segment, vector<double>> m_landmarks;
+  map<Segment, vector<pair<double, double>>> m_landmarks;
   set<NumMwmId> m_mwmUsedLandmark;
->>>>>>> [routing] start add landmarks
 };
 
 IndexGraphLoaderImpl::IndexGraphLoaderImpl(
@@ -217,7 +214,7 @@ IndexGraphLoaderImpl::GraphAttrs & IndexGraphLoaderImpl::CreateIndexGraph(
 
 void IndexGraphLoaderImpl::Clear() { m_graphs.clear(); }
 
-vector<double> IndexGraphLoaderImpl::GetLandmarks(Segment const & segment)
+vector<pair<double, double>> IndexGraphLoaderImpl::GetLandmarks(Segment const & segment)
 {
   bool hasCached = m_mwmUsedLandmark.find(segment.GetMwmId()) != m_mwmUsedLandmark.end();
   if (segment.GetMwmId() == kFakeNumMwmId)
@@ -261,9 +258,12 @@ vector<double> IndexGraphLoaderImpl::GetLandmarks(Segment const & segment)
     ReadPrimitiveFromSource(src, segmentId);
     ReadPrimitiveFromSource(src, landmarksNumber);
 
-    std::vector<double> d(landmarksNumber);
+    std::vector<std::pair<double, double>> d(landmarksNumber);
     for (size_t j = 0; j < landmarksNumber; ++j)
-      src.Read(&d[j], sizeof(double));
+    {
+      src.Read(&d[j].first, sizeof(double));
+      src.Read(&d[j].second, sizeof(double));
+    }
 
     Segment newSegment(segment.GetMwmId(), featureId, segmentId, true);
     m_landmarks.emplace(newSegment, std::move(d));

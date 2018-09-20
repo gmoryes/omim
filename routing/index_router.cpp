@@ -325,7 +325,7 @@ bool IndexRouter::FindBestSegment(m2::PointD const & point, m2::PointD const & d
 RouterResultCode IndexRouter::CalculateRoute(Checkpoints const & checkpoints,
                                              m2::PointD const & startDirection,
                                              bool adjustToPrevRoute,
-                                             RouterDelegate const & delegate, Route & route)
+                                             RouterDelegate const & delegate, Route & route, bool enableLandmarks)
 {
   vector<string> outdatedMwms;
   GetOutdatedMwms(m_dataSource, outdatedMwms);
@@ -360,7 +360,7 @@ RouterResultCode IndexRouter::CalculateRoute(Checkpoints const & checkpoints,
           MercatorBounds::ToLatLon(finalPoint)));
       }
     }
-    return DoCalculateRoute(checkpoints, startDirection, delegate, route);
+    return DoCalculateRoute(checkpoints, startDirection, delegate, route, enableLandmarks);
   }
   catch (RootException const & e)
   {
@@ -372,7 +372,7 @@ RouterResultCode IndexRouter::CalculateRoute(Checkpoints const & checkpoints,
 
 RouterResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoints,
                                                m2::PointD const & startDirection,
-                                               RouterDelegate const & delegate, Route & route)
+                                               RouterDelegate const & delegate, Route & route, bool enableLandmarks)
 {
   m_lastRoute.reset();
 
@@ -434,92 +434,15 @@ RouterResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoints,
     if (isFirstSubroute)
       isStartSegmentStrictForward = startSegmentIsAlmostCodirectionalDirection;
 
-
-    /////////////////////
-    // Look at each segment of roads and find the closest.
-    double bestMinDist = std::numeric_limits<double>::max();
-    uint32_t bestFeatureId, bestSegmentId;
-    double bestCoef = 0.0;
-    static auto constexpr kSearchRadiusMeters = 10;
-    bool found = false;
-    NumMwmIds mwmIds;
-    NumMwmId mwmId;
-    auto const updateClosestFeatureCallback = [&](FeatureType & ft) {
-      if (ft.GetFeatureType() != feature::GEOM_LINE)
-        return;
-
-      if (!routing::IsCarRoad(feature::TypesHolder(ft)))
-        return;
-
-      auto curMinDist = std::numeric_limits<double>::max();
-
-      ft.ParseGeometry(FeatureType::BEST_GEOMETRY);
-      std::vector<m2::PointD> points(ft.GetPointsCount());
-      for (size_t i = 0; i < points.size(); ++i)
-        points[i] = ft.GetPoint(i);
-
-      routing::FollowedPolyline polyline(points.begin(), points.end());
-      m2::RectD const rect =
-        MercatorBounds::RectByCenterXYAndSizeInMeters(finishCheckpoint, kSearchRadiusMeters);
-      auto curSegment = polyline.UpdateProjection(rect);
-      double curCoef = 0.0;
-
-      if (!curSegment.IsValid())
-        return;
-
-      CHECK_LESS(curSegment.m_ind + 1, polyline.GetPolyline().GetSize(), ());
-      static double constexpr kEps = 1e-6;
-      auto const & p1 = polyline.GetPolyline().GetPoint(curSegment.m_ind);
-      auto const & p2 = polyline.GetPolyline().GetPoint(curSegment.m_ind + 1);
-
-      if (AlmostEqualAbs(p1, p2, kEps))
-        return;
-
-      m2::ParametrizedSegment<m2::PointD> st(p1, p2);
-      auto const cameraProjOnSegment = st.ClosestPointTo(finishCheckpoint);
-      curMinDist = MercatorBounds::DistanceOnEarth(cameraProjOnSegment, finishCheckpoint);
-
-      curCoef = MercatorBounds::DistanceOnEarth(p1, cameraProjOnSegment) /
-                MercatorBounds::DistanceOnEarth(p1, p2);
-
-      if (curMinDist < bestMinDist)
-      {
-        bestMinDist = curMinDist;
-        bestFeatureId = ft.GetID().m_index;
-        bestSegmentId = static_cast<uint32_t>(curSegment.m_ind);
-        bestCoef = curCoef;
-        platform::CountryFile file(ft.GetID().m_mwmId.GetInfo()->GetCountryName());
-        mwmIds.RegisterFile(file);
-        mwmId = mwmIds.GetId(file);
-        found = true;
-      }
-    };
-
-    m_dataSource.ForEachInRect(
-      updateClosestFeatureCallback,
-      MercatorBounds::RectByCenterXYAndSizeInMeters(finishCheckpoint, kSearchRadiusMeters),
-      scales::GetUpperScale());
-
-
-    ///////////////
-
     IndexGraphStarter subrouteStarter(MakeFakeEnding(startSegment, startCheckpoint, *graph),
                                       MakeFakeEnding(finishSegment, finishCheckpoint, *graph),
                                       starter ? starter->GetNumFakeSegments() : 0,
                                       isStartSegmentStrictForward, *graph);
 
-    if (found)
-    {
-      subrouteStarter.m_hasLastSegment = true;
-      subrouteStarter.m_lastSegmentDebug = Segment(749, bestFeatureId, bestSegmentId, true);
-    }
-    else
-    {
-      CHECK(false, ("FUCK SOCIETY"));
-    }
+    subrouteStarter.m_lastSegmentDebug = finishSegment;
 
     vector<Segment> subroute;
-    auto const result = CalculateSubroute(checkpoints, i, delegate, subrouteStarter, subroute);
+    auto const result = CalculateSubroute(checkpoints, i, delegate, subrouteStarter, subroute, enableLandmarks, route);
 
     if (result != RouterResultCode::NoError)
       return result;
@@ -563,7 +486,9 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
                                                 size_t subrouteIdx,
                                                 RouterDelegate const & delegate,
                                                 IndexGraphStarter & starter,
-                                                vector<Segment> & subroute)
+                                                vector<Segment> & subroute,
+                                                bool enableLandmarks,
+                                                Route & route)
 {
   subroute.clear();
 
@@ -619,9 +544,16 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
       delegate, onVisitJunction, checkLength);
 
   set<NumMwmId> const mwmIds = starter.GetMwms();
-  RouterResultCode const result = FindPath<IndexGraphStarter>(params, mwmIds, routingResult);
+  RouterResultCode result;
+  if (enableLandmarks)
+    result = FindPathLandmarks<IndexGraphStarter>(params, mwmIds, routingResult);
+  else
+    result = FindPath<IndexGraphStarter>(params, mwmIds, routingResult);
+
   if (result != RouterResultCode::NoError)
     return result;
+
+  route.m_routeWeight = routingResult.m_distance;
 
   RouterResultCode const leapsResult =
       ProcessLeaps(routingResult.m_path, delegate, starter.GetGraph().GetMode(), starter, subroute);
@@ -782,8 +714,9 @@ bool IndexRouter::FindBestSegment(m2::PointD const & point, m2::PointD const & d
   // Getting rid of knowingly bad candidates.
   base::EraseIf(candidates, [&](pair<Edge, Junction> const & p) {
     Edge const & edge = p.first;
-    return edge.GetFeatureId().m_mwmId != mwmId ||
-           IsDeadEnd(getSegmentByEdge(edge), isOutgoing, worldGraph);
+    bool one =  edge.GetFeatureId().m_mwmId != mwmId;
+    bool second = IsDeadEnd(getSegmentByEdge(edge), isOutgoing, worldGraph);
+    return one || second;
   });
 
   if (candidates.empty())

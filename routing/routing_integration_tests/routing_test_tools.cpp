@@ -144,11 +144,9 @@ namespace integration
   {
     // Setting stored paths from testingmain.cpp
     Platform & pl = GetPlatform();
-    CommandLineOptions const & options = GetTestingOptions();
-    if (options.m_dataPath)
-      pl.SetWritableDirForTests(options.m_dataPath);
-    if (options.m_resourcePath)
-      pl.SetResourceDir(options.m_resourcePath);
+    //CommandLineOptions const & options = GetTestingOptions();
+    pl.SetWritableDirForTests("/Users/m.gorbushin/projects/Mail/fork_omim/omim/data/180804/");
+    //pl.SetResourceDir(options.m_resourcePath);
 
     platform::migrate::SetMigrationFlag();
     platform::FindAllLocalMapsAndCleanup(numeric_limits<int64_t>::max() /* latestVersion */,
@@ -167,12 +165,12 @@ namespace integration
 
   TRouteResult CalculateRoute(IRouterComponents const & routerComponents,
                               m2::PointD const & startPoint, m2::PointD const & startDirection,
-                              m2::PointD const & finalPoint)
+                              m2::PointD const & finalPoint, bool enableLandmarks)
   {
     RouterDelegate delegate;
     shared_ptr<Route> route = make_shared<Route>("mapsme", 0 /* route id */);
     RouterResultCode result = routerComponents.GetRouter().CalculateRoute(
-        Checkpoints(startPoint, finalPoint), startDirection, false /* adjust */, delegate, *route);
+        Checkpoints(startPoint, finalPoint), startDirection, false /* adjust */, delegate, *route, enableLandmarks);
     ASSERT(route, ());
     return TRouteResult(route, result);
   }
@@ -229,6 +227,8 @@ namespace integration
          ("Route points test failed. Expected:", expectedPointsNumber, "have:", routePoints,
           "relative error:", relativeError));
   }
+
+
 
   void CalculateRouteAndTestRouteLength(IRouterComponents const & routerComponents,
                                         m2::PointD const & startPoint,

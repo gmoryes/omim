@@ -137,7 +137,7 @@ void SingleVehicleWorldGraph::GetTwinsInner(Segment const & segment, bool isOutg
   m_crossMwmGraph->GetTwins(segment, isOutgoing, twins);
 }
 
-vector<double> SingleVehicleWorldGraph::GetLandmarks(Segment const & segment)
+vector<pair<double, double>> SingleVehicleWorldGraph::GetLandmarks(Segment const & segment)
 {
   return m_loader->GetLandmarks(segment);
 }

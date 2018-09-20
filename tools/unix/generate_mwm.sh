@@ -75,7 +75,7 @@ CITIES_BOUNDARIES_DATA="${CITIES_BOUNDARIES_DATA:-$INTDIR/cities_boundaries.bin}
 
 # Create MWM file
 INTDIR_FLAG="--intermediate_data_path=$INTDIR/ --node_storage=map"
-GENERATE_EVERYTHING="--generate_features --generate_geometry --generate_index --generate_search_index --dump_cities_boundaries --cities_boundaries_data=$CITIES_BOUNDARIES_DATA"
+GENERATE_EVERYTHING="--generate_features --generate_geometry --generate_index --dump_cities_boundaries --cities_boundaries_data=$CITIES_BOUNDARIES_DATA" #--generate_search_index
 [ -n "${HOTELS-}" ] && GENERATE_EVERYTHING="$GENERATE_EVERYTHING --booking_data=$HOTELS"
 COASTS="${COASTS-WorldCoasts.geom}"
 if [ -f "$COASTS" ]; then

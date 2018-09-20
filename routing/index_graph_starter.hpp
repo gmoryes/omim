@@ -98,47 +98,81 @@ public:
     GetEdgesList(segment, false /* isOutgoing */, edges);
   }
 
-  RouteWeight HeuristicCostEstimate(Vertex const & from, Vertex const & to) const
+  bool IsGoodLandmark(std::pair<double, double> const & landmark) const
   {
-    //return m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */),
-    //                                     GetPoint(to, true /* front */));
-    if (true)
-    {
-      std::vector<double> fromLandmarks = m_graph.GetLandmarks(from);
-      std::vector<double> toLandmarks = m_graph.GetLandmarks(m_lastSegmentDebug);
+    static auto constexpr kMax = std::numeric_limits<double>::max();
+    static auto constexpr kBadPair = std::make_pair(kMax, kMax);
+    return landmark != kBadPair;
+  }
 
-      size_t minN = std::min(fromLandmarks.size(), toLandmarks.size());
-      size_t maxN = std::max(fromLandmarks.size(), toLandmarks.size());
+  RouteWeight HeuristicCostEstimateLandmarks(Vertex const & from, Vertex const & to) const
+  {
+    std::vector<std::pair<double, double>> fromLandmarks = m_graph.GetLandmarks(from);
+    std::vector<std::pair<double, double>> toLandmarks = m_graph.GetLandmarks(m_lastSegmentDebug);
 
-      if (minN == 0)
-      {
-        return m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */),
-                                             GetPoint(to, true /* front */));
-      }
+    size_t minN = std::min(fromLandmarks.size(), toLandmarks.size());
+    size_t maxN = std::max(fromLandmarks.size(), toLandmarks.size());
 
-      CHECK_EQUAL(minN, maxN, ("WHAT THE FUCK"));
-      double maxi = 0;
-      for (size_t i = 0; i < maxN; ++i)
-      {
-        if (fromLandmarks[i] != std::numeric_limits<double>::max() &&
-            toLandmarks[i] != std::numeric_limits<double>::max())
-        {
-          maxi = std::max(maxi, fromLandmarks[i] - toLandmarks[i]);
-        }
-      }
-
-      auto p1 = MercatorBounds::ToLatLon(GetPoint(from, true));
-      auto p2 = MercatorBounds::ToLatLon(GetPoint(from, true));
-      auto tmp = m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */), GetPoint(to, true /* front */));
-      LOG(LINFO, ("Approximate from:", p1, "to:", p2, "is:", maxi, "silly:", tmp));
-
-      return RouteWeight(maxi / 200.0);
-    }
-    else
+    //minN = 0;
+    if (minN == 0)
     {
       return m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */),
                                            GetPoint(to, true /* front */));
     }
+
+    if (from.GetFeatureId() == 81371 && from.GetSegmentIdx() == 0)
+    {
+      int asd = 5;
+    }
+    CHECK_EQUAL(minN, maxN, ("WHAT THE FUCK"));
+    double maxi = 0;
+    size_t maxIndex;
+    double from2Landmark, to2Landmark;
+    for (size_t i = 0; i < maxN; ++i)
+    {
+      if (IsGoodLandmark(fromLandmarks[i]) && IsGoodLandmark(toLandmarks[i]))
+      {
+        auto const prikol = fromLandmarks[i].second /* backward */ - toLandmarks[i].second /* backward */;
+        if (maxi < prikol)
+        {
+          maxi = prikol;
+          maxIndex = i;
+          from2Landmark = fromLandmarks[i].second;
+          to2Landmark = toLandmarks[i].second;
+        }
+      }
+    }
+
+    auto p1 = MercatorBounds::ToLatLon(GetPoint(from, true));
+    auto p2 = MercatorBounds::ToLatLon(GetPoint(to, true));
+    auto tmp = m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */), GetPoint(to, true /* front */));
+    LOG(LINFO, ("Approximate from:", p1, "to:", p2, "is:", maxi, "silly:", tmp));
+
+    /*if (maxi < tmp.GetWeight())
+      return tmp;*/
+
+    {
+      std::ofstream output("/tmp/checker", std::ofstream::app);
+      output << GetPoint(from, true).x << " "
+             << GetPoint(from, true).y << " "
+             << GetPoint(m_lastSegmentDebug, true).x << " "
+             << GetPoint(m_lastSegmentDebug, true).y << " "
+             << maxi << " "
+             << maxIndex << " "
+             << from2Landmark << " "
+             << to2Landmark << " "
+             << from.GetFeatureId() << " "
+             << from.GetSegmentIdx()
+             << std::endl;
+    }
+
+    return RouteWeight(maxi);
+  }
+
+  RouteWeight HeuristicCostEstimate(Vertex const & from, Vertex const & to) const
+  {
+    return m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */),
+                                         GetPoint(to, true /* front */));
   }
 
   RouteWeight CalcSegmentWeight(Segment const & segment) const;
@@ -146,7 +180,6 @@ public:
   double CalcSegmentETA(Segment const & segment) const;
 
   Segment m_lastSegmentDebug;
-  bool m_hasLastSegment = false;
 private:
   // Start or finish ending information. 
   struct Ending

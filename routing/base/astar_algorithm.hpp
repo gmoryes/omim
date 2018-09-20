@@ -2,6 +2,7 @@
 
 #include "routing/base/astar_weight.hpp"
 #include "routing/base/routing_result.hpp"
+#include "routing/index_graph_starter.hpp"
 
 #include "base/assert.hpp"
 #include "base/cancellable.hpp"
@@ -15,6 +16,7 @@
 
 //tmp
 #include <fstream>
+#include "base/logging.hpp"
 //end tmp
 
 namespace routing
@@ -167,13 +169,19 @@ public:
   template <typename VisitVertex, typename AdjustEdgeWeight, typename FilterStates>
   void PropagateWave(Graph & graph, Vertex const & startVertex, VisitVertex && visitVertex,
                      AdjustEdgeWeight && adjustEdgeWeight, FilterStates && filterStates,
-                     Context & context) const;
+                     Context & context, bool forwardWave = true) const;
 
   void PropagateWave(Graph & graph, Vertex const & startVertex, std::function<bool(State const &)> && filterStates,
-                     Context & context) const;
+                     Context & context, bool forwardWave = true) const;
 
   void PropagateWave(Graph & graph, Vertex const & startVertex, std::function<bool(Vertex const &)> && visitVertex,
-                     Context & context) const;
+                     Context & context, bool forwardWave = true) const;
+
+  template <typename VisitVertex, typename PotentialFunction>
+  void PropagateWaveLandmarks(Graph & graph, Vertex const & startVertex,
+                              VisitVertex && visitVertex,
+                              PotentialFunction && potentialFunction,
+                              Context & context) const;
 
   template <typename P>
   Result FindPath(P & params, RoutingResult<Vertex, Weight> & result) const;
@@ -181,6 +189,8 @@ public:
   template <typename P>
   Result FindPathBidirectional(P & params, RoutingResult<Vertex, Weight> & result) const;
 
+  template <typename P>
+  Result FindPathLandmarks(P & params, RoutingResult<Vertex, Weight> & result) const;
   // Adjust route to the previous one.
   // Expects |params.m_checkLengthCallback| to check wave propagation limit.
   template <typename P>
@@ -302,7 +312,63 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
                                           VisitVertex && visitVertex,
                                           AdjustEdgeWeight && adjustEdgeWeight,
                                           FilterStates && filterStates,
-                                          AStarAlgorithm<Graph>::Context & context) const
+                                          AStarAlgorithm<Graph>::Context & context, bool forwardWave) const
+{
+  context.Clear();
+
+  std::priority_queue<State, std::vector<State>, std::greater<State>> queue;
+
+  context.SetDistance(startVertex, kZeroDistance);
+  queue.push(State(startVertex, kZeroDistance));
+
+  std::vector<Edge> adj;
+
+  while (!queue.empty())
+  {
+    State const stateV = queue.top();
+    queue.pop();
+
+    if (stateV.distance > context.GetDistance(stateV.vertex))
+      continue;
+
+    if (!visitVertex(stateV.vertex))
+      return;
+
+    if (forwardWave)
+      graph.GetOutgoingEdgesList(stateV.vertex, adj);
+    else
+      graph.GetIngoingEdgesList(stateV.vertex, adj);
+
+    for (auto const & edge : adj)
+    {
+      State stateW(edge.GetTarget(), kZeroDistance);
+      if (stateV.vertex == stateW.vertex)
+        continue;
+
+      auto const edgeWeight = adjustEdgeWeight(stateV.vertex, edge);
+      auto const newReducedDist = stateV.distance + edgeWeight;
+
+      if (newReducedDist >= context.GetDistance(stateW.vertex) - kEpsilon)
+        continue;
+
+      stateW.distance = newReducedDist;
+
+      if (!filterStates(stateW))
+        continue;
+
+      context.SetDistance(stateW.vertex, newReducedDist);
+      context.SetParent(stateW.vertex, stateV.vertex);
+      queue.push(stateW);
+    }
+  }
+}
+
+template <typename Graph>
+template <typename VisitVertex, typename PotentialFunction>
+void AStarAlgorithm<Graph>::PropagateWaveLandmarks(Graph & graph, Vertex const & startVertex,
+                                                   VisitVertex && visitVertex,
+                                                   PotentialFunction && potentialFunction,
+                                                   Context & context) const
 {
   context.Clear();
 
@@ -331,16 +397,15 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
       if (stateV.vertex == stateW.vertex)
         continue;
 
-      auto const edgeWeight = adjustEdgeWeight(stateV.vertex, edge);
-      auto const newReducedDist = stateV.distance + edgeWeight;
+      auto const someValue = edge.GetWeight()  + potentialFunction(stateW.vertex);
+      CHECK(someValue > -kEpsilon, ("AAAAAAAA FUUUCCKKK!!!"));
+
+      auto const newReducedDist = stateV.distance + someValue;
 
       if (newReducedDist >= context.GetDistance(stateW.vertex) - kEpsilon)
         continue;
 
       stateW.distance = newReducedDist;
-
-      if (!filterStates(stateW))
-        continue;
 
       context.SetDistance(stateW.vertex, newReducedDist);
       context.SetParent(stateW.vertex, stateV.vertex);
@@ -352,27 +417,27 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
 template <typename Graph>
 void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVertex,
                                           std::function<bool(Vertex const &)> && visitVertex,
-                                          AStarAlgorithm<Graph>::Context & context) const
+                                          AStarAlgorithm<Graph>::Context & context, bool forwardWave) const
 {
   auto const adjustEdgeWeight = [](Vertex const & /* vertex */, Edge const & edge) {
     return edge.GetWeight();
   };
 
   auto const filterStates = [](State const & /* state */) { return true; };
-  PropagateWave(graph, startVertex, visitVertex, adjustEdgeWeight, filterStates, context);
+  PropagateWave(graph, startVertex, visitVertex, adjustEdgeWeight, filterStates, context, forwardWave);
 }
 
 template <typename Graph>
 void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVertex,
                                           std::function<bool(State const &)> && filterStates,
-                                          AStarAlgorithm<Graph>::Context & context) const
+                                          AStarAlgorithm<Graph>::Context & context, bool forwardWave) const
 {
   auto const adjustEdgeWeight = [](Vertex const & /* vertex */, Edge const & edge) {
     return edge.GetWeight();
   };
 
   auto const visitVertex = [](Vertex const & /* state */) { return true; };
-  PropagateWave(graph, startVertex, visitVertex, adjustEdgeWeight, filterStates, context);
+  PropagateWave(graph, startVertex, visitVertex, adjustEdgeWeight, filterStates, context, forwardWave);
 }
 
 // This implementation is based on the view that the A* algorithm
@@ -450,7 +515,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPath(
 
   auto const filterStates = [&](State const & state) {
     return params.m_checkLengthCallback(
-        reducedToFullLength(startVertex, state.vertex, state.distance));
+      reducedToFullLength(startVertex, state.vertex, state.distance));
   };
 
   PropagateWave(graph, startVertex, visitVertex, adjustEdgeWeight, filterStates, context);
@@ -464,6 +529,52 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPath(
     if (!params.m_checkLengthCallback(result.m_distance))
       resultCode = Result::NoPath;
   }
+
+  return resultCode;
+}
+
+template <typename Graph>
+template <typename P>
+typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLandmarks(
+  P & params, RoutingResult<Vertex, Weight> & result) const
+{
+  result.Clear();
+
+  auto & graph = params.m_graph;
+  auto const & finalVertex = params.m_finalVertex;
+  auto const & startVertex = params.m_startVertex;
+
+  Context context;
+  Result resultCode = Result::NoPath;
+
+  size_t counter = 0;
+  auto visitVertex = [&](Vertex const & vertex) {
+    counter++;
+
+    if (vertex == finalVertex)
+    {
+      {
+        result.m_distance = context.GetDistance(vertex);
+        std::ofstream output("/tmp/counter", std::ofstream::app);
+        output << counter << std::endl;
+      }
+      resultCode = Result::OK;
+      return false;
+    }
+
+    return true;
+  };
+
+  auto const potentialFunction = [&](Vertex const & vertex) {
+    auto toReturn = graph.HeuristicCostEstimateLandmarks(vertex, finalVertex);
+    //return graph.HeuristicCostEstimate(vertex, finalVertex);
+    return toReturn;
+  };
+
+  PropagateWaveLandmarks(graph, startVertex, visitVertex, potentialFunction, context);
+
+  if (resultCode == Result::OK)
+    context.ReconstructPath(finalVertex, result.m_path);
 
   return resultCode;
 }

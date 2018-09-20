@@ -77,6 +77,11 @@ public:
     m_jointIndex.ForEachPoint(jointId, forward<F>(f));
   }
 
+  m2::PointD const & GetPoint(Segment const & segment, bool front)
+  {
+    return GetGeometry().GetRoad(segment.GetFeatureId()).GetPoint(segment.GetPointId(front));
+  }
+
 private:
   RouteWeight CalcSegmentWeight(Segment const & segment);
   void GetNeighboringEdges(Segment const & from, RoadPoint const & rp, bool isOutgoing,
@@ -84,10 +89,6 @@ private:
   void GetNeighboringEdge(Segment const & from, Segment const & to, bool isOutgoing,
                           vector<SegmentEdge> & edges);
   RouteWeight GetPenalties(Segment const & u, Segment const & v);
-  m2::PointD const & GetPoint(Segment const & segment, bool front)
-  {
-    return GetGeometry().GetRoad(segment.GetFeatureId()).GetPoint(segment.GetPointId(front));
-  }
 
   shared_ptr<Geometry> m_geometry;
   shared_ptr<EdgeEstimator> m_estimator;

@@ -144,7 +144,10 @@ if (PLATFORM_DESKTOP)
   add_subdirectory(routing_quality)
 endif()
 
+add_subdirectory(routing_path)
+
 omim_add_test_subdirectory(routing_benchmarks)
 omim_add_test_subdirectory(routing_consistency_tests)
 omim_add_test_subdirectory(routing_integration_tests)
 omim_add_test_subdirectory(routing_tests)
+

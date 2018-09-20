@@ -233,7 +233,7 @@ static size_t counter = 0;
                           if (m_bmManager == nullptr)
                             return;
                           auto editSession = m_bmManager->GetEditSession();
-                          if (counter % 128 == 0)
+                          if (counter % 10000000000L == 0)
                           {
                             editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
                             editSession.CreateUserMark<DebugMarkPoint>(pt);

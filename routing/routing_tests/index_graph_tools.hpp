@@ -101,6 +101,7 @@ public:
 
   void AddGraph(NumMwmId mwmId, unique_ptr<IndexGraph> graph);
 
+  std::vector<std::pair<double, double>> GetLandmarks(Segment const & segment) override { return {}; }
 private:
   unordered_map<NumMwmId, unique_ptr<IndexGraph>> m_graphs;
 };

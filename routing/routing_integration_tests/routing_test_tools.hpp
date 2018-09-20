@@ -111,7 +111,7 @@ IRouterComponents & GetVehicleComponents()
 
 TRouteResult CalculateRoute(IRouterComponents const & routerComponents,
                             m2::PointD const & startPoint, m2::PointD const & startDirection,
-                            m2::PointD const & finalPoint);
+                            m2::PointD const & finalPoint, bool enableLandmarks = false);
 
 void TestTurnCount(Route const & route, uint32_t expectedTurnCount);
 

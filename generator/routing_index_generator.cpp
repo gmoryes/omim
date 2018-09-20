@@ -410,11 +410,11 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
 
     Segment const & enter = connector.GetEnter(i);
 
-    AStarAlgorithm<DijkstraWrapper> astar;
+    /*AStarAlgorithm<DijkstraWrapper> astar;
     DijkstraWrapper wrapper(graph);
     AStarAlgorithm<DijkstraWrapper>::Context context;
     astar.PropagateWave(wrapper, enter,
-                        [](Segment const & /* vertex */) { return true; } /* visitVertex */,
+                        [](Segment const & ) { return true; },
                         context);
 
     for (Segment const & exit : connector.GetExits())
@@ -428,11 +428,11 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
       {
         ++notFoundCount;
       }
-    }
+    }*/
   }
 
   connector.FillWeights([&](Segment const & enter, Segment const & exit) {
-    auto it0 = weights.find(enter);
+    /*auto it0 = weights.find(enter);
     if (it0 == weights.end())
       return connector::kNoRoute;
 
@@ -440,7 +440,8 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
     if (it1 == it0->second.end())
       return connector::kNoRoute;
 
-    return it1->second.ToCrossMwmWeight();
+    return it1->second.ToCrossMwmWeight();*/
+    return 0.0;
   });
 
   LOG(LINFO, ("Leaps finished, elapsed:", timer.ElapsedSeconds(), "seconds, routes found:",
@@ -450,7 +451,7 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
 void CalcLandMarks(string const & path, string const & mwmFile, string const & country,
                    CountryParentNameGetterFn const & countryParentNameGetterFn,
                    CrossMwmConnector<base::GeoObjectId> & connector,
-                   map<pair<uint32_t, uint32_t>, std::vector<double>> & landmarks)
+                   map<pair<uint32_t, uint32_t>, std::vector<std::pair<double /* forward */, double /* backward */>>> & landmarks)
 {
   shared_ptr<VehicleModelInterface> vehicleModel =
     CarModelFactory(countryParentNameGetterFn).GetVehicleModelForCountry(country);
@@ -463,54 +464,86 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
 
   map<Segment, map<Segment, RouteWeight>> weights;
 
-  static double constexpr kLandMarksNumberPercent = 5 / 100.0;
+  static double constexpr kLandMarksNumberPercent = 0.5 / 100.0;
   auto const numEnters = connector.GetEnters().size();
   auto const step = static_cast<size_t>(1.0 / kLandMarksNumberPercent);
 
   size_t landmarkNumber = 0;
+  size_t landmarksAmount = numEnters / step;
+  landmarksAmount += (numEnters % step) ? 1 : 0;
+
   for (size_t i = 0; i < numEnters; i += step)
   {
-    LOG(LINFO, ("start process ", i, "/", numEnters, "landmark"));
     Segment const & enter = connector.GetEnter(i);
+    LOG(LINFO, ("start process ", i, "/", numEnters, "landmark, coord:", MercatorBounds::ToLatLon(graph.GetPoint(enter, true))));
 
     AStarAlgorithm<DijkstraWrapper> astar;
     DijkstraWrapper wrapper(graph);
     AStarAlgorithm<DijkstraWrapper>::Context context;
 
-    ++landmarkNumber;
-    astar.PropagateWave(wrapper, enter,
-                        [&landmarks, landmarkNumber](AStarAlgorithm<DijkstraWrapper>::State const & state)
+    /*astar.PropagateWave(wrapper, enter,
+                        [&](AStarAlgorithm<DijkstraWrapper>::State const & state)
                         {
+                          static auto constexpr kMax = std::numeric_limits<double>::max();
                           auto it = landmarks.find({state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()});
                           if (it == landmarks.end())
                           {
-                            landmarks[{state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()}] =
-                              {state.distance.GetWeight()};
-                          } else if (it->second.size() != landmarkNumber)
-                          {
-                            it->second.emplace_back(state.distance.GetWeight());
+                            auto emptyVector = std::vector<std::pair<double, double>>(landmarksAmount, {kMax, kMax});
+                            pair<uint32_t, uint32_t> newPair = {state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()};
+
+                            std::tie(it, std::ignore) = landmarks.insert(make_pair(newPair, emptyVector));
                           }
+
+                          auto oldValue = it->second[landmarkNumber].first;
+                          if (oldValue == kMax)
+                            it->second[landmarkNumber].first = state.distance.GetWeight();
 
                           return true;
                         },
-                        context);
+                        context, true); */
 
-    size_t found = 0;
-    size_t notFound = 0;
-    for (auto & item : landmarks)
-    {
-      if (item.second.size() < landmarkNumber)
-      {
-        item.second.emplace_back(std::numeric_limits<double>::max());
-        ++notFound;
-      }
-      else
-      {
-        ++found;
-      }
-    }
-    LOG(LINFO, ("found/not for current landmark:", found, "/", notFound));
+    bool startLog = false;
+    astar.PropagateWave(wrapper, enter,
+                        [&](AStarAlgorithm<DijkstraWrapper>::State const & state)
+                        {
+                          static auto constexpr kMax = std::numeric_limits<double>::max();
+                          auto it = landmarks.find({state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()});
+                          if (state.vertex.GetFeatureId() == 84715 && state.vertex.GetSegmentIdx() == 0)
+                          {
+                            LOG(LINFO, ("HAS FOUND, number:", landmarkNumber));
+                            startLog = true;
+                          }
+                          if (it == landmarks.end())
+                          {
+                            if (startLog)
+                            {
+                              LOG(LINFO, ("No info before, add item for", MercatorBounds::ToLatLon(graph.GetPoint(state.vertex, true))));
+                            }
+                            auto emptyVector = std::vector<std::pair<double, double>>(landmarksAmount, {kMax, kMax});
+                            pair<uint32_t, uint32_t> newPair = {state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()};
 
+                            std::tie(it, std::ignore) = landmarks.insert(make_pair(newPair, emptyVector));
+                          }
+
+                          auto oldValue = it->second[landmarkNumber].second;
+                          if (startLog)
+                          {
+                            LOG(LINFO, ("oldValue:", oldValue, "newValue:", state.distance.GetWeight()));
+                            std::vector<Segment> path;
+                            context.ReconstructPath(state.vertex, path);
+                            LOG(LINFO, ("Path:"));
+                            for (auto & item : path)
+                              LOG(LINFO, (MercatorBounds::ToLatLon(graph.GetPoint(item, true))));
+                          }
+                          if (oldValue == kMax)
+                            it->second[landmarkNumber].second = state.distance.GetWeight();
+
+                          startLog = false;
+                          return true;
+                        },
+                        context, false /* forwardWave */);
+
+    ++landmarkNumber;
   }
 }
 
@@ -573,7 +606,7 @@ void SerializeCrossMwm(string const & mwmFile, string const & sectionName,
 }
 
 void SerializeLandMarks(string const & mwmFile, string const & sectionName,
-                        map<pair<uint32_t, uint32_t>, std::vector<double>> const & landmarks)
+                        map<pair<uint32_t, uint32_t>, std::vector<std::pair<double, double>>> const & landmarks)
 {
   FilesContainerW cont(mwmFile, FileWriter::OP_WRITE_EXISTING);
   auto writer = cont.GetWriter(sectionName);
@@ -589,7 +622,10 @@ void SerializeLandMarks(string const & mwmFile, string const & sectionName,
     size_t size = item.second.size();
     writer.Write(&size, sizeof(size));  // number of landmarks
     for (auto distance : item.second)
-      writer.Write(&distance, sizeof(distance));
+    {
+      writer.Write(&distance.first, sizeof(distance.first));
+      writer.Write(&distance.second, sizeof(distance.second));
+    }
   }
 }
 
@@ -628,7 +664,7 @@ void BuildLandmarksSection(string const & path, string const & mwmFile,
   CalcCrossMwmConnectors(path, mwmFile, country, countryParentNameGetterFn, osmToFeatureFile,
                          transitions, connectors);
 
-  map<pair<uint32_t, uint32_t>, std::vector<double>> landmarks;
+  map<pair<uint32_t, uint32_t>, std::vector<std::pair<double, double>>> landmarks;
   CalcLandMarks(path, mwmFile, country, countryParentNameGetterFn,
                 connectors[static_cast<size_t>(VehicleType::Car)], landmarks);
 

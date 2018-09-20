@@ -369,9 +369,13 @@ public:
   void GetTurnsForTesting(std::vector<turns::TurnItem> & turns) const;
   bool IsRouteId(uint64_t routeId) const { return routeId == m_routeId; }
 
+<<<<<<< HEAD
   /// \returns Length of the route segment with |segIdx| in meters.
   double GetSegLenMeters(size_t segIdx) const;
 
+=======
+  RouteWeight m_routeWeight;
+>>>>>>> [routing] exp with landmarks
 private:
   friend std::string DebugPrint(Route const & r);
 

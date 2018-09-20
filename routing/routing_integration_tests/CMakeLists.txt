@@ -9,18 +9,24 @@ project(routing_integration_tests)
 
 set(
   SRC
-  bicycle_route_test.cpp
-  bicycle_turn_test.cpp
-  get_altitude_test.cpp
-  online_cross_tests.cpp
-  pedestrian_route_test.cpp
-  road_graph_tests.cpp
-  route_test.cpp
+  #bicycle_route_test.cpp
+  #bicycle_turn_test.cpp
+  #get_altitude_test.cpp
+  #online_cross_tests.cpp
+  #pedestrian_route_test.cpp
+  #road_graph_tests.cpp
+  #route_test.cpp
   routing_test_tools.cpp
   routing_test_tools.hpp
+<<<<<<< HEAD
   speed_camera_notifications_tests.cpp
   street_names_test.cpp
   turn_test.cpp
+=======
+  exp.cpp
+  #street_names_test.cpp
+  #turn_test.cpp
+>>>>>>> [routing] exp with landmarks
 )
 
 omim_add_test(${PROJECT_NAME} ${SRC})

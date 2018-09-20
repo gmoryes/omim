@@ -76,15 +76,15 @@ public:
   std::string GetName() const override { return m_name; }
   RouterResultCode CalculateRoute(Checkpoints const & checkpoints, m2::PointD const & startDirection,
                                   bool adjustToPrevRoute, RouterDelegate const & delegate,
-                                  Route & route) override;
+                                  Route & route, bool enableLandmarks) override;
 
 private:
   RouterResultCode DoCalculateRoute(Checkpoints const & checkpoints,
                                     m2::PointD const & startDirection,
-                                    RouterDelegate const & delegate, Route & route);
+                                    RouterDelegate const & delegate, Route & route, bool enableLandmarks = false);
   RouterResultCode CalculateSubroute(Checkpoints const & checkpoints, size_t subrouteIdx,
                                      RouterDelegate const & delegate, IndexGraphStarter & graph,
-                                     std::vector<Segment> & subroute);
+                                     std::vector<Segment> & subroute, bool enableLandmarks, Route & route);
 
   RouterResultCode AdjustRoute(Checkpoints const & checkpoints,
                                m2::PointD const & startDirection,
@@ -143,7 +143,17 @@ private:
                                   ConvertResult<Graph>(algorithm.FindPath(params, routingResult)));
     }
     return ConvertTransitResult(
-        mwmIds, ConvertResult<Graph>(algorithm.FindPath(params, routingResult)));
+      mwmIds, ConvertResult<Graph>(algorithm.FindPathBidirectional(params, routingResult)));
+  }
+
+  template <typename Graph>
+  RouterResultCode FindPathLandmarks(
+    typename AStarAlgorithm<Graph>::Params & params, std::set<NumMwmId> const & mwmIds,
+    RoutingResult<typename Graph::Vertex, typename Graph::Weight> & routingResult) const
+  {
+    AStarAlgorithm<Graph> algorithm;
+    return ConvertTransitResult(
+      mwmIds, ConvertResult<Graph>(algorithm.FindPathLandmarks(params, routingResult)));
   }
 
   VehicleType m_vehicleType;

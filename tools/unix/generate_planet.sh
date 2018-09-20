@@ -380,22 +380,22 @@ if [ "$MODE" == "coast" ]; then
       # Strip coastlines from the planet to speed up the process
       "$OSMCTOOLS/osmfilter" "$PLANET" --keep= --keep-ways="natural=coastline" --keep-nodes="capital=yes place=town =city" "-o=$COASTS_O5M"
       # Preprocess coastlines to separate intermediate directory
-      "$GENERATOR_TOOL" --intermediate_data_path="$INTCOASTSDIR/" --node_storage=map --osm_file_type=o5m --osm_file_name="$COASTS_O5M" \
-        -preprocess 2>> "$LOG_PATH/WorldCoasts.log"
+      #"$GENERATOR_TOOL" --intermediate_data_path="$INTCOASTSDIR/" --node_storage=map --osm_file_type=o5m --osm_file_name="$COASTS_O5M" \
+      #  -preprocess 2>> "$LOG_PATH/WorldCoasts.log"
       # Generate temporary coastlines file in the coasts intermediate dir
-      if ! "$GENERATOR_TOOL" --intermediate_data_path="$INTCOASTSDIR/" --node_storage=map --osm_file_type=o5m --osm_file_name="$COASTS_O5M" \
-        --user_resource_path="$DATA_PATH/" -make_coasts -fail_on_coasts 2>&1 | tee -a "$LOG_PATH/WorldCoasts.log" | { grep -i 'not merged\|coastline polygons' || true; }
-      then
-        log "STATUS" "Coastline merge failed"
-        if [ -n "$OPT_UPDATE" ]; then
-          [ -n "${MAIL-}" ] && tail -n 50 "$LOG_PATH/WorldCoasts.log" | mailx -s "Coastline merge at $(hostname) failed, next try in $MERGE_INTERVAL minutes" "$MAIL"
-          echo "Will try fresh coasts again in $MERGE_INTERVAL minutes, or press a key..."
-          read -rs -n 1 -t $(($MERGE_INTERVAL * 60)) || true
-          TRY_AGAIN=1
-        else
-          fail
-        fi
-      fi
+      #if ! "$GENERATOR_TOOL" --intermediate_data_path="$INTCOASTSDIR/" --node_storage=map --osm_file_type=o5m --osm_file_name="$COASTS_O5M" \
+      #  --user_resource_path="$DATA_PATH/" -make_coasts -fail_on_coasts 2>&1 | tee -a "$LOG_PATH/WorldCoasts.log" | { grep -i 'not merged\|coastline polygons' || true; }
+      #then
+      #  log "STATUS" "Coastline merge failed"
+      #  if [ -n "$OPT_UPDATE" ]; then
+      #    [ -n "${MAIL-}" ] && tail -n 50 "$LOG_PATH/WorldCoasts.log" | mailx -s "Coastline merge at $(hostname) failed, next try in $MERGE_INTERVAL minutes" "$MAIL"
+      #    echo "Will try fresh coasts again in $MERGE_INTERVAL minutes, or press a key..."
+      #    read -rs -n 1 -t $(($MERGE_INTERVAL * 60)) || true
+      #    TRY_AGAIN=1
+      #  else
+      #    fail
+      #  fi
+      #fi
     fi
   done
   # Make a working copy of generated coastlines file
@@ -502,7 +502,7 @@ if [ "$MODE" == "mwm" ]; then
       "$GENERATOR_TOOL" $PARAMS --output=World 2>> "$LOG_PATH/World.log"
       "$GENERATOR_TOOL" --data_path="$TARGET" \
                         --user_resource_path="$DATA_PATH/" \
-                        --generate_search_index \
+                        #--generate_search_index \
                         --generate_cities_boundaries \
                         --cities_boundaries_data="$CITIES_BOUNDARIES_DATA" \
                         --output=World 2>> "$LOG_PATH/World.log"
@@ -511,7 +511,7 @@ if [ "$MODE" == "mwm" ]; then
   fi
 
   if [ -z "$NO_REGIONS" ]; then
-    PARAMS_WITH_SEARCH="$PARAMS --generate_search_index --cities_boundaries_data=$CITIES_BOUNDARIES_DATA --make_city_roads"
+    PARAMS_WITH_SEARCH="$PARAMS --cities_boundaries_data=$CITIES_BOUNDARIES_DATA --make_city_roads" #--generate_search_index
     [ -n "${SRTM_PATH-}" -a -d "${SRTM_PATH-}" ] && PARAMS_WITH_SEARCH="$PARAMS_WITH_SEARCH --srtm_path=$SRTM_PATH"
     [ -f "$UGC_FILE" ] && PARAMS_WITH_SEARCH="$PARAMS_WITH_SEARCH --ugc_data=$UGC_FILE"
     [ -f "$POPULAR_PLACES_FILE" ] && PARAMS_WITH_SEARCH="$PARAMS_WITH_SEARCH --popular_places_data=$POPULAR_PLACES_FILE"
@@ -542,7 +542,7 @@ if [ "$MODE" == "routing" ]; then
       BASENAME="$(basename "$file" .mwm)"
       (
         "$GENERATOR_TOOL" --data_path="$TARGET" --intermediate_data_path="$INTDIR/" --user_resource_path="$DATA_PATH/" \
-        --make_cross_mwm --disable_cross_mwm_progress  ${GENERATE_CAMERA_SECTION-} --make_routing_index --generate_traffic_keys --output="$BASENAME" 2>> "$LOG_PATH/$BASENAME.log"
+        --make_cross_mwm --make_landmarks ${GENERATE_CAMERA_SECTION-} --make_routing_index --generate_traffic_keys --output="$BASENAME" 2>> "$LOG_PATH/$BASENAME.log"
         "$GENERATOR_TOOL" --data_path="$TARGET" --intermediate_data_path="$INTDIR/" --user_resource_path="$DATA_PATH/" \
         --make_transit_cross_mwm --transit_path="$DATA_PATH" --output="$BASENAME" 2>> "$LOG_PATH/$BASENAME.log"
         ) &
