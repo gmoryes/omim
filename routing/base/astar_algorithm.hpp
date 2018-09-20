@@ -353,11 +353,11 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
 
       stateW.distance = newReducedDist;
 
+      context.SetDistance(stateW.vertex, newReducedDist);
+      context.SetParent(stateW.vertex, stateV.vertex);
       if (!filterStates(stateW))
         continue;
 
-      context.SetDistance(stateW.vertex, newReducedDist);
-      context.SetParent(stateW.vertex, stateV.vertex);
       queue.push(stateW);
     }
   }
@@ -824,10 +824,12 @@ void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
                                             std::map<Vertex, Vertex> const & parent,
                                             std::vector<Vertex> & path)
 {
+  LOG(LINFO, ("Start ReconstructPath() of v(", v, ")"));
   path.clear();
   Vertex cur = v;
   while (true)
   {
+    LOG(LINFO, ("cur =", cur));
     path.push_back(cur);
     auto it = parent.find(cur);
     if (it == parent.end())
