@@ -105,10 +105,11 @@ public:
     return landmark != kBadPair;
   }
 
-  RouteWeight HeuristicCostEstimateLandmarks(Vertex const & from, Vertex const & to) const
+  RouteWeight HeuristicCostEstimateLandmarks(Vertex const & from, Vertex const & to, bool forward) const
   {
     std::vector<std::pair<double, double>> fromLandmarks = m_graph.GetLandmarks(from);
-    std::vector<std::pair<double, double>> toLandmarks = m_graph.GetLandmarks(m_lastSegmentDebug);
+    auto lastSegment = forward ? m_lastSegmentDebug : m_firstSegmentDebug;
+    std::vector<std::pair<double, double>> toLandmarks = m_graph.GetLandmarks(lastSegment);
 
     size_t minN = std::min(fromLandmarks.size(), toLandmarks.size());
     size_t maxN = std::max(fromLandmarks.size(), toLandmarks.size());
@@ -116,14 +117,12 @@ public:
     //minN = 0;
     if (minN == 0)
     {
-      return m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */),
-                                           GetPoint(to, true /* front */));
+      // FUCK THIS SHIT, NELZYA!!!
+      //return m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */),
+      //                                     GetPoint(to, true /* front */));
+      return RouteWeight(0.0);
     }
 
-    if (from.GetFeatureId() == 81371 && from.GetSegmentIdx() == 0)
-    {
-      int asd = 5;
-    }
     CHECK_EQUAL(minN, maxN, ("WHAT THE FUCK"));
     double maxi = 0;
     size_t maxIndex;
@@ -143,20 +142,22 @@ public:
       }
     }
 
-    auto p1 = MercatorBounds::ToLatLon(GetPoint(from, true));
+    auto fromLatLon = MercatorBounds::ToLatLon(GetPoint(from, true));
     auto p2 = MercatorBounds::ToLatLon(GetPoint(to, true));
     auto tmp = m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */), GetPoint(to, true /* front */));
-    LOG(LINFO, ("Approximate from:", p1, "to:", p2, "is:", maxi, "silly:", tmp));
+    LOG(LINFO, ("Approximate from(", from, "):", fromLatLon, "to(", lastSegment, "):", p2, "is:", maxi, "silly:", tmp.GetWeight()));
 
     /*if (maxi < tmp.GetWeight())
       return tmp;*/
 
     {
+      auto end = MercatorBounds::ToLatLon(GetPoint(m_lastSegmentDebug, true));
       std::ofstream output("/tmp/checker", std::ofstream::app);
-      output << GetPoint(from, true).x << " "
-             << GetPoint(from, true).y << " "
-             << GetPoint(m_lastSegmentDebug, true).x << " "
-             << GetPoint(m_lastSegmentDebug, true).y << " "
+      output << std::setprecision(20);
+      output << fromLatLon.lat << " "
+             << fromLatLon.lon << " "
+             << end.lat << " "
+             << end.lon << " "
              << maxi << " "
              << maxIndex << " "
              << from2Landmark << " "
@@ -180,6 +181,7 @@ public:
   double CalcSegmentETA(Segment const & segment) const;
 
   Segment m_lastSegmentDebug;
+  Segment m_firstSegmentDebug;
 private:
   // Start or finish ending information. 
   struct Ending

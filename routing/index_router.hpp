@@ -152,8 +152,18 @@ private:
     RoutingResult<typename Graph::Vertex, typename Graph::Weight> & routingResult) const
   {
     AStarAlgorithm<Graph> algorithm;
-    return ConvertTransitResult(
-      mwmIds, ConvertResult<Graph>(algorithm.FindPathLandmarks(params, routingResult)));
+    bool oneDirect = false;
+    if (oneDirect)
+    {
+      return ConvertTransitResult(
+        mwmIds, ConvertResult<Graph>(algorithm.FindPathLandmarks(params, routingResult)));
+    }
+    else
+    {
+      return ConvertTransitResult(
+        mwmIds, ConvertResult<Graph>(algorithm.FindPathBidirectional(params, routingResult,
+                                                                     true /* enableLandmarks */)));
+    }
   }
 
   VehicleType m_vehicleType;

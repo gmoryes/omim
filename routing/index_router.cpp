@@ -439,6 +439,7 @@ RouterResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoints,
                                       starter ? starter->GetNumFakeSegments() : 0,
                                       isStartSegmentStrictForward, *graph);
 
+    subrouteStarter.m_firstSegmentDebug = startSegment;
     subrouteStarter.m_lastSegmentDebug = finishSegment;
 
     vector<Segment> subroute;

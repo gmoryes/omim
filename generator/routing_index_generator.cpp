@@ -508,7 +508,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                         {
                           static auto constexpr kMax = std::numeric_limits<double>::max();
                           auto it = landmarks.find({state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()});
-                          if (state.vertex.GetFeatureId() == 84715 && state.vertex.GetSegmentIdx() == 0)
+                          if (state.vertex.GetFeatureId() == 34710 && state.vertex.GetSegmentIdx() == 0)
                           {
                             LOG(LINFO, ("HAS FOUND, number:", landmarkNumber));
                             startLog = true;

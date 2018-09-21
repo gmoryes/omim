@@ -75,6 +75,16 @@ public:
     return RouteWeight(-m_weight, -m_numPassThroughChanges, -m_numAccessChanges, -m_transitTime);
   }
 
+  RouteWeight & operator=(RouteWeight const & rhs)
+  {
+    m_weight = rhs.m_weight;
+    m_numPassThroughChanges = rhs.m_numPassThroughChanges;
+    m_numAccessChanges = rhs.m_numAccessChanges;
+    m_transitTime = rhs.m_transitTime;
+
+    return *this;
+  }
+
   bool IsAlmostEqualForTests(RouteWeight const & rhs, double epsilon)
   {
     return m_numPassThroughChanges == rhs.m_numPassThroughChanges &&

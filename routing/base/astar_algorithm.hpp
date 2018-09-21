@@ -187,7 +187,7 @@ public:
   Result FindPath(P & params, RoutingResult<Vertex, Weight> & result) const;
 
   template <typename P>
-  Result FindPathBidirectional(P & params, RoutingResult<Vertex, Weight> & result) const;
+  Result FindPathBidirectional(P & params, RoutingResult<Vertex, Weight> & result, bool enableLandmarks = false) const;
 
   template <typename P>
   Result FindPathLandmarks(P & params, RoutingResult<Vertex, Weight> & result) const;
@@ -259,12 +259,34 @@ private:
         /// @todo careful: with this "return" here and below in the Backward case
         /// the heuristic becomes inconsistent but still seems to work.
         /// return HeuristicCostEstimate(v, finalVertex);
-        return 0.5 * (piF - piR + m_piRT);
+        return 0.5 * (piF - piR);
       }
       else
       {
         // return HeuristicCostEstimate(v, startVertex);
-        return 0.5 * (piR - piF + m_piFS);
+        return 0.5 * (piR - piF);
+      }
+    }
+
+    Weight ConsistentHeuristicLandmarks(Vertex const & v) const
+    {
+      auto const piF = graph.HeuristicCostEstimateLandmarks(v, finalVertex, true /* forward */);
+      auto const piR = graph.HeuristicCostEstimateLandmarks(v, startVertex, false /* backward */);
+
+      if (std::abs(piF.GetWeight()) < 1e-5 || std::abs(piR.GetWeight()) < 1e-5)
+        return Weight(0);
+
+      if (forward)
+      {
+        /// @todo careful: with this "return" here and below in the Backward case
+        /// the heuristic becomes inconsistent but still seems to work.
+        /// return HeuristicCostEstimate(v, finalVertex);
+        return 0.5 * (piF - piR);
+      }
+      else
+      {
+        // return HeuristicCostEstimate(v, startVertex);
+        return 0.5 * (piR - piF);
       }
     }
 
@@ -496,7 +518,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPath(
     {
       {
         std::ofstream output("/tmp/counter", std::ofstream::app);
-        output << counter << std::endl;
+        output << "simple findPath: " << counter << std::endl;
       }
       resultCode = Result::OK;
       return false;
@@ -556,7 +578,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLandmarks(
       {
         result.m_distance = context.GetDistance(vertex);
         std::ofstream output("/tmp/counter", std::ofstream::app);
-        output << counter << std::endl;
+        output << "landmarks: " << counter << std::endl;
       }
       resultCode = Result::OK;
       return false;
@@ -566,7 +588,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLandmarks(
   };
 
   auto const potentialFunction = [&](Vertex const & vertex) {
-    auto toReturn = graph.HeuristicCostEstimateLandmarks(vertex, finalVertex);
+    auto toReturn = graph.HeuristicCostEstimateLandmarks(vertex, finalVertex, true /* forward */);
     //return graph.HeuristicCostEstimate(vertex, finalVertex);
     return toReturn;
   };
@@ -582,7 +604,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLandmarks(
 template <typename Graph>
 template <typename P>
 typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectional(
-    P & params, RoutingResult<Vertex, Weight> & result) const
+    P & params, RoutingResult<Vertex, Weight> & result, bool enableLandmarks) const
 {
   auto & graph = params.m_graph;
   auto const & finalVertex = params.m_finalVertex;
@@ -653,6 +675,15 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
         CHECK(!result.m_path.empty(), ());
         if (!cur->forward)
           reverse(result.m_path.begin(), result.m_path.end());
+
+        {
+          std::ofstream output("/tmp/counter", std::ofstream::app);
+          if (enableLandmarks)
+            output << "bidirect landmarks: " << steps << std::endl;
+          else
+            output << "bidirect: " << steps << std::endl;
+        }
+
         return Result::OK;
       }
     }
@@ -673,12 +704,36 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
       if (stateV.vertex == stateW.vertex)
         continue;
 
+      if (stateW.vertex.GetFeatureId() == 34710 && stateW.vertex.GetSegmentIdx() == 0)
+      {
+        int sad = 5;
+      }
+
       auto const weight = edge.GetWeight();
-      auto const pV = cur->ConsistentHeuristic(stateV.vertex);
-      auto const pW = cur->ConsistentHeuristic(stateW.vertex);
+      Weight pV;
+      Weight pW;
+      if (enableLandmarks)
+      {
+        pV = cur->ConsistentHeuristicLandmarks(stateV.vertex);
+        pW = cur->ConsistentHeuristicLandmarks(stateW.vertex);
+        if (std::abs(pV.GetWeight()) < 1e-5 || std::abs(pW.GetWeight()) < 1e-5)
+        {
+          pV = Weight(0);
+          pW = Weight(0);
+        }
+      }
+      else
+      {
+        pV = cur->ConsistentHeuristic(stateV.vertex);
+        pW = cur->ConsistentHeuristic(stateW.vertex);
+      }
       auto const reducedWeight = weight + pW - pV;
 
-      CHECK_GREATER_OR_EQUAL(reducedWeight, -kEpsilon, ("Invariant violated."));
+      CHECK_GREATER_OR_EQUAL(reducedWeight, -kEpsilon,
+                             ("Invariant violated. weight(", weight.GetWeight(), "), pW(", pW.GetWeight(), "), pV(", pV.GetWeight(), ")",
+                              "V(", stateV.vertex, "), W(", stateW.vertex, ")", "forward:", cur->forward,
+                              ", startVertex:", MercatorBounds::ToLatLon(cur->graph.GetPoint(cur->startVertex, true)),
+                              ", finalVertex:", MercatorBounds::ToLatLon(cur->graph.GetPoint(cur->finalVertex, true))));
       auto const newReducedDist = stateV.distance + std::max(reducedWeight, kZeroDistance);
 
       auto const fullLength = weight + stateV.distance + cur->pS - pV;
@@ -703,7 +758,13 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
 
           bestPathRealLength = stateV.distance + weight + distW;
           bestPathRealLength += cur->pS - pV;
-          bestPathRealLength += nxt->pS - nxt->ConsistentHeuristic(stateW.vertex);
+          Weight smth;
+          if (enableLandmarks)
+            smth = nxt->ConsistentHeuristicLandmarks(stateW.vertex);
+          else
+            smth = nxt->ConsistentHeuristic(stateW.vertex);
+
+          bestPathRealLength += nxt->pS - smth;
 
           foundAnyPath = true;
           cur->bestVertex = stateV.vertex;
@@ -824,12 +885,10 @@ void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
                                             std::map<Vertex, Vertex> const & parent,
                                             std::vector<Vertex> & path)
 {
-  LOG(LINFO, ("Start ReconstructPath() of v(", v, ")"));
   path.clear();
   Vertex cur = v;
   while (true)
   {
-    LOG(LINFO, ("cur =", cur));
     path.push_back(cur);
     auto it = parent.find(cur);
     if (it == parent.end())

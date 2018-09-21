@@ -42,6 +42,7 @@
 #include <ios>
 #include <map>
 #include <sstream>
+#include <fstream>
 
 using namespace routing;
 using namespace std;
@@ -237,6 +238,27 @@ static size_t counter = 0;
                           {
                             editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
                             editSession.CreateUserMark<DebugMarkPoint>(pt);
+
+                            std::ifstream f;
+                            std::ios_base::iostate exceptionMask = f.exceptions() | std::ios::failbit;
+                            f.exceptions(exceptionMask);
+
+                            try {
+                              f.open("/tmp/points");
+                            }
+                            catch (std::ios_base::failure& e) {
+                              std::cerr << e.what() << '\n';
+                            }
+
+                            char comma;
+                            double lat, lon;
+
+                            while (f >> lat >> comma >> lon) {
+                              auto p = MercatorBounds::FromLatLon({lat, lon});
+                              editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+                              editSession.CreateUserMark<DebugMarkPoint>(p);
+                            }
+
                           }
 
                           counter++;
