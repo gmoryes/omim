@@ -676,6 +676,12 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
         if (!cur->forward)
           reverse(result.m_path.begin(), result.m_path.end());
 
+        LOG(LINFO, ("===================[DEBUG]==================="));
+        LOG(LINFO, ("Path:"));
+        for (auto & item : result.m_path)
+          LOG(LINFO, (item));
+        LOG(LINFO, ("===================[DEBUG]==================="));
+
         {
           std::ofstream output("/tmp/counter", std::ofstream::app);
           if (enableLandmarks)
