@@ -679,7 +679,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
         LOG(LINFO, ("===================[DEBUG]==================="));
         LOG(LINFO, ("Path:"));
         for (auto & item : result.m_path)
-          LOG(LINFO, (item));
+          LOG(LINFO, (MercatorBounds::ToLatLon(graph.GetPoint(item, true))));
         LOG(LINFO, ("===================[DEBUG]==================="));
 
         {
