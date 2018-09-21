@@ -44,6 +44,10 @@
 #include <sstream>
 #include <fstream>
 
+//tmp
+#include "geometry/distance_on_sphere.hpp"
+//end tmp
+
 using namespace routing;
 using namespace std;
 
@@ -234,31 +238,31 @@ static size_t counter = 0;
                           if (m_bmManager == nullptr)
                             return;
                           auto editSession = m_bmManager->GetEditSession();
-                          if (counter % 10000000000L == 0)
+                          if (counter == 0)
                           {
-                            editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
-                            editSession.CreateUserMark<DebugMarkPoint>(pt);
+                            //editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+                            //editSession.CreateUserMark<DebugMarkPoint>(pt);
 
-                            std::ifstream f;
-                            std::ios_base::iostate exceptionMask = f.exceptions() | std::ios::failbit;
-                            f.exceptions(exceptionMask);
+                            std::ifstream f("/tmp/points");
 
-                            try {
-                              f.open("/tmp/points");
-                            }
-                            catch (std::ios_base::failure& e) {
-                              std::cerr << e.what() << '\n';
-                            }
-
-                            char comma;
+                            char comma, bracket;
                             double lat, lon;
+                            m2::PointD prev = m2::PointD::Zero();
+                            double dist = 0.0;
 
-                            while (f >> lat >> comma >> lon) {
+                            while (f >> lat >> comma >> lon >> bracket) {
                               auto p = MercatorBounds::FromLatLon({lat, lon});
                               editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
                               editSession.CreateUserMark<DebugMarkPoint>(p);
+                              if (prev != m2::PointD::Zero())
+                              {
+                                dist += MercatorBounds::DistanceOnEarth(prev, p);
+                              }
+                              prev = p;
                             }
-
+                            LOG(LINFO, ("==================[DEBUG]=================="));
+                            LOG(LINFO, ("dist =", dist));
+                            LOG(LINFO, ("==================[DEBUG]=================="));
                           }
 
                           counter++;

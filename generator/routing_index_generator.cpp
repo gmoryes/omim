@@ -535,7 +535,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                             context.ReconstructPath(state.vertex, path);
                             LOG(LINFO, ("Path:"));
                             for (auto & item : path)
-                              LOG(LINFO, (MercatorBounds::ToLatLon(graph.GetPoint(item, true))));
+                              LOG(LINFO, (item));
                           }
                           if (oldValue == kMax)
                             it->second[landmarkNumber].second = state.distance.GetWeight();

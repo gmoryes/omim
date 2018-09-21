@@ -381,7 +381,10 @@ void AsyncRouter::CalculateRoute()
     code = router->CalculateRoute(checkpoints, startDirection, adjustToPrevRoute,
                                   delegate->GetDelegate(), *route);
 
+    LOG(LINFO, ("======================[DEBUG]======================"));
     LOG(LINFO, ("weight:", route->m_routeWeight));
+    LOG(LINFO, ("dist:", route->GetTotalDistanceMeters()));
+    LOG(LINFO, ("======================[DEBUG]======================"));
     elapsedSec = timer.ElapsedSeconds(); // routing time
     LogCode(code, elapsedSec);
   }
