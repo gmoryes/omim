@@ -201,7 +201,7 @@ public:
 
 private:
   // Periodicity of switching a wave of bidirectional algorithm.
-  static uint32_t constexpr kQueueSwitchPeriod = 1;
+  static uint32_t constexpr kQueueSwitchPeriod = 128;
 
   // Precision of comparison weights.
   static Weight constexpr kEpsilon = GetAStarWeightEpsilon<Weight>();
@@ -351,6 +351,8 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
 
   std::vector<Edge> adj;
 
+  bool first = true;
+
   while (!queue.empty())
   {
     State const stateV = queue.top();
@@ -366,6 +368,18 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
       graph.GetOutgoingEdgesList(stateV.vertex, adj);
     else
       graph.GetIngoingEdgesList(stateV.vertex, adj);
+
+    if (first)
+    {
+      LOG(LINFO, ("============[mini_debug]============"));
+      LOG(LINFO, ("start from(", startVertex, ") list of edges:"));
+      for (auto const & edge : adj)
+      {
+        LOG(LINFO, ("edge:", edge, "weight:", edge.GetWeight()));
+      }
+      LOG(LINFO, ("============[mini_debug]============"));
+      first = false;
+    }
 
     for (auto const & edge : adj)
     {
