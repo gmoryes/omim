@@ -475,7 +475,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
   for (size_t i = 0; i < numEnters; i += step)
   {
     Segment const & enter = connector.GetEnter(i);
-    LOG(LINFO, ("start process ", i, "/", numEnters, "landmark, coord:", MercatorBounds::ToLatLon(graph.GetPoint(enter, true))));
+    LOG(LINFO, ("start process ", i, "/", numEnters, "landmark(", enter, "), coord:", MercatorBounds::ToLatLon(graph.GetPoint(enter, true))));
 
     AStarAlgorithm<DijkstraWrapper> astar;
     DijkstraWrapper wrapper(graph);
