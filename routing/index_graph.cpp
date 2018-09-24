@@ -67,7 +67,7 @@ IndexGraph::IndexGraph(shared_ptr<Geometry> geometry, shared_ptr<EdgeEstimator> 
 void IndexGraph::GetEdgeList(Segment const & segment, bool isOutgoing, vector<SegmentEdge> & edges)
 {
   bool log = false;
-  if (segment.GetFeatureId() == 97410)
+  if (segment.GetFeatureId() == 99866)
     log = true;
 
   RoadPoint const roadPoint = segment.GetRoadPoint(isOutgoing);
