@@ -904,8 +904,10 @@ void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
                                             std::map<Vertex, std::pair<Vertex, Weight>> const & parent,
                                             std::vector<Vertex> & path)
 {
+  LOG(LINFO, ("==================[DEUBG_WEIGHTS]=================="));
   path.clear();
   Vertex cur = v;
+  Weight summ(0);
   while (true)
   {
     path.push_back(cur);
@@ -914,7 +916,10 @@ void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
       break;
     cur = it->second.first;
     LOG(LINFO, (it->second.second));
+    summ = summ + it->second.second;
   }
+  LOG(LINFO, ("Summary weight:", summ));
+  LOG(LINFO, ("==================[DEUBG_WEIGHTS]=================="));
   reverse(path.begin(), path.end());
 }
 
