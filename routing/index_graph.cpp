@@ -6,6 +6,10 @@
 #include "base/checked_cast.hpp"
 #include "base/exception.hpp"
 
+//tmp
+#include "geometry/mercator.hpp"
+//end tmp
+
 #include <algorithm>
 #include <limits>
 
@@ -93,7 +97,8 @@ void IndexGraph::GetEdgeList(Segment const & segment, bool isOutgoing, vector<Se
 
   if (true)
   {
-    LOG(LINFO, ("List of edges from segment(", segment, "):"));
+    LOG(LINFO, ("List of edges from segment(", segment, "):",
+                "pos:", MercatorBounds::ToLatLon(GetPoint(segment, true))));
     for (auto const & edge : edges)
       LOG(LINFO, (edge));
   }
