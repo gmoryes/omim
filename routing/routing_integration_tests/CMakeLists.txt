@@ -18,15 +18,11 @@ set(
   #route_test.cpp
   routing_test_tools.cpp
   routing_test_tools.hpp
-<<<<<<< HEAD
-  speed_camera_notifications_tests.cpp
-  street_names_test.cpp
-  turn_test.cpp
-=======
+  #speed_camera_notifications_tests.cpp
+  #street_names_test.cpp
   exp.cpp
   #street_names_test.cpp
   #turn_test.cpp
->>>>>>> [routing] exp with landmarks
 )
 
 omim_add_test(${PROJECT_NAME} ${SRC})
