@@ -143,13 +143,13 @@ public:
       m_distanceMap[vertex] = distance;
     }
 
-    void SetParent(Vertex const & parent, Vertex const & child) { m_parents[parent] = child; }
+    void SetParent(Vertex const & parent, std::pair<Vertex, Weight> const & child) { m_parents[parent] = child; }
 
     void ReconstructPath(Vertex const & v, std::vector<Vertex> & path) const;
 
   private:
     std::map<Vertex, Weight> m_distanceMap;
-    std::map<Vertex, Vertex> m_parents;
+    std::map<Vertex, std::pair<Vertex, Weight>> m_parents;
   };
 
   // State is what is going to be put in the priority queue. See the
@@ -309,17 +309,18 @@ private:
     std::priority_queue<State, std::vector<State>, std::greater<State>> queue;
     std::map<Vertex, Weight> bestDistance;
     std::map<Vertex, Weight> distance;
-    std::map<Vertex, Vertex> parent;
+    std::map<Vertex, std::pair<Vertex, Weight>> parent;
     Vertex bestVertex;
 
     Weight pS;
   };
 
-  static void ReconstructPath(Vertex const & v, std::map<Vertex, Vertex> const & parent,
+  static void ReconstructPath(Vertex const & v, std::map<Vertex, std::pair<Vertex, Weight>> const & parent,
                               std::vector<Vertex> & path);
+
   static void ReconstructPathBidirectional(Vertex const & v, Vertex const & w,
-                                           std::map<Vertex, Vertex> const & parentV,
-                                           std::map<Vertex, Vertex> const & parentW,
+                                           std::map<Vertex, std::pair<Vertex, Weight>> const & parentV,
+                                           std::map<Vertex, std::pair<Vertex, Weight>> const & parentW,
                                            std::vector<Vertex> & path);
 };
 
@@ -378,7 +379,7 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
       stateW.distance = newReducedDist;
 
       context.SetDistance(stateW.vertex, newReducedDist);
-      context.SetParent(stateW.vertex, stateV.vertex);
+      context.SetParent(stateW.vertex, std::make_pair(stateV.vertex, newReducedDist));
       if (!filterStates(stateW))
         continue;
 
@@ -432,7 +433,7 @@ void AStarAlgorithm<Graph>::PropagateWaveLandmarks(Graph & graph, Vertex const &
       stateW.distance = newReducedDist;
 
       context.SetDistance(stateW.vertex, newReducedDist);
-      context.SetParent(stateW.vertex, stateV.vertex);
+      context.SetParent(stateW.vertex, std::make_pair(stateV.vertex, newReducedDist));
       queue.push(stateW);
     }
   }
@@ -792,7 +793,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
       stateW.distance = newReducedDist;
       cur->bestDistance[stateW.vertex] = newReducedDist;
       cur->distance[stateW.vertex] = stateW.distance2;
-      cur->parent[stateW.vertex] = stateV.vertex;
+      cur->parent[stateW.vertex] = std::make_pair(stateV.vertex, weight);
       cur->queue.push(stateW);
     }
   }
@@ -900,7 +901,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::AdjustRoute(
 // static
 template <typename Graph>
 void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
-                                            std::map<Vertex, Vertex> const & parent,
+                                            std::map<Vertex, std::pair<Vertex, Weight>> const & parent,
                                             std::vector<Vertex> & path)
 {
   path.clear();
@@ -911,7 +912,8 @@ void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
     auto it = parent.find(cur);
     if (it == parent.end())
       break;
-    cur = it->second;
+    cur = it->second.first;
+    LOG(LINFO, (it->second.second));
   }
   reverse(path.begin(), path.end());
 }
@@ -919,8 +921,8 @@ void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
 // static
 template <typename Graph>
 void AStarAlgorithm<Graph>::ReconstructPathBidirectional(Vertex const & v, Vertex const & w,
-                                                         std::map<Vertex, Vertex> const & parentV,
-                                                         std::map<Vertex, Vertex> const & parentW,
+                                                         std::map<Vertex, std::pair<Vertex, Weight>> const & parentV,
+                                                         std::map<Vertex, std::pair<Vertex, Weight>> const & parentW,
                                                          std::vector<Vertex> & path)
 {
   std::vector<Vertex> pathV;

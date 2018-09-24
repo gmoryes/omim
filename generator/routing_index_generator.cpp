@@ -537,7 +537,6 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                             DijkstraWrapper::Weight summ(0);
                             for (auto & item : path)
                             {
-                              summ += item.GetWeight();
                               LOG(LINFO, (MercatorBounds::ToLatLon(graph.GetPoint(item, true))));
                             }
                           }
