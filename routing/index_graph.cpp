@@ -173,10 +173,10 @@ void IndexGraph::GetNeighboringEdge(Segment const & from, Segment const & to, bo
   RouteWeight const weight = CalcSegmentWeight(isOutgoing ? to : from) +
                              GetPenalties(isOutgoing ? from : to, isOutgoing ? to : from);
 
-  LOG(LINFO, ("from:", from, "to:", to,
+  /*LOG(LINFO, ("from:", from, "to:", to,
               "calc:", CalcSegmentWeight(isOutgoing ? to : from),
               "penalty:", GetPenalties(isOutgoing ? from : to, isOutgoing ? to : from),
-              "summ:", weight));
+              "summ:", weight));*/
 
   edges.emplace_back(to, weight);
 }
