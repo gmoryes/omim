@@ -90,6 +90,13 @@ void IndexGraph::GetEdgeList(Segment const & segment, bool isOutgoing, vector<Se
       LOG(LINFO, ("normalno delaem"));
     GetNeighboringEdges(segment, roadPoint, isOutgoing, edges);
   }
+
+  if (log)
+  {
+    LOG(LINFO, ("List of edges:"));
+    for (auto const & edge : edges)
+      LOG(LINFO, (edge));
+  }
 }
 
 void IndexGraph::Build(uint32_t numJoints)
