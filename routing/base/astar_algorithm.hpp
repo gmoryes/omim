@@ -379,7 +379,7 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
       stateW.distance = newReducedDist;
 
       context.SetDistance(stateW.vertex, newReducedDist);
-      context.SetParent(stateW.vertex, std::make_pair(stateV.vertex, newReducedDist));
+      context.SetParent(stateW.vertex, std::make_pair(stateV.vertex, edgeWeight));
       if (!filterStates(stateW))
         continue;
 
@@ -422,7 +422,7 @@ void AStarAlgorithm<Graph>::PropagateWaveLandmarks(Graph & graph, Vertex const &
       if (stateV.vertex == stateW.vertex)
         continue;
 
-      auto const someValue = edge.GetWeight()  + potentialFunction(stateW.vertex);
+      auto const someValue = edge.GetWeight() + potentialFunction(stateW.vertex);
       CHECK(someValue > -kEpsilon, ("AAAAAAAA FUUUCCKKK!!!"));
 
       auto const newReducedDist = stateV.distance + someValue;
