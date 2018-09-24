@@ -162,6 +162,7 @@ public:
 
     Vertex vertex;
     Weight distance;
+    Weight distance2;
   };
 
   // VisitVertex returns true: wave will continue
@@ -307,6 +308,7 @@ private:
 
     std::priority_queue<State, std::vector<State>, std::greater<State>> queue;
     std::map<Vertex, Weight> bestDistance;
+    std::map<Vertex, Weight> distance;
     std::map<Vertex, Vertex> parent;
     Vertex bestVertex;
 
@@ -616,11 +618,14 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
   bool foundAnyPath = false;
   auto bestPathReducedLength = kZeroDistance;
   auto bestPathRealLength = kZeroDistance;
+  auto goodDist = kZeroDistance;
 
   forward.bestDistance[startVertex] = kZeroDistance;
+  forward.distance[startVertex] = kZeroDistance;
   forward.queue.push(State(startVertex, kZeroDistance));
 
   backward.bestDistance[finalVertex] = kZeroDistance;
+  backward.distance[finalVertex] = kZeroDistance;
   backward.queue.push(State(finalVertex, kZeroDistance));
 
   // To use the search code both for backward and forward directions
@@ -641,6 +646,8 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
   while (!cur->queue.empty() && !nxt->queue.empty())
   {
     ++steps;
+    /*if (steps == 100)
+      return Result::NoPath;*/
 
     if (periodicCancellable.IsCancelled())
       return Result::Cancelled;
@@ -671,6 +678,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
 
         ReconstructPathBidirectional(cur->bestVertex, nxt->bestVertex, cur->parent, nxt->parent,
                                      result.m_path);
+        //result.m_distance = goodDist;
         result.m_distance = bestPathRealLength;
         CHECK(!result.m_path.empty(), ());
         if (!cur->forward)
@@ -754,6 +762,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
       if (itNxt != nxt->bestDistance.end())
       {
         auto const distW = itNxt->second;
+        auto const distW2 = nxt->distance.find(stateW.vertex);
         // Reduced length that the path we've just found has in the original graph:
         // find the reduced length of the path's parts in the reduced forward and backward graphs.
         auto const curPathReducedLength = newReducedDist + distW;
@@ -764,6 +773,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
 
           bestPathRealLength = stateV.distance + weight + distW;
           bestPathRealLength += cur->pS - pV;
+          goodDist = stateV.distance2 + weight + distW2->second;
           Weight smth;
           if (enableLandmarks)
             smth = nxt->ConsistentHeuristicLandmarks(stateW.vertex);
@@ -778,8 +788,10 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
         }
       }
 
+      stateW.distance2 = stateV.distance2 + weight;
       stateW.distance = newReducedDist;
       cur->bestDistance[stateW.vertex] = newReducedDist;
+      cur->distance[stateW.vertex] = stateW.distance2;
       cur->parent[stateW.vertex] = stateV.vertex;
       cur->queue.push(stateW);
     }

@@ -534,8 +534,12 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                             std::vector<Segment> path;
                             context.ReconstructPath(state.vertex, path);
                             LOG(LINFO, ("Path:"));
+                            DijkstraWrapper::Weight summ(0);
                             for (auto & item : path)
+                            {
+                              summ += item.GetWeight();
                               LOG(LINFO, (MercatorBounds::ToLatLon(graph.GetPoint(item, true))));
+                            }
                           }
                           if (oldValue == kMax)
                             it->second[landmarkNumber].second = state.distance.GetWeight();

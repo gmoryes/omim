@@ -46,6 +46,7 @@
 
 //tmp
 #include "geometry/distance_on_sphere.hpp"
+#include "map/search_mark.hpp"
 //end tmp
 
 using namespace routing;
@@ -242,27 +243,53 @@ static size_t counter = 0;
                           {
                             //editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
                             //editSession.CreateUserMark<DebugMarkPoint>(pt);
+                            {
+                              std::ifstream f("/tmp/points");
 
-                            std::ifstream f("/tmp/points");
+                              char comma, bracket;
+                              double lat, lon;
+                              m2::PointD prev = m2::PointD::Zero();
+                              double dist = 0.0;
 
-                            char comma, bracket;
-                            double lat, lon;
-                            m2::PointD prev = m2::PointD::Zero();
-                            double dist = 0.0;
-
-                            while (f >> lat >> comma >> lon >> bracket) {
-                              auto p = MercatorBounds::FromLatLon({lat, lon});
-                              editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
-                              editSession.CreateUserMark<DebugMarkPoint>(p);
-                              if (prev != m2::PointD::Zero())
+                              while (f >> lat >> comma >> lon >> bracket)
                               {
-                                dist += MercatorBounds::DistanceOnEarth(prev, p);
+                                auto p = MercatorBounds::FromLatLon({lat, lon});
+                                editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+                                editSession.CreateUserMark<DebugMarkPoint>(p);
+                                if (prev != m2::PointD::Zero())
+                                {
+                                  dist += MercatorBounds::DistanceOnEarth(prev, p);
+                                }
+                                prev = p;
                               }
-                              prev = p;
+                              LOG(LINFO, ("==================[DEBUG]=================="));
+                              LOG(LINFO, ("dist from generator =", dist));
+                              LOG(LINFO, ("==================[DEBUG]=================="));
                             }
-                            LOG(LINFO, ("==================[DEBUG]=================="));
-                            LOG(LINFO, ("dist =", dist));
-                            LOG(LINFO, ("==================[DEBUG]=================="));
+
+                            {
+                              std::ifstream f("/tmp/points_desktop");
+
+                              char comma, bracket;
+                              double lat, lon;
+                              m2::PointD prev = m2::PointD::Zero();
+                              double dist = 0.0;
+
+                              while (f >> lat >> comma >> lon >> bracket)
+                              {
+                                auto p = MercatorBounds::FromLatLon({lat, lon});
+                                editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+                                editSession.CreateUserMark<SearchMarkPoint>(p);
+                                if (prev != m2::PointD::Zero())
+                                {
+                                  dist += MercatorBounds::DistanceOnEarth(prev, p);
+                                }
+                                prev = p;
+                              }
+                              LOG(LINFO, ("==================[DEBUG]=================="));
+                              LOG(LINFO, ("dist from desktop =", dist));
+                              LOG(LINFO, ("==================[DEBUG]=================="));
+                            }
                           }
 
                           counter++;
