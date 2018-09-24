@@ -62,12 +62,8 @@ public:
   bool LeapIsAllowed(NumMwmId mwmId) const override;
   std::vector<Segment> const & GetTransitions(NumMwmId numMwmId, bool isEnter) override;
   std::unique_ptr<TransitInfo> GetTransitInfo(Segment const & segment) override;
-<<<<<<< HEAD
   std::vector<RouteSegment::SpeedCamera> GetSpeedCamInfo(Segment const & segment) override;
-  std::vector<double> GetLandmarks(Segment const & segment) override { return {}; }
-=======
   std::vector<std::pair<double, double>> GetLandmarks(Segment const & segment) override { return {}; }
->>>>>>> [routing] exp with landmarks
 private:
   // WorldGraph overrides:
   void GetTwinsInner(Segment const & s, bool isOutgoing, std::vector<Segment> & twins) override;

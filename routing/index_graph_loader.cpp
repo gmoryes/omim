@@ -60,7 +60,6 @@ private:
   // TODO (@gmoryes) move this field to |GeometryIndexGraph| after @bykoianko PR
   unordered_map<NumMwmId, map<SegmentCoord, vector<RouteSegment::SpeedCamera>>> m_cachedCameras;
   decltype(m_cachedCameras)::iterator ReceiveSpeedCamsFromMwm(NumMwmId numMwmId);
-  unordered_map<NumMwmId, GeometryIndexGraph> m_graphs;
 
   map<Segment, vector<pair<double, double>>> m_landmarks;
   set<NumMwmId> m_mwmUsedLandmark;
