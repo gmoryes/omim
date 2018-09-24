@@ -167,6 +167,13 @@ void IndexGraph::GetNeighboringEdges(Segment const & from, RoadPoint const & rp,
     GetNeighboringEdge(
         from, Segment(from.GetMwmId(), rp.GetFeatureId(), rp.GetPointId() - 1, !isOutgoing),
         isOutgoing, edges);
+
+    if (rp.GetPointId() < road.GetPointsCount())
+    {
+      GetNeighboringEdge(
+        Segment(from.GetMwmId(), rp.GetFeatureId(), rp.GetPointId() + 1, isOutgoing), from,
+        isOutgoing, edges);
+    }
   }
 }
 
