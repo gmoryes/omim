@@ -920,9 +920,11 @@ void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
     if (it == parent.end())
       break;
     cur = it->second.first;
-    LOG(LINFO, ("from:", MercatorBounds::ToLatLon(graph.GetPoint(prev, true)),
-                "to:", MercatorBounds::ToLatLon(graph.GetPoint(cur, true)),
-                " weight:", it->second.second));
+    
+    LOG(LINFO, ("from(", prev, "):", MercatorBounds::ToLatLon(graph.GetPoint(prev, true)),
+                "to(", cur, "):", MercatorBounds::ToLatLon(graph.GetPoint(cur, true)),
+                "weight:", it->second.second));
+
     summ = summ + it->second.second;
     prev = cur;
   }
