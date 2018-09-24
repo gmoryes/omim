@@ -91,9 +91,9 @@ void IndexGraph::GetEdgeList(Segment const & segment, bool isOutgoing, vector<Se
     GetNeighboringEdges(segment, roadPoint, isOutgoing, edges);
   }
 
-  if (log)
+  if (true)
   {
-    LOG(LINFO, ("List of edges:"));
+    LOG(LINFO, ("List of edges from segment(", segment, "):"));
     for (auto const & edge : edges)
       LOG(LINFO, (edge));
   }
@@ -175,13 +175,6 @@ void IndexGraph::GetNeighboringEdges(Segment const & from, RoadPoint const & rp,
     GetNeighboringEdge(
         from, Segment(from.GetMwmId(), rp.GetFeatureId(), rp.GetPointId() - 1, !isOutgoing),
         isOutgoing, edges);
-
-    if (rp.GetPointId() < road.GetPointsCount())
-    {
-      GetNeighboringEdge(
-        Segment(from.GetMwmId(), rp.GetFeatureId(), rp.GetPointId() + 1, isOutgoing), from,
-        isOutgoing, edges);
-    }
   }
 }
 
