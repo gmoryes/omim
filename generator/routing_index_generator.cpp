@@ -640,7 +640,7 @@ void BuildRoutingCrossMwmSection(string const & path, string const & mwmFile,
                                  string const & osmToFeatureFile, bool disableCrossMwmProgress)
 {
   LOG(LINFO, ("Building cross mwm section for", country));
-  using CrossMwmId = base::GeoObjectId;
+  /*using CrossMwmId = base::GeoObjectId;
   CrossMwmConnectorPerVehicleType<CrossMwmId> connectors;
   vector<CrossMwmConnectorSerializer::Transition<CrossMwmId>> transitions;
 
@@ -653,7 +653,7 @@ void BuildRoutingCrossMwmSection(string const & path, string const & mwmFile,
               connectors[static_cast<size_t>(VehicleType::Car)]);
 
   CHECK(connectors[static_cast<size_t>(VehicleType::Transit)].IsEmpty(), ());
-  SerializeCrossMwm(mwmFile, CROSS_MWM_FILE_TAG, connectors, transitions);
+  SerializeCrossMwm(mwmFile, CROSS_MWM_FILE_TAG, connectors, transitions);*/
 }
 
 void BuildLandmarksSection(string const & path, string const & mwmFile,
