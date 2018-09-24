@@ -433,7 +433,7 @@ void AStarAlgorithm<Graph>::PropagateWaveLandmarks(Graph & graph, Vertex const &
       stateW.distance = newReducedDist;
 
       context.SetDistance(stateW.vertex, newReducedDist);
-      context.SetParent(stateW.vertex, std::make_pair(stateV.vertex, newReducedDist));
+      context.SetParent(stateW.vertex, std::make_pair(stateV.vertex, edge.GetWeight()));
       queue.push(stateW);
     }
   }
