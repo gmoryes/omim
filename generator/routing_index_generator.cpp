@@ -532,7 +532,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                           {
                             LOG(LINFO, ("oldValue:", oldValue, "newValue:", state.distance.GetWeight()));
                             std::vector<Segment> path;
-                            context.ReconstructPath(state.vertex, path);
+                            context.ReconstructPath(state.vertex, path, graph);
                             LOG(LINFO, ("Path:"));
                             DijkstraWrapper::Weight summ(0);
                             for (auto & item : path)

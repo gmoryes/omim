@@ -145,7 +145,8 @@ public:
 
     void SetParent(Vertex const & parent, std::pair<Vertex, Weight> const & child) { m_parents[parent] = child; }
 
-    void ReconstructPath(Vertex const & v, std::vector<Vertex> & path) const;
+    template <typename IndexGraph>
+    void ReconstructPath(Vertex const & v, std::vector<Vertex> & path, IndexGraph & graph) const;
 
   private:
     std::map<Vertex, Weight> m_distanceMap;
@@ -315,13 +316,15 @@ private:
     Weight pS;
   };
 
+  template <typename IndexGraph>
   static void ReconstructPath(Vertex const & v, std::map<Vertex, std::pair<Vertex, Weight>> const & parent,
-                              std::vector<Vertex> & path);
+                              std::vector<Vertex> & path, IndexGraph & graph);
 
+  template <typename IndexGraph>
   static void ReconstructPathBidirectional(Vertex const & v, Vertex const & w,
                                            std::map<Vertex, std::pair<Vertex, Weight>> const & parentV,
                                            std::map<Vertex, std::pair<Vertex, Weight>> const & parentW,
-                                           std::vector<Vertex> & path);
+                                           std::vector<Vertex> & path, IndexGraph & graph);
 };
 
 template <typename Graph>
@@ -547,7 +550,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPath(
 
   if (resultCode == Result::OK)
   {
-    context.ReconstructPath(finalVertex, result.m_path);
+    context.ReconstructPath(finalVertex, result.m_path, graph);
     result.m_distance =
         reducedToFullLength(startVertex, finalVertex, context.GetDistance(finalVertex));
 
@@ -599,7 +602,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLandmarks(
   PropagateWaveLandmarks(graph, startVertex, visitVertex, potentialFunction, context);
 
   if (resultCode == Result::OK)
-    context.ReconstructPath(finalVertex, result.m_path);
+    context.ReconstructPath(finalVertex, result.m_path, graph);
 
   return resultCode;
 }
@@ -678,7 +681,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
           return Result::NoPath;
 
         ReconstructPathBidirectional(cur->bestVertex, nxt->bestVertex, cur->parent, nxt->parent,
-                                     result.m_path);
+                                     result.m_path, graph);
         //result.m_distance = goodDist;
         result.m_distance = bestPathRealLength;
         CHECK(!result.m_path.empty(), ());
@@ -873,7 +876,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::AdjustRoute(
   if (minDistance == kInfiniteDistance)
     return Result::NoPath;
 
-  context.ReconstructPath(returnVertex, result.m_path);
+  context.ReconstructPath(returnVertex, result.m_path, graph);
 
   // Append remaining route.
   bool found = false;
@@ -900,13 +903,15 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::AdjustRoute(
 
 // static
 template <typename Graph>
+template <typename IndexGraph>
 void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
                                             std::map<Vertex, std::pair<Vertex, Weight>> const & parent,
-                                            std::vector<Vertex> & path)
+                                            std::vector<Vertex> & path, IndexGraph & graph)
 {
   LOG(LINFO, ("==================[DEUBG_WEIGHTS]=================="));
   path.clear();
   Vertex cur = v;
+  Vertex prev = cur;
   Weight summ(0);
   while (true)
   {
@@ -915,8 +920,11 @@ void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
     if (it == parent.end())
       break;
     cur = it->second.first;
-    LOG(LINFO, (it->second.second));
+    LOG(LINFO, ("from:", MercatorBounds::ToLatLon(graph.GetPoint(prev, true)),
+                "to:", MercatorBounds::ToLatLon(graph.GetPoint(cur, true)),
+                " weight:", it->second.second));
     summ = summ + it->second.second;
+    prev = cur;
   }
   LOG(LINFO, ("Summary weight:", summ));
   LOG(LINFO, ("==================[DEUBG_WEIGHTS]=================="));
@@ -925,15 +933,16 @@ void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
 
 // static
 template <typename Graph>
+template <typename IndexGraph>
 void AStarAlgorithm<Graph>::ReconstructPathBidirectional(Vertex const & v, Vertex const & w,
                                                          std::map<Vertex, std::pair<Vertex, Weight>> const & parentV,
                                                          std::map<Vertex, std::pair<Vertex, Weight>> const & parentW,
-                                                         std::vector<Vertex> & path)
+                                                         std::vector<Vertex> & path, IndexGraph & graph)
 {
   std::vector<Vertex> pathV;
-  ReconstructPath(v, parentV, pathV);
+  ReconstructPath(v, parentV, pathV, graph);
   std::vector<Vertex> pathW;
-  ReconstructPath(w, parentW, pathW);
+  ReconstructPath(w, parentW, pathW, graph);
   path.clear();
   path.reserve(pathV.size() + pathW.size());
   path.insert(path.end(), pathV.begin(), pathV.end());
@@ -941,9 +950,10 @@ void AStarAlgorithm<Graph>::ReconstructPathBidirectional(Vertex const & v, Verte
 }
 
 template <typename Graph>
+template <typename IndexGraph>
 void AStarAlgorithm<Graph>::Context::ReconstructPath(Vertex const & v,
-                                                     std::vector<Vertex> & path) const
+                                                     std::vector<Vertex> & path, IndexGraph & graph) const
 {
-  AStarAlgorithm<Graph>::ReconstructPath(v, m_parents, path);
+  AStarAlgorithm<Graph>::ReconstructPath(v, m_parents, path, graph);
 }
 }  // namespace routing
