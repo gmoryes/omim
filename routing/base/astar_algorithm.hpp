@@ -201,7 +201,7 @@ public:
 
 private:
   // Periodicity of switching a wave of bidirectional algorithm.
-  static uint32_t constexpr kQueueSwitchPeriod = 128;
+  static uint32_t constexpr kQueueSwitchPeriod = 1;
 
   // Precision of comparison weights.
   static Weight constexpr kEpsilon = GetAStarWeightEpsilon<Weight>();
