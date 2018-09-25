@@ -347,6 +347,7 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
   std::priority_queue<State, std::vector<State>, std::greater<State>> queue;
 
   context.SetDistance(startVertex, kZeroDistance);
+  startVertex.m_forward = true;
   queue.push(State(startVertex, kZeroDistance));
 
   std::vector<Edge> adj;
@@ -369,7 +370,7 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
     else
       graph.GetIngoingEdgesList(stateV.vertex, adj);
 
-    if (first)
+    /*if (first)
     {
       std::vector<Edge> adjPlus;
       if (forwardWave)
@@ -378,7 +379,7 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
         graph.GetOutgoingEdgesList(stateV.vertex, adjPlus);
 
       adj.insert(adj.end(), adjPlus.begin(), adjPlus.end());
-    }
+    }*/
 
     if (first)
     {
