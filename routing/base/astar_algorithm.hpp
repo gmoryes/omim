@@ -336,7 +336,7 @@ constexpr typename Graph::Weight AStarAlgorithm<Graph>::kZeroDistance;
 
 template <typename Graph>
 template <typename VisitVertex, typename AdjustEdgeWeight, typename FilterStates>
-void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVertex,
+void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex & startVertex,
                                           VisitVertex && visitVertex,
                                           AdjustEdgeWeight && adjustEdgeWeight,
                                           FilterStates && filterStates,
