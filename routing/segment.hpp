@@ -79,7 +79,7 @@ public:
     return m_mwmId != kFakeNumMwmId && !FakeFeatureIds::IsTransitFeature(m_featureId);
   }
 
-  void MakeInverse()
+  void MakeInversed()
   {
     m_forward = !m_forward;
   }
