@@ -15,6 +15,10 @@
 #include <unordered_map>
 #include <vector>
 
+//tmp
+#include "base/logging.hpp"
+//end tmp
+
 namespace routing
 {
 namespace connector
@@ -54,13 +58,22 @@ public:
     Transition<CrossMwmId> transition(connector::kFakeIndex, connector::kFakeIndex, crossMwmId,
                                       oneWay, forwardIsEnter, backPoint, frontPoint);
 
+    bool log = false;
+    if (featureId == 332653)
+      log = true;
+
+    if (log)
+      LOG(LINFO, ("forwardIsEnter:", forwardIsEnter, "oneWay:", oneWay));
+
     if (forwardIsEnter)
     {
+      LOG(LINFO, ("1111"));
       transition.m_enterIdx = base::asserted_cast<uint32_t>(m_enters.size());
       m_enters.emplace_back(m_mwmId, featureId, segmentIdx, true /* forward */);
     }
     else
     {
+      LOG(LINFO, ("2222"));
       transition.m_exitIdx = base::asserted_cast<uint32_t>(m_exits.size());
       m_exits.emplace_back(m_mwmId, featureId, segmentIdx, true /* forward */);
     }
@@ -69,11 +82,13 @@ public:
     {
       if (forwardIsEnter)
       {
+        LOG(LINFO, ("3333"));
         transition.m_exitIdx = base::asserted_cast<uint32_t>(m_exits.size());
         m_exits.emplace_back(m_mwmId, featureId, segmentIdx, false /* forward */);
       }
       else
       {
+        LOG(LINFO, ("4444"));
         transition.m_enterIdx = base::asserted_cast<uint32_t>(m_enters.size());
         m_enters.emplace_back(m_mwmId, featureId, segmentIdx, false /* forward */);
       }
