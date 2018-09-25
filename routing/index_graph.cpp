@@ -95,7 +95,7 @@ void IndexGraph::GetEdgeList(Segment const & segment, bool isOutgoing, vector<Se
     GetNeighboringEdges(segment, roadPoint, isOutgoing, edges);
   }
 
-  if (true)
+  if (log)
   {
     LOG(LINFO, ("List of edges from segment(", segment, "):",
                 "pos:", MercatorBounds::ToLatLon(GetPoint(segment, true))));

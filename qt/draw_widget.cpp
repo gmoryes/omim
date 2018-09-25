@@ -179,14 +179,14 @@ void DrawWidget::mousePressEvent(QMouseEvent * e)
     if (IsShiftModifier(e))
     {
       //SubmitRoutingPoint(pt);
-      //SubmitRoutingPoint(MercatorBounds::FromLatLon({55.94727394, 37.44505836}));
-      SubmitRoutingPoint(MercatorBounds::FromLatLon({55.9480072, 37.4448131}));
+      SubmitRoutingPoint(MercatorBounds::FromLatLon({55.94727394, 37.44505836}));
+      //SubmitRoutingPoint(MercatorBounds::FromLatLon({55.9480072, 37.4448131}));
     }
     else if (IsAltModifier(e))
     {
       //SubmitFakeLocationPoint(pt);
-      //SubmitFakeLocationPoint(MercatorBounds::FromLatLon({55.756352974711333559, 37.58393509376000452}));
-      SubmitFakeLocationPoint(MercatorBounds::FromLatLon({55.9393641, 37.4446402}));
+      SubmitFakeLocationPoint(MercatorBounds::FromLatLon({55.756352974711333559, 37.58393509376000452}));
+      //SubmitFakeLocationPoint(MercatorBounds::FromLatLon({55.9393641, 37.4446402}));
     }
     else
       m_framework.TouchEvent(GetTouchEvent(e, df::TouchEvent::TOUCH_DOWN));

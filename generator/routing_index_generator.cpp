@@ -465,17 +465,17 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
   map<Segment, map<Segment, RouteWeight>> weights;
 
   static double constexpr kLandMarksNumberPercent = 0.5 / 100.0;
-  auto const numEnters = connector.GetEnters().size();
+  auto const numExits = connector.GetExits().size();
   auto const step = static_cast<size_t>(1.0 / kLandMarksNumberPercent);
 
   size_t landmarkNumber = 0;
-  size_t landmarksAmount = numEnters / step;
-  landmarksAmount += (numEnters % step) ? 1 : 0;
+  size_t landmarksAmount = numExits / step;
+  landmarksAmount += (numExits % step) ? 1 : 0;
 
-  for (size_t i = 0; i < numEnters; i += step)
+  for (size_t i = 0; i < numExits; i += step)
   {
-    Segment const & enter = connector.GetEnter(i);
-    LOG(LINFO, ("start process ", i, "/", numEnters, "landmark(", enter, "), coord:", MercatorBounds::ToLatLon(graph.GetPoint(enter, true))));
+    Segment const & exit = connector.GetExit(i);
+    LOG(LINFO, ("start process ", i, "/", numExits, "landmark(", exit, "), coord:", MercatorBounds::ToLatLon(graph.GetPoint(exit, true))));
 
     AStarAlgorithm<DijkstraWrapper> astar;
     DijkstraWrapper wrapper(graph);
@@ -503,7 +503,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                         context, true); */
 
     bool startLog = false;
-    astar.PropagateWave(wrapper, enter,
+    astar.PropagateWave(wrapper, exit,
                         [&](AStarAlgorithm<DijkstraWrapper>::State const & state)
                         {
                           static auto constexpr kMax = std::numeric_limits<double>::max();
