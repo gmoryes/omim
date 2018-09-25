@@ -79,6 +79,11 @@ public:
     return m_mwmId != kFakeNumMwmId && !FakeFeatureIds::IsTransitFeature(m_featureId);
   }
 
+  void MakeInverse()
+  {
+    m_forward = !m_forward;
+  }
+
 private:
   uint32_t m_featureId = 0;
   uint32_t m_segmentIdx = 0;

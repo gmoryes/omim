@@ -347,7 +347,7 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
   std::priority_queue<State, std::vector<State>, std::greater<State>> queue;
 
   context.SetDistance(startVertex, kZeroDistance);
-  startVertex.m_forward = true;
+  startVertex.MakeInverse();
   queue.push(State(startVertex, kZeroDistance));
 
   std::vector<Edge> adj;
