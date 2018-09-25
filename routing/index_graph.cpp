@@ -73,6 +73,7 @@ void IndexGraph::GetEdgeList(Segment const & segment, bool isOutgoing, vector<Se
   bool log = false;
   if (segment.GetFeatureId() == 99866)
     log = true;
+  log = false;
 
   RoadPoint const roadPoint = segment.GetRoadPoint(isOutgoing);
   Joint::Id const jointId = m_roadIndex.GetJointId(roadPoint);
