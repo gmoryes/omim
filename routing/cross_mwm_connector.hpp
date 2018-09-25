@@ -63,17 +63,19 @@ public:
       log = true;
 
     if (log)
-      LOG(LINFO, ("forwardIsEnter:", forwardIsEnter, "oneWay:", oneWay));
+      LOG(LINFO, ("forwardIsEnter:", forwardIsEnter, "oneWay:", oneWay, "segmentId:", segmentIdx));
 
     if (forwardIsEnter)
     {
-      LOG(LINFO, ("1111"));
+      if (log)
+        LOG(LINFO, ("1111"));
       transition.m_enterIdx = base::asserted_cast<uint32_t>(m_enters.size());
       m_enters.emplace_back(m_mwmId, featureId, segmentIdx, true /* forward */);
     }
     else
     {
-      LOG(LINFO, ("2222"));
+      if (log)
+        LOG(LINFO, ("2222"));
       transition.m_exitIdx = base::asserted_cast<uint32_t>(m_exits.size());
       m_exits.emplace_back(m_mwmId, featureId, segmentIdx, true /* forward */);
     }
@@ -82,13 +84,15 @@ public:
     {
       if (forwardIsEnter)
       {
-        LOG(LINFO, ("3333"));
+        if (log)
+          LOG(LINFO, ("3333"));
         transition.m_exitIdx = base::asserted_cast<uint32_t>(m_exits.size());
         m_exits.emplace_back(m_mwmId, featureId, segmentIdx, false /* forward */);
       }
       else
       {
-        LOG(LINFO, ("4444"));
+        if (log)
+          LOG(LINFO, ("4444"));
         transition.m_enterIdx = base::asserted_cast<uint32_t>(m_enters.size());
         m_enters.emplace_back(m_mwmId, featureId, segmentIdx, false /* forward */);
       }
