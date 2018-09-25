@@ -336,7 +336,7 @@ constexpr typename Graph::Weight AStarAlgorithm<Graph>::kZeroDistance;
 
 template <typename Graph>
 template <typename VisitVertex, typename AdjustEdgeWeight, typename FilterStates>
-void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex & startVertex,
+void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVertex_,
                                           VisitVertex && visitVertex,
                                           AdjustEdgeWeight && adjustEdgeWeight,
                                           FilterStates && filterStates,
@@ -346,6 +346,7 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex & startVertex,
 
   std::priority_queue<State, std::vector<State>, std::greater<State>> queue;
 
+  auto startVertex = startVertex_;
   context.SetDistance(startVertex, kZeroDistance);
   startVertex.MakeInverse();
   queue.push(State(startVertex, kZeroDistance));
