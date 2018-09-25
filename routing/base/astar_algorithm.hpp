@@ -702,11 +702,11 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
         if (!cur->forward)
           reverse(result.m_path.begin(), result.m_path.end());
 
-        /*LOG(LINFO, ("===================[DEBUG]==================="));
+        LOG(LINFO, ("===================[DEBUG]==================="));
         LOG(LINFO, ("Path:"));
         for (auto & item : result.m_path)
           LOG(LINFO, (MercatorBounds::ToLatLon(graph.GetPoint(item, true))));
-        LOG(LINFO, ("===================[DEBUG]==================="));*/
+        LOG(LINFO, ("===================[DEBUG]==================="));
 
         {
           std::ofstream output("/tmp/counter", std::ofstream::app);
@@ -736,7 +736,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
       if (stateV.vertex == stateW.vertex)
         continue;
 
-      if (stateW.vertex.GetFeatureId() == 34710 && stateW.vertex.GetSegmentIdx() == 0)
+      if (stateW.vertex.GetFeatureId() == 30522 && stateW.vertex.GetSegmentIdx() == 2)
       {
         int sad = 5;
       }

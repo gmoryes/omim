@@ -151,7 +151,7 @@ public:
       return tmp;*/
 
     {
-      auto end = MercatorBounds::ToLatLon(GetPoint(m_lastSegmentDebug, true));
+      auto end = MercatorBounds::ToLatLon(GetPoint(lastSegment, true));
       std::ofstream output("/tmp/checker", std::ofstream::app);
       output << std::setprecision(20);
       output << fromLatLon.lat << " "
@@ -163,7 +163,8 @@ public:
              << from2Landmark << " "
              << to2Landmark << " "
              << from.GetFeatureId() << " "
-             << from.GetSegmentIdx()
+             << from.GetSegmentIdx() << " "
+             << forward
              << std::endl;
     }
 
