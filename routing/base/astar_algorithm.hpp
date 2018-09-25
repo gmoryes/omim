@@ -376,6 +376,17 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
 
     if (first)
     {
+      std::vector<Edge> adjPlus;
+      if (forwardWave)
+        graph.GetIngoingEdgesList(stateV.vertex, adjPlus);
+      else
+        graph.GetOutgoingEdgesList(stateV.vertex, adjPlus);
+
+      adj.insert(adj.end(), adjPlus.begin(), adjPlus.end());
+    }
+
+    if (first)
+    {
       LOG(LINFO, ("============[mini_debug]============"));
       LOG(LINFO, ("start from(", startVertex, "): ",
                   "list of edges:"));

@@ -122,8 +122,6 @@ void IndexGraph::GetOutgoingEdgesList(Segment const & segment, vector<SegmentEdg
 void IndexGraph::GetIngoingEdgesList(Segment const & segment, vector<SegmentEdge> & edges)
 {
   edges.clear();
-  if (segment.GetFeatureId() == 97410)
-    LOG(LINFO, ("here:", segment));
   GetEdgeList(segment, false /* isOutgoing */, edges);
 }
 
