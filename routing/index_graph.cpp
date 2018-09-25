@@ -70,33 +70,21 @@ IndexGraph::IndexGraph(shared_ptr<Geometry> geometry, shared_ptr<EdgeEstimator> 
 
 void IndexGraph::GetEdgeList(Segment const & segment, bool isOutgoing, vector<SegmentEdge> & edges)
 {
-  bool log = false;
-  if (segment.GetFeatureId() == 99866)
-    log = true;
-  log = false;
-
   RoadPoint const roadPoint = segment.GetRoadPoint(isOutgoing);
   Joint::Id const jointId = m_roadIndex.GetJointId(roadPoint);
 
-  if (log)
-    LOG(LINFO, ("jointId:", jointId));
-
   if (jointId != Joint::kInvalidId)
   {
-    if (log)
-      LOG(LINFO, ("jointId != Joint::kInvalidId"));
     m_jointIndex.ForEachPoint(jointId, [&](RoadPoint const & rp) {
       GetNeighboringEdges(segment, rp, isOutgoing, edges);
     });
   }
   else
   {
-    if (log)
-      LOG(LINFO, ("normalno delaem"));
     GetNeighboringEdges(segment, roadPoint, isOutgoing, edges);
   }
 
-  if (log)
+  if (false)
   {
     LOG(LINFO, ("List of edges from segment(", segment, "):",
                 "pos:", MercatorBounds::ToLatLon(GetPoint(segment, true))));
