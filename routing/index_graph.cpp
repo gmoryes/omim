@@ -142,11 +142,7 @@ RouteWeight IndexGraph::CalcSegmentWeight(Segment const & segment)
 void IndexGraph::GetNeighboringEdges(Segment const & from, RoadPoint const & rp, bool isOutgoing,
                                      vector<SegmentEdge> & edges)
 {
-  bool log = from.GetFeatureId() == 99866;
   RoadGeometry const & road = m_geometry->GetRoad(rp.GetFeatureId());
-
-  if (log)
-    LOG(LINFO, ("isOutgoing:", isOutgoing, "rp:", rp, "isValid:", road.IsValid()));
 
   if (!road.IsValid())
     return;
@@ -155,8 +151,6 @@ void IndexGraph::GetNeighboringEdges(Segment const & from, RoadPoint const & rp,
 
   if ((isOutgoing || bidirectional) && rp.GetPointId() + 1 < road.GetPointsCount())
   {
-    if (log)
-      LOG(LINFO, ("here1"));
     GetNeighboringEdge(from,
                        Segment(from.GetMwmId(), rp.GetFeatureId(), rp.GetPointId(), isOutgoing),
                        isOutgoing, edges);
@@ -164,8 +158,6 @@ void IndexGraph::GetNeighboringEdges(Segment const & from, RoadPoint const & rp,
 
   if ((!isOutgoing || bidirectional) && rp.GetPointId() > 0)
   {
-    if (log)
-      LOG(LINFO, ("here2"));
     GetNeighboringEdge(
         from, Segment(from.GetMwmId(), rp.GetFeatureId(), rp.GetPointId() - 1, !isOutgoing),
         isOutgoing, edges);

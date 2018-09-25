@@ -267,28 +267,31 @@ static size_t counter = 0;
                               LOG(LINFO, ("==================[DEBUG]=================="));
                             }
 
+                            if (false /* draw desktop */)
                             {
-                              std::ifstream f("/tmp/points_desktop");
-
-                              char comma, bracket;
-                              double lat, lon;
-                              m2::PointD prev = m2::PointD::Zero();
-                              double dist = 0.0;
-
-                              while (f >> lat >> comma >> lon >> bracket)
                               {
-                                auto p = MercatorBounds::FromLatLon({lat, lon});
-                                editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
-                                editSession.CreateUserMark<SearchMarkPoint>(p);
-                                if (prev != m2::PointD::Zero())
+                                std::ifstream f("/tmp/points_desktop");
+
+                                char comma, bracket;
+                                double lat, lon;
+                                m2::PointD prev = m2::PointD::Zero();
+                                double dist = 0.0;
+
+                                while (f >> lat >> comma >> lon >> bracket)
                                 {
-                                  dist += MercatorBounds::DistanceOnEarth(prev, p);
+                                  auto p = MercatorBounds::FromLatLon({lat, lon});
+                                  editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+                                  editSession.CreateUserMark<SearchMarkPoint>(p);
+                                  if (prev != m2::PointD::Zero())
+                                  {
+                                    dist += MercatorBounds::DistanceOnEarth(prev, p);
+                                  }
+                                  prev = p;
                                 }
-                                prev = p;
+                                LOG(LINFO, ("==================[DEBUG]=================="));
+                                LOG(LINFO, ("dist from desktop =", dist));
+                                LOG(LINFO, ("==================[DEBUG]=================="));
                               }
-                              LOG(LINFO, ("==================[DEBUG]=================="));
-                              LOG(LINFO, ("dist from desktop =", dist));
-                              LOG(LINFO, ("==================[DEBUG]=================="));
                             }
                           }
 

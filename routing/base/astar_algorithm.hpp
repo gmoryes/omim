@@ -372,7 +372,10 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
     if (first)
     {
       LOG(LINFO, ("============[mini_debug]============"));
-      LOG(LINFO, ("start from(", startVertex, ") list of edges:"));
+      LOG(LINFO, ("start from(", startVertex, "): ",
+                  MercatorBounds::ToLatLon(graph.GetPoint(startVertex, startVertex.IsForward())),
+                  "list of edges:"));
+      
       for (auto const & edge : adj)
       {
         LOG(LINFO, ("edge:", edge, "weight:", edge.GetWeight()));
