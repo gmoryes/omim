@@ -348,11 +348,6 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
 
   context.SetDistance(startVertex, kZeroDistance);
   queue.push(State(startVertex, kZeroDistance));
-  {
-    auto tmp = Vertex(startVertex.GetMwmId(), startVertex.GetFeatureId(),
-                      startVertex.GetSegmentIdx(), !startVertex.IsForward());
-    queue.push(State(tmp, kZeroDistance));
-  }
 
   std::vector<Edge> adj;
 
