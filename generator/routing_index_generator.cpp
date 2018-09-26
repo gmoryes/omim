@@ -482,7 +482,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
     DijkstraWrapper wrapper(graph);
     AStarAlgorithm<DijkstraWrapper>::Context context;
 
-    /*astar.PropagateWave(wrapper, enter,
+    astar.PropagateWave(wrapper, exit,
                         [&](AStarAlgorithm<DijkstraWrapper>::State const & state)
                         {
                           static auto constexpr kMax = std::numeric_limits<double>::max();
@@ -501,7 +501,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
 
                           return true;
                         },
-                        context, true); */
+                        context, true);
 
     bool startLog = false;
     astar.PropagateWave(wrapper, exit,

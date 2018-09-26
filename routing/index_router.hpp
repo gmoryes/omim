@@ -143,7 +143,7 @@ private:
                                   ConvertResult<Graph>(algorithm.FindPath(params, routingResult)));
     }
     return ConvertTransitResult(
-      mwmIds, ConvertResult<Graph>(algorithm.FindPathBidirectional(params, routingResult)));
+      mwmIds, ConvertResult<Graph>(algorithm.FindPath(params, routingResult)));
   }
 
   template <typename Graph>
@@ -152,7 +152,7 @@ private:
     RoutingResult<typename Graph::Vertex, typename Graph::Weight> & routingResult) const
   {
     AStarAlgorithm<Graph> algorithm;
-    bool oneDirect = false;
+    bool oneDirect = true;
     if (oneDirect)
     {
       return ConvertTransitResult(

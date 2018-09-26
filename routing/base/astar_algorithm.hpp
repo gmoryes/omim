@@ -638,7 +638,8 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLandmarks(
 
   auto const potentialFunction = [&](Vertex const & vertex) {
     auto toReturn = graph.HeuristicCostEstimateLandmarks(vertex, finalVertex, true /* forward */);
-    //return graph.HeuristicCostEstimate(vertex, finalVertex);
+    if (toReturn == RouteWeight(0))
+      return graph.HeuristicCostEstimate(vertex, finalVertex);
     return toReturn;
   };
 
