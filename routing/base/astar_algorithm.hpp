@@ -4,6 +4,10 @@
 #include "routing/base/routing_result.hpp"
 #include "routing/index_graph_starter.hpp"
 
+//tmp
+#include "routing/routing_callbacks.hpp"
+//end tmp
+
 #include "base/assert.hpp"
 #include "base/cancellable.hpp"
 
@@ -79,13 +83,13 @@ public:
     }
 
     Graph & m_graph;
-    Vertex const m_startVertex;
+    Vertex m_startVertex;
     // Used for FindPath, FindPathBidirectional.
-    Vertex const m_finalVertex;
+    Vertex m_finalVertex;
     // Used for AdjustRoute.
     std::vector<Edge> const * const m_prevRoute;
     base::Cancellable const & m_cancellable;
-    OnVisitedVertexCallback const m_onVisitedVertexCallback;
+    OnVisitedVertexCallback m_onVisitedVertexCallback;
     CheckLengthCallback const m_checkLengthCallback;
   };
 
@@ -189,7 +193,11 @@ public:
   Result FindPath(P & params, RoutingResult<Vertex, Weight> & result) const;
 
   template <typename P>
-  Result FindPathBidirectional(P & params, RoutingResult<Vertex, Weight> & result, bool enableLandmarks = false) const;
+  Result FindPathBidirectional(P & params, RoutingResult<Vertex, Weight> & result, bool enableLandmarks = false,
+                               bool enableLogging = true) const;
+
+  template <typename P>
+  Weight GetEdgeLength(Vertex const & from, Vertex const & to, P & param) const;
 
   template <typename P>
   Result FindPathLandmarks(P & params, RoutingResult<Vertex, Weight> & result) const;
@@ -201,7 +209,7 @@ public:
 
 private:
   // Periodicity of switching a wave of bidirectional algorithm.
-  static uint32_t constexpr kQueueSwitchPeriod = 1;
+  static uint32_t constexpr kQueueSwitchPeriod = 128;
 
   // Precision of comparison weights.
   static Weight constexpr kEpsilon = GetAStarWeightEpsilon<Weight>();
@@ -318,13 +326,13 @@ private:
 
   template <typename IndexGraph>
   static void ReconstructPath(Vertex const & v, std::map<Vertex, std::pair<Vertex, Weight>> const & parent,
-                              std::vector<Vertex> & path, IndexGraph & graph);
+                              std::vector<Vertex> & path, IndexGraph & graph, bool enableLogging = false);
 
   template <typename IndexGraph>
   static void ReconstructPathBidirectional(Vertex const & v, Vertex const & w,
                                            std::map<Vertex, std::pair<Vertex, Weight>> const & parentV,
                                            std::map<Vertex, std::pair<Vertex, Weight>> const & parentW,
-                                           std::vector<Vertex> & path, IndexGraph & graph);
+                                           std::vector<Vertex> & path, IndexGraph & graph, bool enableLogging = false);
 };
 
 template <typename Graph>
@@ -644,8 +652,27 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLandmarks(
 
 template <typename Graph>
 template <typename P>
+typename AStarAlgorithm<Graph>::Weight AStarAlgorithm<Graph>::GetEdgeLength(
+  typename AStarAlgorithm<Graph>::Vertex const & from,
+  typename AStarAlgorithm<Graph>::Vertex const & to,
+  P & param) const
+{
+
+  base::Cancellable tmp;
+  AStarAlgorithm<Graph>::Params copy(param.m_graph, from, to, nullptr, tmp, nullptr,
+                                     [](Weight const &) { return true; });
+
+  RoutingResult<Vertex, Weight> result;
+  UNUSED_VALUE(AStarAlgorithm<Graph>::FindPathBidirectional(copy, result, false /* enableLandmarks */,
+                                                            false /* enableLogging */));
+
+  return result.m_distance;
+}
+
+template <typename Graph>
+template <typename P>
 typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectional(
-    P & params, RoutingResult<Vertex, Weight> & result, bool enableLandmarks) const
+    P & params, RoutingResult<Vertex, Weight> & result, bool enableLandmarks, bool enableLogging) const
 {
   auto & graph = params.m_graph;
   auto const & finalVertex = params.m_finalVertex;
@@ -685,8 +712,6 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
   while (!cur->queue.empty() && !nxt->queue.empty())
   {
     ++steps;
-    /*if (steps == 100)
-      return Result::NoPath;*/
 
     if (periodicCancellable.IsCancelled())
       return Result::Cancelled;
@@ -716,25 +741,28 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
           return Result::NoPath;
 
         ReconstructPathBidirectional(cur->bestVertex, nxt->bestVertex, cur->parent, nxt->parent,
-                                     result.m_path, graph);
+                                     result.m_path, graph, enableLogging);
         //result.m_distance = goodDist;
         result.m_distance = bestPathRealLength;
         CHECK(!result.m_path.empty(), ());
         if (!cur->forward)
           reverse(result.m_path.begin(), result.m_path.end());
 
-        LOG(LINFO, ("===================[DEBUG]==================="));
-        LOG(LINFO, ("Path:"));
-        for (auto & item : result.m_path)
-          LOG(LINFO, (MercatorBounds::ToLatLon(graph.GetPoint(item, true))));
-        LOG(LINFO, ("===================[DEBUG]==================="));
-
+        if (enableLogging)
         {
-          std::ofstream output("/tmp/counter", std::ofstream::app);
-          if (enableLandmarks)
-            output << "bidirect landmarks: " << steps << std::endl;
-          else
-            output << "bidirect: " << steps << std::endl;
+          /*LOG(LINFO, ("===================[DEBUG]==================="));
+          LOG(LINFO, ("Path:"));
+          for (auto & item : result.m_path)
+            LOG(LINFO, (MercatorBounds::ToLatLon(graph.GetPoint(item, true))));
+          LOG(LINFO, ("===================[DEBUG]==================="));*/
+
+          {
+            std::ofstream output("/tmp/counter", std::ofstream::app);
+            if (enableLandmarks)
+              output << "bidirect landmarks: " << steps << std::endl;
+            else
+              output << "bidirect: " << steps << std::endl;
+          }
         }
 
         return Result::OK;
@@ -749,6 +777,11 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
 
     params.m_onVisitedVertexCallback(stateV.vertex,
                                      cur->forward ? cur->finalVertex : cur->startVertex);
+
+    if (stateV.vertex.GetFeatureId() == 30523 && stateV.vertex.GetSegmentIdx() == 0)
+    {
+      int sad = 5;
+    }
 
     cur->GetAdjacencyList(stateV.vertex, adj);
     for (auto const & edge : adj)
@@ -780,13 +813,36 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
         pV = cur->ConsistentHeuristic(stateV.vertex);
         pW = cur->ConsistentHeuristic(stateW.vertex);
       }
-      auto const reducedWeight = weight + pW - pV;
 
-      CHECK_GREATER_OR_EQUAL(reducedWeight, -kEpsilon,
-                             ("Invariant violated. weight(", weight.GetWeight(), "), pW(", pW.GetWeight(), "), pV(", pV.GetWeight(), ")",
-                              "V(", stateV.vertex, "), W(", stateW.vertex, ")", "forward:", cur->forward,
-                              ", startVertex:", MercatorBounds::ToLatLon(cur->graph.GetPoint(cur->startVertex, true)),
-                              ", finalVertex:", MercatorBounds::ToLatLon(cur->graph.GetPoint(cur->finalVertex, true))));
+      Weight reducedWeight;
+      if (enableLandmarks)
+      {
+        auto v2w = GetEdgeLength(stateV.vertex, stateW.vertex, params);
+        auto w2v = GetEdgeLength(stateW.vertex, stateV.vertex, params);
+        reducedWeight = v2w + w2v + 2.0 * (pW - pV);
+      }
+      else
+      {
+        reducedWeight = weight + pW - pV;
+      }
+      //LOG(LINFO, (reducedWeight));
+
+      CHECK(reducedWeight > -kEpsilon, ("FUCK FUCK FUCK, LANDMARKS WILL DIE"));
+
+      /*if (reducedWeight < -kEpsilon)
+      {
+
+        LOG(LINFO, ("v2w(", v2w, "), w2v(", w2v, ")"));
+
+        CHECK(v2w + w2v + 2.0 * (pW - pV) > -kEpsilon, ("fuck"));
+
+        LOG(LINFO,
+            ("Invariant violated. weight(", weight.GetWeight(), "), pW(", pW.GetWeight(), "), pV(", pV.GetWeight(), ")",
+              "V(", stateV.vertex, "), W(", stateW.vertex, ")", "forward:", cur->forward,
+              ", startVertex:", MercatorBounds::ToLatLon(cur->graph.GetPoint(cur->startVertex, true)),
+              ", finalVertex:", MercatorBounds::ToLatLon(cur->graph.GetPoint(cur->finalVertex, true))));
+      }*/
+
       auto const newReducedDist = stateV.distance + std::max(reducedWeight, kZeroDistance);
 
       auto const fullLength = weight + stateV.distance + cur->pS - pV;
@@ -941,9 +997,10 @@ template <typename Graph>
 template <typename IndexGraph>
 void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
                                             std::map<Vertex, std::pair<Vertex, Weight>> const & parent,
-                                            std::vector<Vertex> & path, IndexGraph & graph)
+                                            std::vector<Vertex> & path, IndexGraph & graph, bool enableLogging)
 {
-  LOG(LINFO, ("==================[DEUBG_WEIGHTS]=================="));
+  if (enableLogging)
+    LOG(LINFO, ("==================[DEUBG_WEIGHTS]=================="));
   path.clear();
   Vertex cur = v;
   Vertex prev = cur;
@@ -956,15 +1013,18 @@ void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
       break;
     cur = it->second.first;
 
-    LOG(LINFO, ("from(", prev, "):", MercatorBounds::ToLatLon(graph.GetPoint(prev, true)),
+    /*LOG(LINFO, ("from(", prev, "):", MercatorBounds::ToLatLon(graph.GetPoint(prev, true)),
                 "to(", cur, "):", MercatorBounds::ToLatLon(graph.GetPoint(cur, true)),
-                "weight:", it->second.second));
+                "weight:", it->second.second));*/
 
     summ = summ + it->second.second;
     prev = cur;
   }
-  LOG(LINFO, ("Summary weight:", summ));
-  LOG(LINFO, ("==================[DEUBG_WEIGHTS]=================="));
+  if (enableLogging)
+  {
+    LOG(LINFO, ("Summary weight:", summ));
+    LOG(LINFO, ("==================[DEUBG_WEIGHTS]=================="));
+  }
   reverse(path.begin(), path.end());
 }
 
@@ -974,12 +1034,12 @@ template <typename IndexGraph>
 void AStarAlgorithm<Graph>::ReconstructPathBidirectional(Vertex const & v, Vertex const & w,
                                                          std::map<Vertex, std::pair<Vertex, Weight>> const & parentV,
                                                          std::map<Vertex, std::pair<Vertex, Weight>> const & parentW,
-                                                         std::vector<Vertex> & path, IndexGraph & graph)
+                                                         std::vector<Vertex> & path, IndexGraph & graph, bool enableLogging)
 {
   std::vector<Vertex> pathV;
-  ReconstructPath(v, parentV, pathV, graph);
+  ReconstructPath(v, parentV, pathV, graph, enableLogging);
   std::vector<Vertex> pathW;
-  ReconstructPath(w, parentW, pathW, graph);
+  ReconstructPath(w, parentW, pathW, graph, enableLogging);
   path.clear();
   path.reserve(pathV.size() + pathW.size());
   path.insert(path.end(), pathV.begin(), pathV.end());

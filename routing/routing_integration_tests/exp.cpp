@@ -32,12 +32,12 @@ UNIT_TEST(BenchmarkTest_Landmarks_Yes)
   TestRoute(from, end, true);
 }
 
-/*UNIT_TEST(BenchmarkTest_Landmarks_No)
+UNIT_TEST(BenchmarkTest_Landmarks_No)
 {
   auto from = MercatorBounds::FromLatLon(55.797529, 37.538253);
   auto end = MercatorBounds::FromLatLon(55.721194, 37.622323);
   TestRoute(from, end, false);
-}*/
+}
 /*
 UNIT_TEST(BenchmarkTest_Checker)
 {

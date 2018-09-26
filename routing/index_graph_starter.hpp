@@ -145,7 +145,7 @@ public:
     auto fromLatLon = MercatorBounds::ToLatLon(GetPoint(from, true));
     auto p2 = MercatorBounds::ToLatLon(GetPoint(to, true));
     auto tmp = m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */), GetPoint(to, true /* front */));
-    LOG(LINFO, ("Approximate from(", from, "):", fromLatLon, "to(", lastSegment, "):", p2, "is:", maxi, "silly:", tmp.GetWeight()));
+    //LOG(LINFO, ("Approximate from(", from, "):", fromLatLon, "to(", lastSegment, "):", p2, "is:", maxi, "silly:", tmp.GetWeight()));
 
     /*if (maxi < tmp.GetWeight())
       return tmp;*/
@@ -161,7 +161,6 @@ public:
              << maxi << " "
              << maxIndex << " "
              << from2Landmark << " "
-             << to2Landmark << " "
              << from.GetFeatureId() << " "
              << from.GetSegmentIdx() << " "
              << forward

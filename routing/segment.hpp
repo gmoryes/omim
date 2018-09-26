@@ -84,6 +84,16 @@ public:
     m_forward = !m_forward;
   }
 
+  Segment & operator=(Segment const & rhs)
+  {
+    m_featureId = rhs.m_featureId;
+    m_segmentIdx = rhs.m_segmentIdx;
+    m_mwmId = rhs.m_mwmId;
+    m_forward = rhs.m_forward;
+
+    return *this;
+  }
+
 private:
   uint32_t m_featureId = 0;
   uint32_t m_segmentIdx = 0;

@@ -244,7 +244,8 @@ static size_t counter = 0;
                             //editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
                             //editSession.CreateUserMark<DebugMarkPoint>(pt);
                             {
-                              std::ifstream f("/tmp/points");
+                              //std::ifstream f("/tmp/landmarks_point");
+                              std::ifstream f("/tmp/points_yes");
 
                               char comma, bracket;
                               double lat, lon;
@@ -270,7 +271,8 @@ static size_t counter = 0;
                             if (false /* draw desktop */)
                             {
                               {
-                                std::ifstream f("/tmp/points_desktop");
+                                //std::ifstream f("/tmp/simple_point");
+                                std::ifstream f("/tmp/points_no");
 
                                 char comma, bracket;
                                 double lat, lon;

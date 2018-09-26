@@ -327,6 +327,11 @@ RouterResultCode IndexRouter::CalculateRoute(Checkpoints const & checkpoints,
                                              bool adjustToPrevRoute,
                                              RouterDelegate const & delegate, Route & route, bool enableLandmarks)
 {
+  LOG(LINFO, ("============[CalculateRoute]============"));
+  LOG(LINFO, ("start:", checkpoints.GetStart(), "finish:", checkpoints.GetFinish()));
+  LOG(LINFO, ("startDirection:", startDirection));
+  LOG(LINFO, ("enableLandmarks:", enableLandmarks));
+  LOG(LINFO, ("============[CalculateRoute]============"));
   vector<string> outdatedMwms;
   GetOutdatedMwms(m_dataSource, outdatedMwms);
 
@@ -525,11 +530,31 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
   auto lastValue = progress.GetLastValue();
 
   auto onVisitJunction = [&](Segment const & from, Segment const & to) {
-    if (++visitCount % kVisitPeriod != 0)
-      return;
 
     m2::PointD const & pointFrom = starter.GetPoint(from, true /* front */);
     m2::PointD const & pointTo = starter.GetPoint(to, true /* front */);
+
+    if (enableLandmarks)
+    {
+      std::ofstream output("/tmp/landmarks_point", std::ofstream::app);
+      output << std::setprecision(20)
+             << MercatorBounds::ToLatLon(pointFrom).lat << ", "
+             << MercatorBounds::ToLatLon(pointFrom).lon << ")"
+             << std::endl;
+
+    }
+    else
+    {
+      std::ofstream output("/tmp/simple_point", std::ofstream::app);
+      output << std::setprecision(20)
+             << MercatorBounds::ToLatLon(pointFrom).lat << ", "
+             << MercatorBounds::ToLatLon(pointFrom).lon << ")"
+             << std::endl;
+    }
+
+    if (++visitCount % kVisitPeriod != 0)
+      return;
+
     auto const newValue = progress.GetProgressForBidirectedAlgo(pointFrom, pointTo);
     if (newValue - lastValue > kProgressInterval)
     {
