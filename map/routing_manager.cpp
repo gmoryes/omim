@@ -241,34 +241,37 @@ static size_t counter = 0;
                           auto editSession = m_bmManager->GetEditSession();
                           if (counter == 0)
                           {
-                            //editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
-                            //editSession.CreateUserMark<DebugMarkPoint>(pt);
+                            if (true /* draw */)
                             {
-                              //std::ifstream f("/tmp/landmarks_point");
-                              std::ifstream f("/tmp/points_yes");
-
-                              char comma, bracket;
-                              double lat, lon;
-                              m2::PointD prev = m2::PointD::Zero();
-                              double dist = 0.0;
-
-                              while (f >> lat >> comma >> lon >> bracket)
+                              //editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+                              //editSession.CreateUserMark<DebugMarkPoint>(pt);
                               {
-                                auto p = MercatorBounds::FromLatLon({lat, lon});
-                                editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
-                                editSession.CreateUserMark<DebugMarkPoint>(p);
-                                if (prev != m2::PointD::Zero())
+                                //std::ifstream f("/tmp/landmarks_point");
+                                std::ifstream f("/tmp/points_yes");
+
+                                char comma, bracket;
+                                double lat, lon;
+                                m2::PointD prev = m2::PointD::Zero();
+                                double dist = 0.0;
+
+                                while (f >> lat >> comma >> lon >> bracket)
                                 {
-                                  dist += MercatorBounds::DistanceOnEarth(prev, p);
+                                  auto p = MercatorBounds::FromLatLon({lat, lon});
+                                  editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+                                  editSession.CreateUserMark<DebugMarkPoint>(p);
+                                  if (prev != m2::PointD::Zero())
+                                  {
+                                    dist += MercatorBounds::DistanceOnEarth(prev, p);
+                                  }
+                                  prev = p;
                                 }
-                                prev = p;
+                                LOG(LINFO, ("==================[DEBUG]=================="));
+                                LOG(LINFO, ("dist landmarks =", dist));
+                                LOG(LINFO, ("==================[DEBUG]=================="));
                               }
-                              LOG(LINFO, ("==================[DEBUG]=================="));
-                              LOG(LINFO, ("dist from generator =", dist));
-                              LOG(LINFO, ("==================[DEBUG]=================="));
                             }
 
-                            if (false /* draw desktop */)
+                            if (true /* draw */)
                             {
                               {
                                 //std::ifstream f("/tmp/simple_point");
@@ -291,12 +294,11 @@ static size_t counter = 0;
                                   prev = p;
                                 }
                                 LOG(LINFO, ("==================[DEBUG]=================="));
-                                LOG(LINFO, ("dist from desktop =", dist));
+                                LOG(LINFO, ("dist no_landmarks =", dist));
                                 LOG(LINFO, ("==================[DEBUG]=================="));
                               }
                             }
                           }
-
                           counter++;
                         }
 #else

@@ -127,17 +127,32 @@ public:
     double maxi = 0;
     size_t maxIndex;
     double from2Landmark, to2Landmark;
+    bool forwardLandmark = false;
     for (size_t i = 0; i < maxN; ++i)
     {
       if (IsGoodLandmark(fromLandmarks[i]) && IsGoodLandmark(toLandmarks[i]))
       {
-        auto const prikol = fromLandmarks[i].second /* backward */ - toLandmarks[i].second /* backward */;
-        if (maxi < prikol)
         {
-          maxi = prikol;
-          maxIndex = i;
-          from2Landmark = fromLandmarks[i].second;
-          to2Landmark = toLandmarks[i].second;
+          auto const prikol = fromLandmarks[i].second /* backward */ - toLandmarks[i].second /* backward */;
+          if (maxi < prikol)
+          {
+            forwardLandmark = false;
+            maxi = prikol;
+            maxIndex = i;
+            from2Landmark = fromLandmarks[i].second;
+            to2Landmark = toLandmarks[i].second;
+          }
+        }
+        {
+          auto const prikol = toLandmarks[i].first /* forward */ - fromLandmarks[i].first /* forward */;
+          if (maxi < prikol)
+          {
+            forwardLandmark = true;
+            maxi = prikol;
+            maxIndex = i;
+            from2Landmark = fromLandmarks[i].first;
+            to2Landmark = toLandmarks[i].first;
+          }
         }
       }
     }
@@ -160,6 +175,7 @@ public:
              << end.lon << " "
              << maxi << " "
              << maxIndex << " "
+             << forwardLandmark << " "
              << from2Landmark << " "
              << from.GetFeatureId() << " "
              << from.GetSegmentIdx() << " "

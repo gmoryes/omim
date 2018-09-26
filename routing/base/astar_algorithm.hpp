@@ -356,7 +356,6 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
 
   auto startVertex = startVertex_;
   context.SetDistance(startVertex, kZeroDistance);
-  //startVertex.MakeInverse();
   queue.push(State(startVertex, kZeroDistance));
   {
     auto tmp = startVertex;
@@ -597,6 +596,12 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPath(
     result.m_distance =
         reducedToFullLength(startVertex, finalVertex, context.GetDistance(finalVertex));
 
+    LOG(LINFO, ("===================[DEBUG]==================="));
+    LOG(LINFO, ("Path:"));
+    for (auto & item : result.m_path)
+      LOG(LINFO, (MercatorBounds::ToLatLon(graph.GetPoint(item, true))));
+    LOG(LINFO, ("===================[DEBUG]==================="));
+
     if (!params.m_checkLengthCallback(result.m_distance))
       resultCode = Result::NoPath;
   }
@@ -619,6 +624,9 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLandmarks(
   Result resultCode = Result::NoPath;
 
   size_t counter = 0;
+  size_t all = 0;
+  size_t landmarkWin = 0;
+  size_t landmarkLoose = 0;
   auto visitVertex = [&](Vertex const & vertex) {
     counter++;
 
@@ -627,7 +635,8 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLandmarks(
       {
         result.m_distance = context.GetDistance(vertex);
         std::ofstream output("/tmp/counter", std::ofstream::app);
-        output << "landmarks: " << counter << std::endl;
+        output << "landmarks: " << counter << " win(" << landmarkWin << " / " << all << "), "
+               << "loose(" << landmarkLoose << " / " << all << ")" << std::endl;
       }
       resultCode = Result::OK;
       return false;
@@ -638,15 +647,33 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLandmarks(
 
   auto const potentialFunction = [&](Vertex const & vertex) {
     auto toReturn = graph.HeuristicCostEstimateLandmarks(vertex, finalVertex, true /* forward */);
-    if (toReturn == RouteWeight(0))
-      return graph.HeuristicCostEstimate(vertex, finalVertex);
+    auto tmp = graph.HeuristicCostEstimate(vertex, finalVertex);
+
+    all++;
+    if (toReturn < tmp)
+    {
+      landmarkLoose++;
+      return tmp;
+    }
+    else
+    {
+      landmarkWin++;
+    }
+
     return toReturn;
   };
 
   PropagateWaveLandmarks(graph, startVertex, visitVertex, potentialFunction, context);
 
   if (resultCode == Result::OK)
+  {
     context.ReconstructPath(finalVertex, result.m_path, graph);
+    LOG(LINFO, ("===================[DEBUG]==================="));
+    LOG(LINFO, ("Path:"));
+    for (auto & item : result.m_path)
+      LOG(LINFO, (MercatorBounds::ToLatLon(graph.GetPoint(item, true))));
+    LOG(LINFO, ("===================[DEBUG]==================="));
+  }
 
   return resultCode;
 }
@@ -751,11 +778,11 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
 
         if (enableLogging)
         {
-          /*LOG(LINFO, ("===================[DEBUG]==================="));
+          LOG(LINFO, ("===================[DEBUG]==================="));
           LOG(LINFO, ("Path:"));
           for (auto & item : result.m_path)
             LOG(LINFO, (MercatorBounds::ToLatLon(graph.GetPoint(item, true))));
-          LOG(LINFO, ("===================[DEBUG]==================="));*/
+          LOG(LINFO, ("===================[DEBUG]==================="));
 
           {
             std::ofstream output("/tmp/counter", std::ofstream::app);
@@ -1000,6 +1027,7 @@ void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
                                             std::map<Vertex, std::pair<Vertex, Weight>> const & parent,
                                             std::vector<Vertex> & path, IndexGraph & graph, bool enableLogging)
 {
+  enableLogging = true;
   if (enableLogging)
     LOG(LINFO, ("==================[DEUBG_WEIGHTS]=================="));
   path.clear();
@@ -1016,7 +1044,7 @@ void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
 
     /*LOG(LINFO, ("from(", prev, "):", MercatorBounds::ToLatLon(graph.GetPoint(prev, true)),
                 "to(", cur, "):", MercatorBounds::ToLatLon(graph.GetPoint(cur, true)),
-                "weight:", it->second.second));*/
+                "weight:", it->second.second))*/
 
     summ = summ + it->second.second;
     prev = cur;
