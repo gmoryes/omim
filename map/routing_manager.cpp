@@ -247,7 +247,7 @@ static size_t counter = 0;
                               //editSession.CreateUserMark<DebugMarkPoint>(pt);
                               {
                                 //std::ifstream f("/tmp/landmarks_point");
-                                std::ifstream f("/tmp/points_yes");
+                                std::ifstream f("/tmp/points_super_landmark_set");
 
                                 char comma, bracket;
                                 double lat, lon;
@@ -271,7 +271,7 @@ static size_t counter = 0;
                               }
                             }
 
-                            if (true /* draw */)
+                            if (false /* draw */)
                             {
                               {
                                 //std::ifstream f("/tmp/simple_point");

@@ -46,9 +46,9 @@ UNIT_TEST(BenchmarkTest_Checker)
   double fromLat, fromLon, toLat, toLon, dist;
   size_t landmarkIndex;
   bool enableLandmarks = false;
-  double from2Landmark, to2Landmark;
+  double from2Landmark;
   uint32_t featureId, segmentId;
-  while (input >> fromLat >> fromLon >> toLat >> toLon >> dist >> landmarkIndex >> from2Landmark >> to2Landmark >>
+  while (input >> fromLat >> fromLon >> toLat >> toLon >> dist >> landmarkIndex >> from2Landmark >>
          featureId >> segmentId)
   {
     m2::PointD start(MercatorBounds::FromLatLon(fromLat, fromLon));
@@ -68,14 +68,13 @@ UNIT_TEST(BenchmarkTest_Checker)
     auto fromLatLon = ms::LatLon({fromLat, fromLon});
     auto endLatLon = ms::LatLon({toLat, toLon});
 
-    if (!(RouteWeight(dist) < weight))
+    static auto constexpr kEps = RouteWeight(0.1);
+    if (RouteWeight(dist) > weight + kEps)
     {
       LOG(LINFO, ("Dist from(", fromLatLon, ") to(", endLatLon, ") landmark(",
         landmarkIndex, ") is more than another - dist:", dist, "true:", weight.GetWeight(),
-        "from2Landmark:", from2Landmark, ", to2Landmark:", to2Landmark,
-        "featureId:", featureId, "segmentId:", segmentId));
+        "from2Landmark:", from2Landmark, "featureId:", featureId, "segmentId:", segmentId));
     }
   }
-}
-*/
+}*/
 }  // namespace

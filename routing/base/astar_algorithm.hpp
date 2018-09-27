@@ -161,12 +161,26 @@ public:
   // comment for FindPath for more information.
   struct State
   {
-    State(Vertex const & vertex, Weight const & distance) : vertex(vertex), distance(distance) {}
+    State(Vertex const & vertex, Weight const & distance) :
+      vertex(vertex),
+      distance(distance),
+      previousDistance(distance),
+      potentialDistance(0) {}
 
     inline bool operator>(State const & rhs) const { return distance > rhs.distance; }
 
+    struct IsLess
+    {
+      inline bool operator() (State const & lhs, State const & rhs)
+      {
+        return lhs.previousDistance + lhs.potentialDistance > rhs.previousDistance + rhs.potentialDistance;
+      }
+    };
+
     Vertex vertex;
     Weight distance;
+    Weight previousDistance;
+    Weight potentialDistance;
     Weight distance2;
   };
 
@@ -442,42 +456,52 @@ void AStarAlgorithm<Graph>::PropagateWaveLandmarks(Graph & graph, Vertex const &
 {
   context.Clear();
 
-  std::priority_queue<State, std::vector<State>, std::greater<State>> queue;
+  std::priority_queue<State, std::vector<State>, typename State::IsLess> queue;
 
   context.SetDistance(startVertex, kZeroDistance);
   queue.push(State(startVertex, kZeroDistance));
 
   std::vector<Edge> adj;
 
+  bool superPuperDebug = true;
+
   while (!queue.empty())
   {
     State const stateV = queue.top();
     queue.pop();
 
-    if (stateV.distance > context.GetDistance(stateV.vertex))
+    if (stateV.previousDistance > context.GetDistance(stateV.vertex))
       continue;
 
     if (!visitVertex(stateV.vertex))
       return;
 
     graph.GetOutgoingEdgesList(stateV.vertex, adj);
+    if (superPuperDebug)
+      LOG(LINFO, ("Current vertex:", MercatorBounds::ToLatLon(graph.GetPoint(stateV.vertex, true))));
+
     for (auto const & edge : adj)
     {
       State stateW(edge.GetTarget(), kZeroDistance);
       if (stateV.vertex == stateW.vertex)
         continue;
 
-      auto const someValue = edge.GetWeight() + potentialFunction(stateW.vertex);
-      CHECK(someValue > -kEpsilon, ("AAAAAAAA FUUUCCKKK!!!"));
+      if (superPuperDebug)
+       LOG(LINFO, ("Go to:", MercatorBounds::ToLatLon(graph.GetPoint(stateW.vertex, true))));
 
-      auto const newReducedDist = stateV.distance + someValue;
+      auto const potential = potentialFunction(stateW.vertex);
+      auto const newPreviousDistance = stateV.previousDistance + edge.GetWeight();
 
-      if (newReducedDist >= context.GetDistance(stateW.vertex) - kEpsilon)
+      if (newPreviousDistance >= context.GetDistance(stateW.vertex) - kEpsilon)
         continue;
 
-      stateW.distance = newReducedDist;
+      if (superPuperDebug)
+        LOG(LINFO, ("Add last with weight =", newPreviousDistance.GetWeight(), "potential:", potential.GetWeight()));
 
-      context.SetDistance(stateW.vertex, newReducedDist);
+      stateW.previousDistance = newPreviousDistance;
+      stateW.potentialDistance = potential;
+
+      context.SetDistance(stateW.vertex, newPreviousDistance);
       context.SetParent(stateW.vertex, std::make_pair(stateV.vertex, edge.GetWeight()));
       queue.push(stateW);
     }
@@ -629,6 +653,13 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLandmarks(
   size_t landmarkLoose = 0;
   auto visitVertex = [&](Vertex const & vertex) {
     counter++;
+
+    {
+      std::ofstream output("/tmp/points_one_way_landmarks", std::ofstream::app);
+      auto p = MercatorBounds::ToLatLon(graph.GetPoint(vertex, true));
+      output << std::setprecision(20);
+      output << p.lat << "," << p.lon << ")" << std::endl;
+    }
 
     if (vertex == finalVertex)
     {

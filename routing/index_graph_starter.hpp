@@ -126,44 +126,36 @@ public:
     CHECK_EQUAL(minN, maxN, ("WHAT THE FUCK"));
     double maxi = 0;
     size_t maxIndex;
-    double from2Landmark, to2Landmark;
-    bool forwardLandmark = false;
+    double from2Landmark;
     for (size_t i = 0; i < maxN; ++i)
     {
-      if (IsGoodLandmark(fromLandmarks[i]) && IsGoodLandmark(toLandmarks[i]))
-      {
+      static auto constexpr kMax = std::numeric_limits<double>::max();
+      if (fromLandmarks[i].second != kMax && toLandmarks[i].second != kMax) {
+        auto const prikol = fromLandmarks[i].second /* backward */ - toLandmarks[i].second /* backward */;
+        if (maxi < prikol)
         {
-          auto const prikol = fromLandmarks[i].second /* backward */ - toLandmarks[i].second /* backward */;
-          if (maxi < prikol)
-          {
-            forwardLandmark = false;
-            maxi = prikol;
-            maxIndex = i;
-            from2Landmark = fromLandmarks[i].second;
-            to2Landmark = toLandmarks[i].second;
-          }
-        }
-        {
-          auto const prikol = toLandmarks[i].first /* forward */ - fromLandmarks[i].first /* forward */;
-          if (maxi < prikol)
-          {
-            forwardLandmark = true;
-            maxi = prikol;
-            maxIndex = i;
-            from2Landmark = fromLandmarks[i].first;
-            to2Landmark = toLandmarks[i].first;
-          }
+          maxi = prikol;
+          maxIndex = i;
+          from2Landmark = fromLandmarks[i].second;
         }
       }
+
+      if (fromLandmarks[i].first != kMax && toLandmarks[i].first != kMax) {
+        auto const prikol = toLandmarks[i].first /* forward */ - fromLandmarks[i].first /* forward */;
+        if (maxi < prikol)
+        {
+          maxi = prikol;
+          maxIndex = i;
+          from2Landmark = fromLandmarks[i].first;
+        }
+      }
+
     }
 
     auto fromLatLon = MercatorBounds::ToLatLon(GetPoint(from, true));
     auto p2 = MercatorBounds::ToLatLon(GetPoint(to, true));
     auto tmp = m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */), GetPoint(to, true /* front */));
     //LOG(LINFO, ("Approximate from(", from, "):", fromLatLon, "to(", lastSegment, "):", p2, "is:", maxi, "silly:", tmp.GetWeight()));
-
-    /*if (maxi < tmp.GetWeight())
-      return tmp;*/
 
     {
       auto end = MercatorBounds::ToLatLon(GetPoint(lastSegment, true));
@@ -175,11 +167,9 @@ public:
              << end.lon << " "
              << maxi << " "
              << maxIndex << " "
-             << forwardLandmark << " "
              << from2Landmark << " "
              << from.GetFeatureId() << " "
-             << from.GetSegmentIdx() << " "
-             << forward
+             << from.GetSegmentIdx()
              << std::endl;
     }
 
