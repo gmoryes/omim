@@ -257,6 +257,9 @@ vector<pair<double, double>> IndexGraphLoaderImpl::GetLandmarks(Segment const & 
     ReadPrimitiveFromSource(src, segmentId);
     ReadPrimitiveFromSource(src, landmarksNumber);
 
+    if (featureId == 301564)
+      LOG(LINFO, ("HAS FOUND:", featureId, segmentId));
+
     std::vector<std::pair<double, double>> d(landmarksNumber);
     for (size_t j = 0; j < landmarksNumber; ++j)
     {

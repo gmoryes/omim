@@ -513,7 +513,6 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                           {
                             LOG(LINFO, ("HAS FOUND(", state.vertex, "), number:", landmarkNumber));
                             startLog = true;
-                            LOG(LINFO, ("was:", it == landmarks.end()));
                           }
 
                           if (it == landmarks.end())
@@ -527,10 +526,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                             auto emptyVector = std::vector<std::pair<double, double>>(landmarksAmount, {kMax, kMax});
                             pair<uint32_t, uint32_t> newPair = {state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()};
 
-                            bool ok = false;
-                            std::tie(it, ok) = landmarks.insert(make_pair(newPair, emptyVector));
-                            if (startLog)
-                              LOG(LINFO, ("info about insert:", ok));
+                            std::tie(it, std::ignore) = landmarks.insert(make_pair(newPair, emptyVector));
                           }
 
                           auto oldValue = it->second[landmarkNumber].second;
