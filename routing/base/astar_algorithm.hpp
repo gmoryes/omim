@@ -192,10 +192,10 @@ public:
                      Context & context, bool forwardWave = true, bool generator = false) const;
 
   void PropagateWave(Graph & graph, Vertex const & startVertex, std::function<bool(State const &)> && filterStates,
-                     Context & context, bool forwardWave = true) const;
+                     Context & context, bool forwardWave = true, bool generator = false) const;
 
   void PropagateWave(Graph & graph, Vertex const & startVertex, std::function<bool(Vertex const &)> && visitVertex,
-                     Context & context, bool forwardWave = true) const;
+                     Context & context, bool forwardWave = true, bool generator = false) const;
 
   template <typename VisitVertex, typename PotentialFunction>
   void PropagateWaveLandmarks(Graph & graph, Vertex const & startVertex,
@@ -502,27 +502,27 @@ void AStarAlgorithm<Graph>::PropagateWaveLandmarks(Graph & graph, Vertex const &
 template <typename Graph>
 void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVertex,
                                           std::function<bool(Vertex const &)> && visitVertex,
-                                          AStarAlgorithm<Graph>::Context & context, bool forwardWave) const
+                                          AStarAlgorithm<Graph>::Context & context, bool forwardWave, bool generator) const
 {
   auto const adjustEdgeWeight = [](Vertex const & /* vertex */, Edge const & edge) {
     return edge.GetWeight();
   };
 
   auto const filterStates = [](State const & /* state */) { return true; };
-  PropagateWave(graph, startVertex, visitVertex, adjustEdgeWeight, filterStates, context, forwardWave);
+  PropagateWave(graph, startVertex, visitVertex, adjustEdgeWeight, filterStates, context, forwardWave, generator);
 }
 
 template <typename Graph>
 void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVertex,
                                           std::function<bool(State const &)> && filterStates,
-                                          AStarAlgorithm<Graph>::Context & context, bool forwardWave) const
+                                          AStarAlgorithm<Graph>::Context & context, bool forwardWave, bool generator) const
 {
   auto const adjustEdgeWeight = [](Vertex const & /* vertex */, Edge const & edge) {
     return edge.GetWeight();
   };
 
   auto const visitVertex = [](Vertex const & /* state */) { return true; };
-  PropagateWave(graph, startVertex, visitVertex, adjustEdgeWeight, filterStates, context, forwardWave);
+  PropagateWave(graph, startVertex, visitVertex, adjustEdgeWeight, filterStates, context, forwardWave, generator);
 }
 
 // This implementation is based on the view that the A* algorithm
