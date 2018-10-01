@@ -451,7 +451,7 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
 void CalcLandMarks(string const & path, string const & mwmFile, string const & country,
                    CountryParentNameGetterFn const & countryParentNameGetterFn,
                    CrossMwmConnector<base::GeoObjectId> & connector,
-                   map<pair<uint32_t, uint32_t>, vector<pair<double /* forward */, double /* backward */>>> & landmarks)
+                   map<tuple<uint32_t, uint32_t, bool>, vector<pair<double /* forward */, double /* backward */>>> & landmarks)
 {
   shared_ptr<VehicleModelInterface> vehicleModel =
     CarModelFactory(countryParentNameGetterFn).GetVehicleModelForCountry(country);
@@ -486,11 +486,11 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                         [&](AStarAlgorithm<DijkstraWrapper>::State const & state)
                         {
                           static auto constexpr kMax = std::numeric_limits<double>::max();
-                          auto it = landmarks.find({state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()});
+                          auto it = landmarks.find({state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx(), state.vertex.IsForward()});
                           if (it == landmarks.end())
                           {
                             auto emptyVector = std::vector<std::pair<double, double>>(landmarksAmount, {kMax, kMax});
-                            pair<uint32_t, uint32_t> newPair = {state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()};
+                            tuple<uint32_t, uint32_t, bool> newPair = {state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx(), state.vertex.IsForward()};
 
                             std::tie(it, std::ignore) = landmarks.insert(make_pair(newPair, emptyVector));
                           }
@@ -508,7 +508,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                         [&](AStarAlgorithm<DijkstraWrapper>::State const & state)
                         {
                           static auto constexpr kMax = std::numeric_limits<double>::max();
-                          auto it = landmarks.find({state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()});
+                          auto it = landmarks.find({state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx(), state.vertex.IsForward()});
                           if (state.vertex.GetFeatureId() == 301564 && state.vertex.GetSegmentIdx() == 4)
                           {
                             LOG(LINFO, ("HAS FOUND(", state.vertex, "), number:", landmarkNumber));
@@ -524,7 +524,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                                           "or:", MercatorBounds::ToLatLon(graph.GetPoint(state.vertex, false))));
                             }
                             auto emptyVector = std::vector<std::pair<double, double>>(landmarksAmount, {kMax, kMax});
-                            pair<uint32_t, uint32_t> newPair = {state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()};
+                            tuple<uint32_t, uint32_t, bool> newPair = {state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx(), state.vertex.IsForward()};
 
                             std::tie(it, std::ignore) = landmarks.insert(make_pair(newPair, emptyVector));
                           }
@@ -613,7 +613,7 @@ void SerializeCrossMwm(string const & mwmFile, string const & sectionName,
 }
 
 void SerializeLandMarks(string const & mwmFile, string const & sectionName,
-                        map<pair<uint32_t, uint32_t>, std::vector<std::pair<double, double>>> const & landmarks)
+                        map<tuple<uint32_t, uint32_t, bool>, std::vector<std::pair<double, double>>> const & landmarks)
 {
   FilesContainerW cont(mwmFile, FileWriter::OP_WRITE_EXISTING);
   auto writer = cont.GetWriter(sectionName);
@@ -624,10 +624,13 @@ void SerializeLandMarks(string const & mwmFile, string const & sectionName,
   int i = 0;
   for (auto const & item : landmarks)
   {
-    if (item.first.first == 301564 && item.first.second == 4)
-      LOG(LINFO, ("HAS FOUND IN SERIALYZE, i(", i, "), amount(", amount, ")"));
-    writer.Write(&item.first.first, sizeof(item.first.first));  // feature id
-    writer.Write(&item.first.second, sizeof(item.first.second));  // segment id
+    uint32_t featureId, segmentId;
+    bool forward;
+    std::tie(featureId, segmentId, forward) = item.first;
+
+    writer.Write(&featureId, sizeof(featureId));
+    writer.Write(&segmentId, sizeof(segmentId));
+    writer.Write(&forward, sizeof(forward));
 
     size_t size = item.second.size();
     writer.Write(&size, sizeof(size));  // number of landmarks
@@ -674,7 +677,7 @@ void BuildLandmarksSection(string const & path, string const & mwmFile,
   CalcCrossMwmConnectors(path, mwmFile, country, countryParentNameGetterFn, osmToFeatureFile,
                          transitions, connectors);
 
-  map<pair<uint32_t, uint32_t>, std::vector<std::pair<double, double>>> landmarks;
+  map<tuple<uint32_t, uint32_t, bool>, std::vector<std::pair<double, double>>> landmarks;
   CalcLandMarks(path, mwmFile, country, countryParentNameGetterFn,
                 connectors[static_cast<size_t>(VehicleType::Car)], landmarks);
 

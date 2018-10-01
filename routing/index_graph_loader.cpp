@@ -252,13 +252,12 @@ vector<pair<double, double>> IndexGraphLoaderImpl::GetLandmarks(Segment const & 
   {
     uint32_t featureId, segmentId;
     size_t landmarksNumber;
+    bool forward;
 
     ReadPrimitiveFromSource(src, featureId);
     ReadPrimitiveFromSource(src, segmentId);
+    ReadPrimitiveFromSource(src, forward);
     ReadPrimitiveFromSource(src, landmarksNumber);
-
-    if (featureId == 301564)
-      LOG(LINFO, ("HAS FOUND:", featureId, segmentId));
 
     std::vector<std::pair<double, double>> d(landmarksNumber);
     for (size_t j = 0; j < landmarksNumber; ++j)
@@ -267,7 +266,9 @@ vector<pair<double, double>> IndexGraphLoaderImpl::GetLandmarks(Segment const & 
       src.Read(&d[j].second, sizeof(double));
     }
 
-    Segment newSegment(segment.GetMwmId(), featureId, segmentId, true);
+    Segment newSegment(segment.GetMwmId(), featureId, segmentId, forward);
+    if (featureId == 301564)
+      LOG(LINFO, ("Add:", newSegment));
     m_landmarks.emplace(newSegment, std::move(d));
     callback(newSegment);
   }
