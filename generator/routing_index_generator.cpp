@@ -509,7 +509,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                         {
                           static auto constexpr kMax = std::numeric_limits<double>::max();
                           auto it = landmarks.find({state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()});
-                          if (state.vertex.GetFeatureId() == 30522 && state.vertex.GetSegmentIdx() == 2)
+                          if (state.vertex.GetFeatureId() == 301564 && state.vertex.GetSegmentIdx() == 4)
                           {
                             LOG(LINFO, ("HAS FOUND, number:", landmarkNumber));
                             startLog = true;
@@ -525,7 +525,10 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                             auto emptyVector = std::vector<std::pair<double, double>>(landmarksAmount, {kMax, kMax});
                             pair<uint32_t, uint32_t> newPair = {state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()};
 
-                            std::tie(it, std::ignore) = landmarks.insert(make_pair(newPair, emptyVector));
+                            bool ok = false;
+                            std::tie(it, ok) = landmarks.insert(make_pair(newPair, emptyVector));
+                            if (startLog)
+                              LOG(LINFO, ("info about insert:", ok));
                           }
 
                           auto oldValue = it->second[landmarkNumber].second;
@@ -534,15 +537,17 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                             LOG(LINFO, ("oldValue:", oldValue, "newValue:", state.distance.GetWeight()));
                             std::vector<Segment> path;
                             context.ReconstructPath(state.vertex, path, graph);
-                            LOG(LINFO, ("Path:"));
+                            /*LOG(LINFO, ("Path:"));
                             DijkstraWrapper::Weight summ(0);
                             for (auto & item : path)
                             {
                               LOG(LINFO, (MercatorBounds::ToLatLon(graph.GetPoint(item, true))));
-                            }
+                            }*/
                           }
                           if (oldValue == kMax)
                             it->second[landmarkNumber].second = state.distance.GetWeight();
+                          else if (startLog)
+                            LOG(LINFO, ("wtf"));
 
                           startLog = false;
                           return true;
