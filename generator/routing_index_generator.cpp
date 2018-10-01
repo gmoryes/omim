@@ -513,7 +513,9 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                           {
                             LOG(LINFO, ("HAS FOUND(", state.vertex, "), number:", landmarkNumber));
                             startLog = true;
+                            LOG(LINFO, ("was:", it == landmarks.end()));
                           }
+                          
                           if (it == landmarks.end())
                           {
                             if (startLog)
