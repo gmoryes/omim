@@ -625,6 +625,8 @@ void SerializeLandMarks(string const & mwmFile, string const & sectionName,
 
   for (auto const & item : landmarks)
   {
+    if (item.first.first == 301564 && item.first.second == 4)
+      LOG(LINFO, ("HAS FOUND IN SERIALYZE"));
     writer.Write(&item.first.first, sizeof(item.first.first));  // feature id
     writer.Write(&item.first.second, sizeof(item.first.second));  // segment id
 
