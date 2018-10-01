@@ -511,7 +511,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                           auto it = landmarks.find({state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()});
                           if (state.vertex.GetFeatureId() == 301564 && state.vertex.GetSegmentIdx() == 4)
                           {
-                            LOG(LINFO, ("HAS FOUND, number:", landmarkNumber));
+                            LOG(LINFO, ("HAS FOUND(", state.vertex, "), number:", landmarkNumber));
                             startLog = true;
                           }
                           if (it == landmarks.end())
@@ -535,9 +535,9 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                           if (startLog)
                           {
                             LOG(LINFO, ("oldValue:", oldValue, "newValue:", state.distance.GetWeight()));
-                            std::vector<Segment> path;
+                            /*std::vector<Segment> path;
                             context.ReconstructPath(state.vertex, path, graph);
-                            /*LOG(LINFO, ("Path:"));
+                            LOG(LINFO, ("Path:"));
                             DijkstraWrapper::Weight summ(0);
                             for (auto & item : path)
                             {
@@ -546,8 +546,6 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                           }
                           if (oldValue == kMax)
                             it->second[landmarkNumber].second = state.distance.GetWeight();
-                          else if (startLog)
-                            LOG(LINFO, ("wtf"));
 
                           startLog = false;
                           return true;
