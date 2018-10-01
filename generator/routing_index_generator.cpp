@@ -621,10 +621,11 @@ void SerializeLandMarks(string const & mwmFile, string const & sectionName,
   size_t amount = landmarks.size();
   writer.Write(&amount, sizeof(amount));
 
+  int i = 0;
   for (auto const & item : landmarks)
   {
     if (item.first.first == 301564 && item.first.second == 4)
-      LOG(LINFO, ("HAS FOUND IN SERIALYZE"));
+      LOG(LINFO, ("HAS FOUND IN SERIALYZE, i(", i, "), amount(", amount, ")"));
     writer.Write(&item.first.first, sizeof(item.first.first));  // feature id
     writer.Write(&item.first.second, sizeof(item.first.second));  // segment id
 
