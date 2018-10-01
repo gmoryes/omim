@@ -391,7 +391,7 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
     if (stateV.distance > context.GetDistance(stateV.vertex))
       continue;
 
-    if (stateV.vertex.GetFeatureId() == 301564 && stateV.vertex.GetSegmentId() == 4)
+    if (stateV.vertex.GetFeatureId() == 301564 && stateV.vertex.GetSegmentIdx() == 4)
     {
       LOG(LINFO, ("has found in astar"));
       first = true;
