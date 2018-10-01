@@ -248,8 +248,11 @@ vector<pair<double, double>> IndexGraphLoaderImpl::GetLandmarks(Segment const & 
 
   size_t amount;
   ReadPrimitiveFromSource(src, amount);
+  std::cout.setf(std::ios::unitbuf);
   for (size_t i = 0; i < amount; ++i)
   {
+    if (i % 1000 == 0)
+      std::cout << "Load: " << i << " / " << amount << '\r';
     uint32_t featureId, segmentId;
     size_t landmarksNumber;
     bool forward;
@@ -272,6 +275,7 @@ vector<pair<double, double>> IndexGraphLoaderImpl::GetLandmarks(Segment const & 
     m_landmarks.emplace(newSegment, std::move(d));
     callback(newSegment);
   }
+  std::cout << "\n";
 
   m_mwmUsedLandmark.insert(segment.GetMwmId());
 

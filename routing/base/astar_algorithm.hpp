@@ -189,7 +189,7 @@ public:
   template <typename VisitVertex, typename AdjustEdgeWeight, typename FilterStates>
   void PropagateWave(Graph & graph, Vertex const & startVertex, VisitVertex && visitVertex,
                      AdjustEdgeWeight && adjustEdgeWeight, FilterStates && filterStates,
-                     Context & context, bool forwardWave = true) const;
+                     Context & context, bool forwardWave = true, bool generator = false) const;
 
   void PropagateWave(Graph & graph, Vertex const & startVertex, std::function<bool(State const &)> && filterStates,
                      Context & context, bool forwardWave = true) const;
@@ -362,7 +362,7 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
                                           VisitVertex && visitVertex,
                                           AdjustEdgeWeight && adjustEdgeWeight,
                                           FilterStates && filterStates,
-                                          AStarAlgorithm<Graph>::Context & context, bool forwardWave) const
+                                          AStarAlgorithm<Graph>::Context & context, bool forwardWave, bool generator) const
 {
   context.Clear();
 
@@ -372,6 +372,7 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
   context.SetDistance(startVertex, kZeroDistance);
   queue.push(State(startVertex, kZeroDistance));
   // NEED FOR GENERATOR FOR LANDMARKS (!!!!!)
+  if (generator)
   {
     auto tmp = startVertex;
     tmp.MakeInversed();
@@ -390,12 +391,6 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
 
     if (stateV.distance > context.GetDistance(stateV.vertex))
       continue;
-
-    if (stateV.vertex.GetFeatureId() == 301564 && stateV.vertex.GetSegmentIdx() == 4)
-    {
-      LOG(LINFO, ("has found in astar"));
-      first = true;
-    }
 
     if (!visitVertex(stateV.vertex))
       return;
@@ -459,7 +454,7 @@ void AStarAlgorithm<Graph>::PropagateWaveLandmarks(Graph & graph, Vertex const &
 
   std::vector<Edge> adj;
 
-  bool superPuperDebug = false;
+  bool superPuperDebug = true;
 
   while (!queue.empty())
   {

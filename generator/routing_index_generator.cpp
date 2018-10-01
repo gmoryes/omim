@@ -464,7 +464,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
 
   map<Segment, map<Segment, RouteWeight>> weights;
 
-  static double constexpr kLandMarksNumberPercent = 1 / 100.0;
+  static double constexpr kLandMarksNumberPercent = 5 / 100.0;
   auto const numExits = connector.GetExits().size();
   auto const step = static_cast<size_t>(1.0 / kLandMarksNumberPercent);
 
@@ -501,7 +501,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
 
                           return true;
                         },
-                        context, true);
+                        context, true /* forwardWave */, true /* generator */);
 
     bool startLog = false;
     astar.PropagateWave(wrapper, exit,
@@ -548,7 +548,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                           startLog = false;
                           return true;
                         },
-                        context, false /* forwardWave */);
+                        context, false /* forwardWave */, true /* generator */);
 
     ++landmarkNumber;
   }
