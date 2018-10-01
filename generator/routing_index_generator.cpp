@@ -507,7 +507,6 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
     astar.PropagateWave(wrapper, exit,
                         [&](AStarAlgorithm<DijkstraWrapper>::State const & state)
                         {
-                          LOG(LINFO, ("state:", state.vertex));
                           static auto constexpr kMax = std::numeric_limits<double>::max();
                           auto it = landmarks.find({state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()});
                           if (state.vertex.GetFeatureId() == 301564 && state.vertex.GetSegmentIdx() == 4)
