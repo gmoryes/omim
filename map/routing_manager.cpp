@@ -247,7 +247,7 @@ static size_t counter = 0;
                               //editSession.CreateUserMark<DebugMarkPoint>(pt);
                               {
                                 //std::ifstream f("/tmp/landmarks_point");
-                                std::ifstream f("/tmp/points_super_landmark_set");
+                                std::ifstream f("/tmp/landmarks_features_matched");
 
                                 char comma, bracket;
                                 double lat, lon;

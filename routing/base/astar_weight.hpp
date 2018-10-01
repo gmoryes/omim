@@ -20,7 +20,7 @@ constexpr Weight GetAStarWeightEpsilon();
 template <>
 constexpr double GetAStarWeightEpsilon<double>()
 {
-  return 1;
+  return 1e5;
 }
 
 template <typename Weight>

@@ -137,8 +137,8 @@ void SingleVehicleWorldGraph::GetTwinsInner(Segment const & segment, bool isOutg
   m_crossMwmGraph->GetTwins(segment, isOutgoing, twins);
 }
 
-vector<pair<double, double>> SingleVehicleWorldGraph::GetLandmarks(Segment const & segment)
+vector<pair<double, double>> SingleVehicleWorldGraph::GetLandmarks(Segment const & segment, std::function<void(Segment const &)> callback)
 {
-  return m_loader->GetLandmarks(segment);
+  return m_loader->GetLandmarks(segment, callback);
 }
 }  // namespace routing

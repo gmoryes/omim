@@ -107,9 +107,18 @@ public:
 
   RouteWeight HeuristicCostEstimateLandmarks(Vertex const & from, Vertex const & to, bool forward) const
   {
-    std::vector<std::pair<double, double>> fromLandmarks = m_graph.GetLandmarks(from);
+    auto const logg = [&](Vertex const & v)
+    {
+      {
+        std::ofstream output("/tmp/landmarks_features_matched", std::ofstream::app);
+        output << std::setprecision(20);
+        auto p = MercatorBounds::ToLatLon(GetPoint(v, true));
+        output << p.lat << ", " << p.lon << ")" << std::endl;
+      }
+    };
+    std::vector<std::pair<double, double>> fromLandmarks = m_graph.GetLandmarks(from, logg);
     auto lastSegment = forward ? m_lastSegmentDebug : m_firstSegmentDebug;
-    std::vector<std::pair<double, double>> toLandmarks = m_graph.GetLandmarks(lastSegment);
+    std::vector<std::pair<double, double>> toLandmarks = m_graph.GetLandmarks(lastSegment, logg);
 
     size_t minN = std::min(fromLandmarks.size(), toLandmarks.size());
     size_t maxN = std::max(fromLandmarks.size(), toLandmarks.size());
@@ -127,6 +136,8 @@ public:
     double maxi = 0;
     size_t maxIndex;
     double from2Landmark;
+    double to2Landmark;
+
     for (size_t i = 0; i < maxN; ++i)
     {
       static auto constexpr kMax = std::numeric_limits<double>::max();

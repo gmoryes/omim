@@ -371,6 +371,7 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
   auto startVertex = startVertex_;
   context.SetDistance(startVertex, kZeroDistance);
   queue.push(State(startVertex, kZeroDistance));
+  // NEED FOR GENERATOR FOR LANDMARKS (!!!!!)
   {
     auto tmp = startVertex;
     tmp.MakeInversed();
@@ -398,22 +399,16 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
     else
       graph.GetIngoingEdgesList(stateV.vertex, adj);
 
-    /*if (first)
-    {
-      std::vector<Edge> adjPlus;
-      if (forwardWave)
-        graph.GetIngoingEdgesList(stateV.vertex, adjPlus);
-      else
-        graph.GetOutgoingEdgesList(stateV.vertex, adjPlus);
+    if (stateV.vertex.GetFeatureId() == 301564)
+      first = true;
 
-      adj.insert(adj.end(), adjPlus.begin(), adjPlus.end());
-    }*/
+    if (stateV.vertex.GetFeatureId() == 301563)
+      first = true;
 
     if (first)
     {
       LOG(LINFO, ("============[mini_debug]============"));
-      LOG(LINFO, ("start from(", startVertex, "): ",
-                  "list of edges:"));
+      LOG(LINFO, ("edges from(", stateV.vertex, "): ", "list of edges:"));
 
       for (auto const & edge : adj)
       {
@@ -463,7 +458,7 @@ void AStarAlgorithm<Graph>::PropagateWaveLandmarks(Graph & graph, Vertex const &
 
   std::vector<Edge> adj;
 
-  bool superPuperDebug = true;
+  bool superPuperDebug = false;
 
   while (!queue.empty())
   {
@@ -873,20 +868,9 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
         pW = cur->ConsistentHeuristic(stateW.vertex);
       }
 
-      Weight reducedWeight;
-      if (enableLandmarks)
-      {
-        auto v2w = GetEdgeLength(stateV.vertex, stateW.vertex, params);
-        auto w2v = GetEdgeLength(stateW.vertex, stateV.vertex, params);
-        reducedWeight = v2w + w2v + 2.0 * (pW - pV);
-      }
-      else
-      {
-        reducedWeight = weight + pW - pV;
-      }
-      //LOG(LINFO, (reducedWeight));
+      Weight reducedWeight = weight + pW - pV;
 
-      CHECK(reducedWeight > -kEpsilon, ("FUCK FUCK FUCK, LANDMARKS WILL DIE"));
+      CHECK_GREATER_OR_EQUAL(reducedWeight, -kEpsilon, ("Invariant violated"));
 
       /*if (reducedWeight < -kEpsilon)
       {

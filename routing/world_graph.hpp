@@ -60,7 +60,8 @@ public:
   virtual void GetOutgoingEdgesList(Segment const & segment, std::vector<SegmentEdge> & edges) = 0;
   virtual void GetIngoingEdgesList(Segment const & segment, std::vector<SegmentEdge> & edges) = 0;
 
-  virtual std::vector<std::pair<double, double>> GetLandmarks(Segment const & segment) = 0;
+  virtual std::vector<std::pair<double, double>> GetLandmarks(Segment const & segment,
+                                                              std::function<void(Segment const &)> callback) = 0;
   virtual RouteWeight HeuristicCostEstimate(Segment const & from, Segment const & to) = 0;
   virtual RouteWeight HeuristicCostEstimate(m2::PointD const & from, m2::PointD const & to) = 0;
   virtual RouteWeight HeuristicCostEstimateLandmarks(Segment const & from, Segment const & to, bool) = 0;

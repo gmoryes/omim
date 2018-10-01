@@ -179,13 +179,13 @@ void DrawWidget::mousePressEvent(QMouseEvent * e)
     if (IsShiftModifier(e))
     {
       //SubmitRoutingPoint(pt);
-      SubmitRoutingPoint(MercatorBounds::FromLatLon({55.721194, 37.622323}));
+      SubmitRoutingPoint(MercatorBounds::FromLatLon({55.8075016, 37.4656657}));
       //SubmitRoutingPoint(MercatorBounds::FromLatLon({55.9480072, 37.4448131}));
     }
     else if (IsAltModifier(e))
     {
       //SubmitFakeLocationPoint(pt);
-      SubmitFakeLocationPoint(MercatorBounds::FromLatLon({55.797529, 37.538253}));
+      SubmitFakeLocationPoint(MercatorBounds::FromLatLon({55.6641332, 37.7544071}));
       //SubmitFakeLocationPoint(MercatorBounds::FromLatLon({55.9393641, 37.4446402}));
     }
     else

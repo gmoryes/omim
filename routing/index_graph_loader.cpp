@@ -35,7 +35,7 @@ public:
   Geometry & GetGeometry(NumMwmId numMwmId) override;
   IndexGraph & GetIndexGraph(NumMwmId numMwmId) override;
   vector<RouteSegment::SpeedCamera> GetSpeedCameraInfo(Segment const & segment) override;
-  vector<pair<double, double>> GetLandmarks(Segment const & segment) override;
+  vector<pair<double, double>> GetLandmarks(Segment const & segment, std::function<void(Segment const &)> callback) override;
   void Clear() override;
 
 private:
@@ -213,7 +213,7 @@ IndexGraphLoaderImpl::GraphAttrs & IndexGraphLoaderImpl::CreateIndexGraph(
 
 void IndexGraphLoaderImpl::Clear() { m_graphs.clear(); }
 
-vector<pair<double, double>> IndexGraphLoaderImpl::GetLandmarks(Segment const & segment)
+vector<pair<double, double>> IndexGraphLoaderImpl::GetLandmarks(Segment const & segment, std::function<void(Segment const &)> callback)
 {
   bool hasCached = m_mwmUsedLandmark.find(segment.GetMwmId()) != m_mwmUsedLandmark.end();
   if (segment.GetMwmId() == kFakeNumMwmId)
@@ -266,11 +266,12 @@ vector<pair<double, double>> IndexGraphLoaderImpl::GetLandmarks(Segment const & 
 
     Segment newSegment(segment.GetMwmId(), featureId, segmentId, true);
     m_landmarks.emplace(newSegment, std::move(d));
+    callback(newSegment);
   }
 
   m_mwmUsedLandmark.insert(segment.GetMwmId());
 
-  return GetLandmarks(segment);
+  return GetLandmarks(segment, nullptr);
 }
 
 bool ReadRoadAccessFromMwm(MwmValue const & mwmValue, VehicleType vehicleType,
