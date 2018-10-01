@@ -509,6 +509,9 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
                                           std::function<bool(Vertex const &)> && visitVertex,
                                           AStarAlgorithm<Graph>::Context & context, bool forwardWave) const
 {
+  LOG(LINFO, ("[===========================]"));
+  LOG(LINFO, ("TRUE"));
+  LOG(LINFO, ("[===========================]"));
   auto const adjustEdgeWeight = [](Vertex const & /* vertex */, Edge const & edge) {
     return edge.GetWeight();
   };
@@ -522,6 +525,9 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
                                           std::function<bool(State const &)> && filterStates,
                                           AStarAlgorithm<Graph>::Context & context, bool forwardWave) const
 {
+  LOG(LINFO, ("[===========================]"));
+  LOG(LINFO, ("FALSE"));
+  LOG(LINFO, ("[===========================]"));
   auto const adjustEdgeWeight = [](Vertex const & /* vertex */, Edge const & edge) {
     return edge.GetWeight();
   };
