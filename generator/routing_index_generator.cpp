@@ -451,7 +451,7 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
 void CalcLandMarks(string const & path, string const & mwmFile, string const & country,
                    CountryParentNameGetterFn const & countryParentNameGetterFn,
                    CrossMwmConnector<base::GeoObjectId> & connector,
-                   map<pair<uint32_t, uint32_t>, std::vector<std::pair<double /* forward */, double /* backward */>>> & landmarks)
+                   map<pair<uint32_t, uint32_t>, vector<pair<double /* forward */, double /* backward */>>> & landmarks)
 {
   shared_ptr<VehicleModelInterface> vehicleModel =
     CarModelFactory(countryParentNameGetterFn).GetVehicleModelForCountry(country);
@@ -511,11 +511,12 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
                           auto it = landmarks.find({state.vertex.GetFeatureId(), state.vertex.GetSegmentIdx()});
                           if (state.vertex.GetFeatureId() == 301564 && state.vertex.GetSegmentIdx() == 4)
                           {
+                            CHECK(false, ());
                             LOG(LINFO, ("HAS FOUND(", state.vertex, "), number:", landmarkNumber));
                             startLog = true;
                             LOG(LINFO, ("was:", it == landmarks.end()));
                           }
-                          
+
                           if (it == landmarks.end())
                           {
                             if (startLog)
