@@ -251,7 +251,7 @@ vector<pair<double, double>> IndexGraphLoaderImpl::GetLandmarks(Segment const & 
   std::cout.setf(std::ios::unitbuf);
   for (size_t i = 0; i < amount; ++i)
   {
-    if (i % 1000 == 0)
+    if (i % 10000 == 0)
       std::cout << "Load: " << i << " / " << amount << '\r';
     uint32_t featureId, segmentId;
     size_t landmarksNumber;

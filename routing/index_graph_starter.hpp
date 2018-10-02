@@ -136,7 +136,7 @@ public:
     double maxi = 0;
     size_t maxIndex;
     double from2Landmark;
-    double to2Landmark;
+    //double to2Landmark;
 
     for (size_t i = 0; i < maxN; ++i)
     {
@@ -164,8 +164,8 @@ public:
     }
 
     auto fromLatLon = MercatorBounds::ToLatLon(GetPoint(from, true));
-    auto p2 = MercatorBounds::ToLatLon(GetPoint(to, true));
-    auto tmp = m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */), GetPoint(to, true /* front */));
+    //auto p2 = MercatorBounds::ToLatLon(GetPoint(to, true));
+    //auto tmp = m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */), GetPoint(to, true /* front */));
     //LOG(LINFO, ("Approximate from(", from, "):", fromLatLon, "to(", lastSegment, "):", p2, "is:", maxi, "silly:", tmp.GetWeight()));
 
     {

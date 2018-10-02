@@ -402,7 +402,14 @@ void DrawWidget::SubmitBookmark(m2::PointD const & pt)
   kml::BookmarkData data;
   data.m_color.m_predefinedColor = kml::PredefinedColor::Red;
   data.m_point = m_framework.P3dtoG(pt);
-  m_framework.GetBookmarkManager().GetEditSession().CreateBookmark(std::move(data), m_bookmarksCategoryId);
+
+  {
+    auto editSession = m_framework.GetBookmarkManager().GetEditSession();
+    editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+    auto debugMark = editSession.CreateUserMark<ColoredDebugMarkPoint>(data.m_point);
+    debugMark->SetColor(dp::Color(100, 200, 150, 255));
+  }
+  //m_framework.GetBookmarkManager().GetEditSession().CreateBookmark(std::move(data), m_bookmarksCategoryId);
 }
 
 void DrawWidget::FollowRoute()

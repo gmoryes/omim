@@ -126,4 +126,20 @@ public:
   drape_ptr<SymbolNameZoomInfo> GetSymbolNames() const override;
 };
 
+class ColoredDebugMarkPoint : public UserMark
+{
+public:
+  ColoredDebugMarkPoint(m2::PointD const & ptOrg);
+
+  void SetColor(dp::Color const & color);
+  bool HasSymbolPriority() const override { return true; }
+  drape_ptr<SymbolNameZoomInfo> GetSymbolNames() const override { return nullptr; }
+  drape_ptr<ColoredSymbolZoomInfo> GetColoredSymbols() const override;
+  drape_ptr<SymbolSizes> GetSymbolSizes() const override;
+
+private:
+  ColoredSymbolZoomInfo m_coloredSymbols;
+  SymbolSizes m_symbolSizes;
+};
+
 string DebugPrint(UserMark::Type type);

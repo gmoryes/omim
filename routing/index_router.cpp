@@ -452,6 +452,7 @@ RouterResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoints,
     LOG(LINFO, ("=============[START_END_SEGMENTS]============="));
 
     vector<Segment> subroute;
+    //auto const result = CalculateSubroute(checkpoints, i, delegate, subrouteStarter, subroute, enableLandmarks, route);
     auto const result = CalculateSubroute(checkpoints, i, delegate, subrouteStarter, subroute, enableLandmarks, route);
 
     if (result != RouterResultCode::NoError)

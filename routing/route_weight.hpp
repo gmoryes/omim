@@ -44,8 +44,8 @@ public:
     // through restrictions e.g. allow to cross access={private, destination} and build the route
     // with the least possible number of such crosses or introduce some maximal number of
     // access={private, destination} crosses.
-    if (m_numAccessChanges != rhs.m_numAccessChanges)
-      return m_numAccessChanges < rhs.m_numAccessChanges;
+    /*if (m_numAccessChanges != rhs.m_numAccessChanges)
+      return m_numAccessChanges < rhs.m_numAccessChanges;*/
     if (m_weight != rhs.m_weight)
       return m_weight < rhs.m_weight;
     // Prefer bigger transit time if total weights are same.

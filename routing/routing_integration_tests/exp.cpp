@@ -81,12 +81,14 @@ UNIT_TEST(BenchmarkTest_Landmarks_4_No)
   TestRoute(from, end, false);
 }
 */
+/*
 UNIT_TEST(BenchmarkTest_Landmarks_5_Yes)
 {
   auto from = MercatorBounds::FromLatLon(55.6641332, 37.7544071);
   auto end = MercatorBounds::FromLatLon(55.8075016, 37.4656657);
   TestRoute(from, end, true);
 }
+*/
 
 UNIT_TEST(BenchmarkTest_Landmarks_5_No)
 {
@@ -95,6 +97,21 @@ UNIT_TEST(BenchmarkTest_Landmarks_5_No)
   TestRoute(from, end, false);
 }
 
+/*
+UNIT_TEST(BenchmarkTest_Landmarks_6_Yes)
+{
+  auto from = MercatorBounds::FromLatLon(55.6645119, 37.7536088);
+  auto end = MercatorBounds::FromLatLon(55.8075016, 37.4656657);
+  TestRoute(from, end, true);
+}
+
+UNIT_TEST(BenchmarkTest_Landmarks_6_No)
+{
+  auto from = MercatorBounds::FromLatLon(55.6645119, 37.7536088);
+  auto end = MercatorBounds::FromLatLon(55.8075016, 37.4656657);
+  TestRoute(from, end, false);
+}
+*/
 /*
 UNIT_TEST(BenchmarkTest_Checker)
 {

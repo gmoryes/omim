@@ -1,6 +1,8 @@
 #include "map/user_mark.hpp"
 #include "map/user_mark_id_storage.hpp"
 
+#include "indexer/scales.hpp"
+
 #include "geometry/mercator.hpp"
 
 UserMark::UserMark(kml::MarkId id, m2::PointD const & ptOrg, UserMark::Type type)
@@ -69,6 +71,35 @@ drape_ptr<df::UserPointMark::SymbolNameZoomInfo> DebugMarkPoint::GetSymbolNames(
   auto symbol = make_unique_dp<SymbolNameZoomInfo>();
   symbol->insert(std::make_pair(1 /* zoomLevel */, "non-found-search-result"));
   return symbol;
+}
+
+ColoredDebugMarkPoint::ColoredDebugMarkPoint(m2::PointD const & ptOrg)
+  : UserMark(ptOrg, UserMark::Type::DEBUG_MARK)
+{
+  df::ColoredSymbolViewParams params;
+  params.m_outlineColor = dp::Color::White();
+  params.m_outlineWidth = 2.0f;
+  params.m_radiusInPixels = 15.0f;
+  params.m_color = dp::Color::Green();
+  m_coloredSymbols.insert(make_pair(1, params));
+  for (int i = 0; i <= scales::UPPER_STYLE_SCALE; ++i)
+    m_symbolSizes.push_back(m2::PointF(0.0, 0.0));
+}
+
+void ColoredDebugMarkPoint::SetColor(dp::Color const & color)
+{
+  SetDirty();
+  m_coloredSymbols.begin()->second.m_color = color;
+}
+
+drape_ptr<df::UserPointMark::ColoredSymbolZoomInfo> ColoredDebugMarkPoint::GetColoredSymbols() const
+{
+  return make_unique_dp<ColoredSymbolZoomInfo>(m_coloredSymbols);
+}
+
+drape_ptr<df::UserPointMark::SymbolSizes> ColoredDebugMarkPoint::GetSymbolSizes() const
+{
+  return make_unique_dp<SymbolSizes>(m_symbolSizes);
 }
 
 string DebugPrint(UserMark::Type type)

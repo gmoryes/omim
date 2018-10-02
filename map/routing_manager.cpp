@@ -239,26 +239,36 @@ static size_t counter = 0;
                           if (m_bmManager == nullptr)
                             return;
                           auto editSession = m_bmManager->GetEditSession();
+                          /*if (counter % 10 == 0)
+                          {
+                            editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+                            editSession.CreateUserMark<DebugMarkPoint>(pt);
+                          }*/
                           if (counter == 0)
                           {
                             if (true /* draw */)
                             {
-                              //editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
-                              //editSession.CreateUserMark<DebugMarkPoint>(pt);
                               {
                                 //std::ifstream f("/tmp/landmarks_point");
-                                std::ifstream f("/tmp/landmarks_features_matched");
+                                std::ifstream f("/tmp/landmarks_points_1");
 
                                 char comma, bracket;
                                 double lat, lon;
                                 m2::PointD prev = m2::PointD::Zero();
                                 double dist = 0.0;
 
-                                while (f >> lat >> comma >> lon >> bracket)
+                                double maxWeight;
+                                f >> maxWeight;
+                                double weight;
+
+                                while (f >> lat >> comma >> lon >> weight)
                                 {
                                   auto p = MercatorBounds::FromLatLon({lat, lon});
                                   editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
-                                  editSession.CreateUserMark<DebugMarkPoint>(p);
+                                  ColoredDebugMarkPoint * point =
+                                    editSession.CreateUserMark<ColoredDebugMarkPoint>(p);
+                                  point->SetColor({static_cast<uint8_t>(255 * (1 - weight / maxWeight)),
+                                                   0, 0, 255});
                                   if (prev != m2::PointD::Zero())
                                   {
                                     dist += MercatorBounds::DistanceOnEarth(prev, p);
@@ -275,7 +285,7 @@ static size_t counter = 0;
                             {
                               {
                                 //std::ifstream f("/tmp/simple_point");
-                                std::ifstream f("/tmp/points_no");
+                                std::ifstream f("/tmp/landmarks_features_matched");
 
                                 char comma, bracket;
                                 double lat, lon;

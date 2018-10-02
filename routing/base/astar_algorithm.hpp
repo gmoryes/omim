@@ -197,8 +197,8 @@ public:
   void PropagateWave(Graph & graph, Vertex const & startVertex, std::function<bool(Vertex const &)> && visitVertex,
                      Context & context, bool forwardWave = true, bool generator = false) const;
 
-  template <typename VisitVertex, typename PotentialFunction>
-  void PropagateWaveLandmarks(Graph & graph, Vertex const & startVertex,
+  template <typename VisitVertex, typename PotentialFunction, typename P>
+  void PropagateWaveLandmarks(Graph & graph, P & params, Vertex const & startVertex,
                               VisitVertex && visitVertex,
                               PotentialFunction && potentialFunction,
                               Context & context) const;
@@ -439,8 +439,8 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
 }
 
 template <typename Graph>
-template <typename VisitVertex, typename PotentialFunction>
-void AStarAlgorithm<Graph>::PropagateWaveLandmarks(Graph & graph, Vertex const & startVertex,
+template <typename VisitVertex, typename PotentialFunction, typename P>
+void AStarAlgorithm<Graph>::PropagateWaveLandmarks(Graph & graph, P & params, Vertex const & startVertex,
                                                    VisitVertex && visitVertex,
                                                    PotentialFunction && potentialFunction,
                                                    Context & context) const
@@ -454,15 +454,21 @@ void AStarAlgorithm<Graph>::PropagateWaveLandmarks(Graph & graph, Vertex const &
 
   std::vector<Edge> adj;
 
-  bool superPuperDebug = true;
+  bool superPuperDebug = false;
 
   while (!queue.empty())
   {
     State const stateV = queue.top();
     queue.pop();
 
+    /*LOG(LINFO, ("segment(", stateV.vertex, ") prevDist:", stateV.previousDistance,
+                "potentialDist:", stateV.potentialDistance,
+                MercatorBounds::ToLatLon(graph.GetPoint(stateV.vertex, true))));*/
+
     if (stateV.previousDistance > context.GetDistance(stateV.vertex))
       continue;
+
+    params.m_onVisitedVertexCallback(stateV.vertex, stateV.vertex);
 
     if (!visitVertex(stateV.vertex))
       return;
@@ -642,30 +648,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLandmarks(
   size_t all = 0;
   size_t landmarkWin = 0;
   size_t landmarkLoose = 0;
-  auto visitVertex = [&](Vertex const & vertex) {
-    counter++;
-
-    {
-      std::ofstream output("/tmp/points_one_way_landmarks", std::ofstream::app);
-      auto p = MercatorBounds::ToLatLon(graph.GetPoint(vertex, true));
-      output << std::setprecision(20);
-      output << p.lat << "," << p.lon << ")" << std::endl;
-    }
-
-    if (vertex == finalVertex)
-    {
-      {
-        result.m_distance = context.GetDistance(vertex);
-        std::ofstream output("/tmp/counter", std::ofstream::app);
-        output << "landmarks: " << counter << " win(" << landmarkWin << " / " << all << "), "
-               << "loose(" << landmarkLoose << " / " << all << ")" << std::endl;
-      }
-      resultCode = Result::OK;
-      return false;
-    }
-
-    return true;
-  };
+  double maxWeight = 0.0;
 
   auto const potentialFunction = [&](Vertex const & vertex) {
     auto toReturn = graph.HeuristicCostEstimateLandmarks(vertex, finalVertex, true /* forward */);
@@ -685,16 +668,60 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLandmarks(
     return toReturn;
   };
 
-  PropagateWaveLandmarks(graph, startVertex, visitVertex, potentialFunction, context);
+  auto visitVertex = [&](Vertex const & vertex) {
+    counter++;
+
+    if (counter == 1)
+    {
+      std::ofstream output("/tmp/landmarks_points_tmp");
+    }
+
+    {
+      std::ofstream output("/tmp/landmarks_points_tmp", std::ofstream::app);
+      output << std::setprecision(20);
+
+      auto const p = MercatorBounds::ToLatLon(graph.GetPoint(vertex, true));
+      auto const weight = potentialFunction(vertex).GetWeight();
+
+      if (maxWeight < weight)
+        maxWeight = weight;
+
+      output << p.lat << " " << p.lon << " " << weight << std::endl;
+    }
+
+    if (vertex == finalVertex)
+    {
+      {
+        std::ifstream input("/tmp/landmarks_points_tmp");
+        std::ofstream output("/tmp/landmarks_points_1");
+        output << std::setprecision(20);
+        double lat, lon, weight;
+
+        output << maxWeight << std::endl;
+        while (input >> lat >> lon >> weight)
+        {
+          output << lat << ", " << lon << " " << weight << std::endl;
+        }
+      }
+
+      result.m_distance = context.GetDistance(vertex);
+      std::ofstream output("/tmp/counter", std::ofstream::app);
+      output << "landmarks: " << counter << " win(" << landmarkWin << " / " << all << "), "
+             << "loose(" << landmarkLoose << " / " << all << ")" << std::endl;
+
+      resultCode = Result::OK;
+      return false;
+    }
+
+    return true;
+  };
+
+  PropagateWaveLandmarks(graph, params, startVertex, visitVertex, potentialFunction, context);
 
   if (resultCode == Result::OK)
   {
+    LOG(LINFO, ("Done"));
     context.ReconstructPath(finalVertex, result.m_path, graph);
-    LOG(LINFO, ("===================[DEBUG]==================="));
-    LOG(LINFO, ("Path:"));
-    for (auto & item : result.m_path)
-      LOG(LINFO, (MercatorBounds::ToLatLon(graph.GetPoint(item, true))));
-    LOG(LINFO, ("===================[DEBUG]==================="));
   }
 
   return resultCode;
@@ -828,22 +855,12 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
     params.m_onVisitedVertexCallback(stateV.vertex,
                                      cur->forward ? cur->finalVertex : cur->startVertex);
 
-    if (stateV.vertex.GetFeatureId() == 30523 && stateV.vertex.GetSegmentIdx() == 0)
-    {
-      int sad = 5;
-    }
-
     cur->GetAdjacencyList(stateV.vertex, adj);
     for (auto const & edge : adj)
     {
       State stateW(edge.GetTarget(), kZeroDistance);
       if (stateV.vertex == stateW.vertex)
         continue;
-
-      if (stateW.vertex.GetFeatureId() == 30522 && stateW.vertex.GetSegmentIdx() == 2)
-      {
-        int sad = 5;
-      }
 
       auto const weight = edge.GetWeight();
       Weight pV;

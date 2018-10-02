@@ -1480,6 +1480,7 @@ void FrontendRenderer::RenderEmptyFrame()
 void FrontendRenderer::BuildOverlayTree(ScreenBase const & modelView)
 {
   static std::vector<DepthLayer> layers = {DepthLayer::OverlayLayer,
+                                           DepthLayer::UserMarkLayer,
                                            DepthLayer::LocalAdsMarkLayer,
                                            DepthLayer::NavigationLayer,
                                            DepthLayer::TransitMarkLayer,
