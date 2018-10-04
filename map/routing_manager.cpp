@@ -239,53 +239,53 @@ static size_t counter = 0;
                           if (m_bmManager == nullptr)
                             return;
                           auto editSession = m_bmManager->GetEditSession();
-                          /*if (counter % 10 == 0)
+                          if (counter % 1 == 0)
                           {
                             editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
                             editSession.CreateUserMark<DebugMarkPoint>(pt);
-                          }*/
+                          }
                           if (counter == 0)
                           {
-                            if (true /* draw */)
+                            if (false /* draw */)
                             {
                               {
-                                //std::ifstream f("/tmp/landmarks_point");
-                                std::ifstream f("/tmp/landmarks_points_1");
-
-                                char comma, bracket;
+                                char comma;
                                 double lat, lon;
-                                m2::PointD prev = m2::PointD::Zero();
-                                double dist = 0.0;
-
-                                double maxWeight;
-                                f >> maxWeight;
+                                double maxWeight = 0.0;
                                 double weight;
+                                {
+                                  std::ifstream f("/tmp/bidirect_points");
+                                  while (f >> lat >> comma >> lon >> weight)
+                                  {
+                                    maxWeight = std::max(weight, maxWeight);
+                                  }
+                                }
+                                //std::ifstream f("/tmp/landmarks_point");
+                                std::ifstream f("/tmp/bidirect_points");
 
+                                int cnt = 0;
+                                LOG(LINFO, ("maxWeight:", maxWeight));
                                 while (f >> lat >> comma >> lon >> weight)
                                 {
+                                  cnt++;
+                                  if (cnt % 1 != 0)
+                                    continue;
+                                  weight = std::min(weight, maxWeight);
                                   auto p = MercatorBounds::FromLatLon({lat, lon});
                                   editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
                                   ColoredDebugMarkPoint * point =
                                     editSession.CreateUserMark<ColoredDebugMarkPoint>(p);
                                   point->SetColor({static_cast<uint8_t>(255 * (1 - weight / maxWeight)),
                                                    0, 0, 255});
-                                  if (prev != m2::PointD::Zero())
-                                  {
-                                    dist += MercatorBounds::DistanceOnEarth(prev, p);
-                                  }
-                                  prev = p;
                                 }
-                                LOG(LINFO, ("==================[DEBUG]=================="));
-                                LOG(LINFO, ("dist landmarks =", dist));
-                                LOG(LINFO, ("==================[DEBUG]=================="));
                               }
                             }
 
-                            if (false /* draw */)
+                            if (true /* draw */)
                             {
                               {
                                 //std::ifstream f("/tmp/simple_point");
-                                std::ifstream f("/tmp/landmarks_features_matched");
+                                std::ifstream f("/tmp/yes");
 
                                 char comma, bracket;
                                 double lat, lon;
@@ -295,17 +295,50 @@ static size_t counter = 0;
                                 while (f >> lat >> comma >> lon >> bracket)
                                 {
                                   auto p = MercatorBounds::FromLatLon({lat, lon});
-                                  editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
-                                  editSession.CreateUserMark<SearchMarkPoint>(p);
                                   if (prev != m2::PointD::Zero())
                                   {
                                     dist += MercatorBounds::DistanceOnEarth(prev, p);
                                   }
                                   prev = p;
+
+                                  editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+                                  ColoredDebugMarkPoint * point =
+                                    editSession.CreateUserMark<ColoredDebugMarkPoint>(p);
+                                  point->SetColor({255, 0, 0, 255});
                                 }
-                                LOG(LINFO, ("==================[DEBUG]=================="));
-                                LOG(LINFO, ("dist no_landmarks =", dist));
-                                LOG(LINFO, ("==================[DEBUG]=================="));
+
+                                LOG(LINFO, ("===========[LANDMARKS_BIDIRECTIONAL]==========="));
+                                LOG(LINFO, ("dist:", dist));
+                                LOG(LINFO, ("===========[LANDMARKS_BIDIRECTIONAL]==========="));
+                              }
+
+                              {
+                                //std::ifstream f("/tmp/simple_point");
+                                std::ifstream f("/tmp/no");
+
+                                char comma, bracket;
+                                double lat, lon;
+                                m2::PointD prev = m2::PointD::Zero();
+                                double dist = 0.0;
+
+                                while (f >> lat >> comma >> lon >> bracket)
+                                {
+                                  auto p = MercatorBounds::FromLatLon({lat, lon});
+                                  if (prev != m2::PointD::Zero())
+                                  {
+                                    dist += MercatorBounds::DistanceOnEarth(prev, p);
+                                  }
+                                  prev = p;
+
+                                  editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+                                  ColoredDebugMarkPoint * point =
+                                    editSession.CreateUserMark<ColoredDebugMarkPoint>(p);
+                                  point->SetColor({0, 0, 255, 255});
+                                }
+
+                                LOG(LINFO, ("===========[BIDIRECTIONAL]==========="));
+                                LOG(LINFO, ("dist:", dist));
+                                LOG(LINFO, ("===========[BIDIRECTIONAL]==========="));
                               }
                             }
                           }

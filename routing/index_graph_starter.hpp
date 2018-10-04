@@ -116,8 +116,21 @@ public:
         output << p.lat << ", " << p.lon << ")" << std::endl;
       }
     };
-    std::vector<std::pair<double, double>> fromLandmarks = m_graph.GetLandmarks(from, logg);
-    auto lastSegment = forward ? m_lastSegmentDebug : m_firstSegmentDebug;
+
+    Vertex firstSegment;
+    Vertex lastSegment;
+    if (forward)
+    {
+      firstSegment = from;
+      lastSegment = m_lastSegmentDebug;
+    }
+    else
+    {
+      firstSegment = m_firstSegmentDebug;
+      lastSegment = to;
+    }
+
+    std::vector<std::pair<double, double>> fromLandmarks = m_graph.GetLandmarks(firstSegment, logg);
     std::vector<std::pair<double, double>> toLandmarks = m_graph.GetLandmarks(lastSegment, logg);
 
     size_t minN = std::min(fromLandmarks.size(), toLandmarks.size());

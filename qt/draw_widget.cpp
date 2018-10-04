@@ -174,18 +174,21 @@ void DrawWidget::mousePressEvent(QMouseEvent * e)
 
   m2::PointD const pt = GetDevicePoint(e);
 
+  ms::LatLon from = {55.7889998, 37.5929615};
+  ms::LatLon to =   {55.7455973, 52.412301};
+
   if (IsLeftButton(e))
   {
     if (IsShiftModifier(e))
     {
       //SubmitRoutingPoint(pt);
-      SubmitRoutingPoint(MercatorBounds::FromLatLon({55.8075016, 37.4656657}));
+      SubmitRoutingPoint(MercatorBounds::FromLatLon(to));
       //SubmitRoutingPoint(MercatorBounds::FromLatLon({55.9480072, 37.4448131}));
     }
     else if (IsAltModifier(e))
     {
       //SubmitFakeLocationPoint(pt);
-      SubmitFakeLocationPoint(MercatorBounds::FromLatLon({55.6641332, 37.7544071}));
+      SubmitFakeLocationPoint(MercatorBounds::FromLatLon(from));
       //SubmitFakeLocationPoint(MercatorBounds::FromLatLon({55.9393641, 37.4446402}));
     }
     else

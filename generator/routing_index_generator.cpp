@@ -410,7 +410,7 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
 
     Segment const & enter = connector.GetEnter(i);
 
-    /*AStarAlgorithm<DijkstraWrapper> astar;
+    AStarAlgorithm<DijkstraWrapper> astar;
     DijkstraWrapper wrapper(graph);
     AStarAlgorithm<DijkstraWrapper>::Context context;
     astar.PropagateWave(wrapper, enter,
@@ -428,11 +428,11 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
       {
         ++notFoundCount;
       }
-    }*/
+    }
   }
 
   connector.FillWeights([&](Segment const & enter, Segment const & exit) {
-    /*auto it0 = weights.find(enter);
+    auto it0 = weights.find(enter);
     if (it0 == weights.end())
       return connector::kNoRoute;
 
@@ -440,7 +440,7 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
     if (it1 == it0->second.end())
       return connector::kNoRoute;
 
-    return it1->second.ToCrossMwmWeight();*/
+    return it1->second.ToCrossMwmWeight();
     return 0.0;
   });
 
@@ -464,7 +464,7 @@ void CalcLandMarks(string const & path, string const & mwmFile, string const & c
 
   map<Segment, map<Segment, RouteWeight>> weights;
 
-  static double constexpr kLandMarksNumberPercent = 15 / 100.0;
+  static double constexpr kLandMarksNumberPercent = 5 / 100.0;
   auto const numExits = connector.GetExits().size();
   auto const step = static_cast<size_t>(1.0 / kLandMarksNumberPercent);
 
@@ -648,7 +648,7 @@ void BuildRoutingCrossMwmSection(string const & path, string const & mwmFile,
                                  string const & osmToFeatureFile, bool disableCrossMwmProgress)
 {
   LOG(LINFO, ("Building cross mwm section for", country));
-  /*using CrossMwmId = base::GeoObjectId;
+  using CrossMwmId = base::GeoObjectId;
   CrossMwmConnectorPerVehicleType<CrossMwmId> connectors;
   vector<CrossMwmConnectorSerializer::Transition<CrossMwmId>> transitions;
 
@@ -661,7 +661,7 @@ void BuildRoutingCrossMwmSection(string const & path, string const & mwmFile,
               connectors[static_cast<size_t>(VehicleType::Car)]);
 
   CHECK(connectors[static_cast<size_t>(VehicleType::Transit)].IsEmpty(), ());
-  SerializeCrossMwm(mwmFile, CROSS_MWM_FILE_TAG, connectors, transitions);*/
+  SerializeCrossMwm(mwmFile, CROSS_MWM_FILE_TAG, connectors, transitions);
 }
 
 void BuildLandmarksSection(string const & path, string const & mwmFile,

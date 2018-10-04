@@ -61,8 +61,8 @@ private:
   unordered_map<NumMwmId, map<SegmentCoord, vector<RouteSegment::SpeedCamera>>> m_cachedCameras;
   decltype(m_cachedCameras)::iterator ReceiveSpeedCamsFromMwm(NumMwmId numMwmId);
 
-  map<Segment, vector<pair<double, double>>> m_landmarks;
-  set<NumMwmId> m_mwmUsedLandmark;
+//  map<Segment, vector<pair<double, double>>> m_landmarks;
+//  set<NumMwmId> m_mwmUsedLandmark;
 };
 
 IndexGraphLoaderImpl::IndexGraphLoaderImpl(
@@ -213,6 +213,8 @@ IndexGraphLoaderImpl::GraphAttrs & IndexGraphLoaderImpl::CreateIndexGraph(
 
 void IndexGraphLoaderImpl::Clear() { m_graphs.clear(); }
 
+map<Segment, vector<pair<double, double>>> m_landmarks;
+set<NumMwmId> m_mwmUsedLandmark;
 vector<pair<double, double>> IndexGraphLoaderImpl::GetLandmarks(Segment const & segment, std::function<void(Segment const &)> callback)
 {
   bool hasCached = m_mwmUsedLandmark.find(segment.GetMwmId()) != m_mwmUsedLandmark.end();
@@ -270,8 +272,6 @@ vector<pair<double, double>> IndexGraphLoaderImpl::GetLandmarks(Segment const & 
     }
 
     Segment newSegment(segment.GetMwmId(), featureId, segmentId, forward);
-    if (featureId == 301564)
-      LOG(LINFO, ("Add:", newSegment));
     m_landmarks.emplace(newSegment, std::move(d));
     callback(newSegment);
   }

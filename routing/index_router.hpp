@@ -152,7 +152,7 @@ private:
     RoutingResult<typename Graph::Vertex, typename Graph::Weight> & routingResult) const
   {
     AStarAlgorithm<Graph> algorithm;
-    bool oneDirect = true;
+    bool oneDirect = false;
     if (oneDirect)
     {
       return ConvertTransitResult(

@@ -147,7 +147,20 @@ public:
       m_distanceMap[vertex] = distance;
     }
 
-    void SetParent(Vertex const & parent, std::pair<Vertex, Weight> const & child) { m_parents[parent] = child; }
+    void SetParent(Vertex const & parent, std::pair<Vertex, Weight> const & child)
+    {
+      m_childs[child.first] = parent;
+      m_parents[parent] = child;
+    }
+
+    Vertex const & GetParent(Vertex const & child)
+    {
+      static auto constexpr kEmptyVertex = Vertex();
+      if (m_childs.find(child) == m_childs.end())
+        return kEmptyVertex;
+
+      return m_childs[child];
+    }
 
     template <typename IndexGraph>
     void ReconstructPath(Vertex const & v, std::vector<Vertex> & path, IndexGraph & graph) const;
@@ -155,6 +168,8 @@ public:
   private:
     std::map<Vertex, Weight> m_distanceMap;
     std::map<Vertex, std::pair<Vertex, Weight>> m_parents;
+
+    std::map<Vertex, Vertex> m_childs;
   };
 
   // State is what is going to be put in the priority queue. See the
@@ -173,7 +188,8 @@ public:
     {
       inline bool operator() (State const & lhs, State const & rhs)
       {
-        return lhs.previousDistance + lhs.potentialDistance > rhs.previousDistance + rhs.potentialDistance;
+        auto left = lhs.previousDistance + lhs.potentialDistance;
+        return left.IsMoreForLandmarks(rhs.previousDistance + rhs.potentialDistance);
       }
     };
 
@@ -295,7 +311,7 @@ private:
     Weight ConsistentHeuristicLandmarks(Vertex const & v) const
     {
       auto const piF = graph.HeuristicCostEstimateLandmarks(v, finalVertex, true /* forward */);
-      auto const piR = graph.HeuristicCostEstimateLandmarks(v, startVertex, false /* backward */);
+      auto const piR = graph.HeuristicCostEstimateLandmarks(startVertex, v, false /* backward */);
 
       if (std::abs(piF.GetWeight()) < 1e-5 || std::abs(piR.GetWeight()) < 1e-5)
         return Weight(0);
@@ -470,7 +486,7 @@ void AStarAlgorithm<Graph>::PropagateWaveLandmarks(Graph & graph, P & params, Ve
 
     params.m_onVisitedVertexCallback(stateV.vertex, stateV.vertex);
 
-    if (!visitVertex(stateV.vertex))
+    if (!visitVertex(stateV.vertex, context.GetParent(stateV.vertex)))
       return;
 
     graph.GetOutgoingEdgesList(stateV.vertex, adj);
@@ -486,7 +502,7 @@ void AStarAlgorithm<Graph>::PropagateWaveLandmarks(Graph & graph, P & params, Ve
       if (superPuperDebug)
        LOG(LINFO, ("Go to:", MercatorBounds::ToLatLon(graph.GetPoint(stateW.vertex, true))));
 
-      auto const potential = potentialFunction(stateW.vertex);
+      auto const potential = potentialFunction(stateW.vertex, stateV.vertex);
       auto const newPreviousDistance = stateV.previousDistance + edge.GetWeight();
 
       if (newPreviousDistance >= context.GetDistance(stateW.vertex) - kEpsilon)
@@ -649,26 +665,69 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLandmarks(
   size_t landmarkWin = 0;
   size_t landmarkLoose = 0;
   double maxWeight = 0.0;
+  double fromStartForFinid = 0.0;
+  auto finishPoint = graph.GetPoint(finalVertex, finalVertex.IsForward());
+  {
+    auto withLandmarks = graph.HeuristicCostEstimateLandmarks(startVertex, finalVertex,
+                                                              true /* forward */);
 
-  auto const potentialFunction = [&](Vertex const & vertex) {
-    auto toReturn = graph.HeuristicCostEstimateLandmarks(vertex, finalVertex, true /* forward */);
-    auto tmp = graph.HeuristicCostEstimate(vertex, finalVertex);
+    auto withEuclidean = graph.HeuristicCostEstimate(startVertex, finalVertex);
+    
+    if (withLandmarks > withEuclidean)
+      fromStartForFinid = withLandmarks.GetWeight();
+    else
+      fromStartForFinid = withEuclidean.GetWeight();
+  }
+
+  auto const potentialFunction = [&](Vertex const & vertexTo, Vertex const & vertexFrom_) {
+
+    bool useHack = false;
+    Vertex vertexFrom;
+    if (vertexFrom == Vertex())
+      vertexFrom = startVertex;
+    else
+      vertexFrom = vertexFrom_;
+
+    auto toReturn = graph.HeuristicCostEstimateLandmarks(vertexTo, finalVertex, true /* forward */);
+    auto tmp = graph.HeuristicCostEstimate(vertexTo, finalVertex);
 
     all++;
     if (toReturn < tmp)
     {
       landmarkLoose++;
-      return tmp;
+      toReturn = tmp;
     }
     else
     {
       landmarkWin++;
     }
 
-    return toReturn;
+    if (!useHack)
+      return toReturn;
+
+    static auto constexpr kPenaltyPercent = 0.2;
+    auto weight = toReturn.GetWeight();
+    
+    double k = weight / fromStartForFinid;
+    if (k > 1)
+      k = 1.0;
+
+    auto to = graph.GetPoint(vertexTo, vertexTo.IsForward());
+    auto from = graph.GetPoint(vertexFrom, vertexFrom.IsForward());
+
+    auto toDirection = (to - from).Normalize();
+    auto finishDirection = (finishPoint - from).Normalize();
+
+    double x = m2::DotProduct(toDirection, finishDirection);
+    // Linear transformation: -1 => 0, 1 => 1
+    x = (x + 1.0) / 2.0;
+
+    double newWeight = weight + k * ((1.0 - x) * kPenaltyPercent * weight);
+
+    return Weight(newWeight);
   };
 
-  auto visitVertex = [&](Vertex const & vertex) {
+  auto visitVertex = [&](Vertex const & vertex, Vertex const & prev) {
     counter++;
 
     if (counter == 1)
@@ -681,7 +740,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLandmarks(
       output << std::setprecision(20);
 
       auto const p = MercatorBounds::ToLatLon(graph.GetPoint(vertex, true));
-      auto const weight = potentialFunction(vertex).GetWeight();
+      auto const weight = potentialFunction(vertex, prev).GetWeight();
 
       if (maxWeight < weight)
         maxWeight = weight;
@@ -786,6 +845,13 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
   uint32_t steps = 0;
   PeriodicPollCancellable periodicCancellable(params.m_cancellable);
 
+  std::ofstream output;
+  if (enableLandmarks)
+  {
+    output.open("/tmp/bidirect_points");
+    output << std::setprecision(20);
+  }
+
   while (!cur->queue.empty() && !nxt->queue.empty())
   {
     ++steps;
@@ -852,10 +918,18 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
     if (stateV.distance > cur->bestDistance[stateV.vertex])
       continue;
 
+    if (enableLandmarks)
+    {
+      auto p = MercatorBounds::ToLatLon(graph.GetPoint(stateV.vertex, stateV.vertex.IsForward()));
+      output << p.lat << ", " << p.lon << " " << stateV.distance.GetWeight() << std::endl;
+    }
+
     params.m_onVisitedVertexCallback(stateV.vertex,
                                      cur->forward ? cur->finalVertex : cur->startVertex);
 
     cur->GetAdjacencyList(stateV.vertex, adj);
+    /*LOG(LINFO, ("========================="));
+    LOG(LINFO, ("from:", MercatorBounds::ToLatLon(graph.GetPoint(stateV.vertex, stateV.vertex.IsForward()))));*/
     for (auto const & edge : adj)
     {
       State stateW(edge.GetTarget(), kZeroDistance);
@@ -869,8 +943,10 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
       {
         pV = cur->ConsistentHeuristicLandmarks(stateV.vertex);
         pW = cur->ConsistentHeuristicLandmarks(stateW.vertex);
-        if (std::abs(pV.GetWeight()) < 1e-5 || std::abs(pW.GetWeight()) < 1e-5)
+        if (pV < Weight(1e-5) || pW < Weight(1e-5))
         {
+          // Нужно в тех случаях, когда для одной вершины нашли, для другой нет
+          // и тогда вес становится неоправданнл большим, пусть лучше они обе будут 0
           pV = Weight(0);
           pW = Weight(0);
         }
@@ -881,23 +957,13 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
         pW = cur->ConsistentHeuristic(stateW.vertex);
       }
 
-      Weight reducedWeight = weight + pW - pV;
+
+      Weight reducedWeight = weight - pV + pW;
+
+      /*LOG(LINFO, ("to:", MercatorBounds::ToLatLon(graph.GetPoint(stateW.vertex, stateW.vertex.IsForward())),
+                  "weight:", reducedWeight.GetWeight()));*/
 
       CHECK_GREATER_OR_EQUAL(reducedWeight, -kEpsilon, ("Invariant violated"));
-
-      /*if (reducedWeight < -kEpsilon)
-      {
-
-        LOG(LINFO, ("v2w(", v2w, "), w2v(", w2v, ")"));
-
-        CHECK(v2w + w2v + 2.0 * (pW - pV) > -kEpsilon, ("fuck"));
-
-        LOG(LINFO,
-            ("Invariant violated. weight(", weight.GetWeight(), "), pW(", pW.GetWeight(), "), pV(", pV.GetWeight(), ")",
-              "V(", stateV.vertex, "), W(", stateW.vertex, ")", "forward:", cur->forward,
-              ", startVertex:", MercatorBounds::ToLatLon(cur->graph.GetPoint(cur->startVertex, true)),
-              ", finalVertex:", MercatorBounds::ToLatLon(cur->graph.GetPoint(cur->finalVertex, true))));
-      }*/
 
       auto const newReducedDist = stateV.distance + std::max(reducedWeight, kZeroDistance);
 

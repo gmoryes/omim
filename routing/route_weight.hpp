@@ -52,6 +52,11 @@ public:
     return m_transitTime > rhs.m_transitTime;
   }
 
+  bool IsMoreForLandmarks(RouteWeight const & rhs)
+  {
+    return m_weight > rhs.m_weight;
+  }
+
   bool operator==(RouteWeight const & rhs) const { return !((*this) < rhs) && !(rhs < (*this)); }
 
   bool operator!=(RouteWeight const & rhs) const { return !((*this) == rhs); }

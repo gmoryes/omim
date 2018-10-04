@@ -452,7 +452,6 @@ RouterResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoints,
     LOG(LINFO, ("=============[START_END_SEGMENTS]============="));
 
     vector<Segment> subroute;
-    //auto const result = CalculateSubroute(checkpoints, i, delegate, subrouteStarter, subroute, enableLandmarks, route);
     auto const result = CalculateSubroute(checkpoints, i, delegate, subrouteStarter, subroute, enableLandmarks, route);
 
     if (result != RouterResultCode::NoError)
@@ -513,7 +512,7 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
       break;
     case VehicleType::Car:
       starter.GetGraph().SetMode(AreMwmsNear(starter.GetMwms()) ? WorldGraph::Mode::NoLeaps
-                                                                : WorldGraph::Mode::NoLeaps);
+                                                                : WorldGraph::Mode::LeapsOnly);
       break;
     case VehicleType::Count:
       CHECK(false, ("Unknown vehicle type:", m_vehicleType));
