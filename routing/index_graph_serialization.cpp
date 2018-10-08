@@ -1,3 +1,5 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "misc-static-assert"
 #include "routing/index_graph_serialization.hpp"
 
 namespace routing
@@ -121,3 +123,5 @@ void IndexGraphSerializer::PrepareSectionSerializers(
     serializer.SortRoads();
 }
 }  // namespace routing
+
+#pragma clang diagnostic pop

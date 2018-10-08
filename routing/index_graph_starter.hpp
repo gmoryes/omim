@@ -200,6 +200,53 @@ public:
     return RouteWeight(maxi);
   }
 
+  // this hacking function, don't use it (!)
+  RouteWeight GetUpperBoundFor(Vertex const & from, Vertex const & to) const
+  {
+    auto const logg = [&](Vertex const & v) {};
+
+    Vertex firstSegment;
+    Vertex lastSegment;
+    firstSegment = m_lastSegmentDebug;
+    lastSegment = from;
+
+    std::vector<std::pair<double, double>> fromLandmarks = m_graph.GetLandmarks(firstSegment, logg);
+    std::vector<std::pair<double, double>> toLandmarks = m_graph.GetLandmarks(lastSegment, logg);
+
+    size_t minN = std::min(fromLandmarks.size(), toLandmarks.size());
+    size_t maxN = std::max(fromLandmarks.size(), toLandmarks.size());
+
+    //minN = 0;
+    if (minN == 0)
+    {
+      // FUCK THIS SHIT, NELZYA!!!
+      //return m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */),
+      //                                     GetPoint(to, true /* front */));
+      return RouteWeight(0.0);
+    }
+
+    CHECK_EQUAL(minN, maxN, ("WHAT THE FUCK"));
+    double maxi = 0;
+    size_t maxIndex;
+
+    for (size_t i = 0; i < maxN; ++i)
+    {
+      static auto constexpr kMax = std::numeric_limits<double>::max();
+      if (fromLandmarks[i].second != kMax && toLandmarks[i].first != kMax) {
+        // d(from, to) <= L(from, l) + L(l, to)
+        auto const prikol = fromLandmarks[i].second /* backward */ - toLandmarks[i].first /* forward */;
+        if (maxi < prikol)
+        {
+          maxi = prikol;
+          maxIndex = i;
+        }
+      }
+
+    }
+
+    return RouteWeight(maxi);
+  }
+
   RouteWeight HeuristicCostEstimate(Vertex const & from, Vertex const & to) const
   {
     return m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */),

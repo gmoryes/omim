@@ -63,7 +63,7 @@ UNIT_TEST(BenchmarkTest_Landmarks_3_Yes)
 
   TEST(base::AlmostEqualAbs(yes, no, kEps), ());
 }
-*/
+
 UNIT_TEST(BenchmarkTest_Landmarks_4_Yes)
 {
   double yes, no;
@@ -75,7 +75,7 @@ UNIT_TEST(BenchmarkTest_Landmarks_4_Yes)
 
   TEST(base::AlmostEqualAbs(yes, no, kEps), ());
 }
-/*
+
 UNIT_TEST(BenchmarkTest_Landmarks_5_Yes)
 {
   double yes, no;
@@ -112,87 +112,13 @@ UNIT_TEST(BenchmarkTest_Landmarks_7_Yes)
   TEST(base::AlmostEqualAbs(yes, no, kEps), ());
 }
 */
-/*
-UNIT_TEST(BigTest_Landmarks_1_6)
+UNIT_TEST(BenchmarkTest_CrossMwm_1)
 {
-  // 1 yes
-  {
-    auto from = MercatorBounds::FromLatLon(55.797529, 37.538253);
-    auto end = MercatorBounds::FromLatLon(55.721194, 37.622323);
-    TestRoute(from, end, true);
-  }
-  // 1 no
-  {
-    auto from = MercatorBounds::FromLatLon(55.797529, 37.538253);
-    auto end = MercatorBounds::FromLatLon(55.721194, 37.622323);
-    TestRoute(from, end, false);
-  }
+  auto from = MercatorBounds::FromLatLon(55.2887402, 37.1732998);
+  auto end = MercatorBounds::FromLatLon(57.4411306, 42.1400653);
 
-  // 2 yes
-  {
-    auto from = MercatorBounds::FromLatLon(55.7891799, 37.635028);
-    auto end = MercatorBounds::FromLatLon(55.6970868, 37.5044513);
-    TestRoute(from, end, true);
-  }
-  // 2 no
-  {
-    auto from = MercatorBounds::FromLatLon(55.7891799, 37.635028);
-    auto end = MercatorBounds::FromLatLon(55.6970868, 37.5044513);
-    TestRoute(from, end, false);
-  }
-
-  // 3 yes
-  {
-    auto from = MercatorBounds::FromLatLon(55.7692285, 37.6458008);
-    auto end = MercatorBounds::FromLatLon(55.7578737, 37.5855697);
-    TestRoute(from, end, true);
-  }
-  // 3 no
-  {
-    auto from = MercatorBounds::FromLatLon(55.7692285, 37.6458008);
-    auto end = MercatorBounds::FromLatLon(55.7578737, 37.5855697);
-    TestRoute(from, end, false);
-  }
-
-  // 4 yes
-  {
-    auto from = MercatorBounds::FromLatLon(55.7526598, 37.5849678);
-    auto end = MercatorBounds::FromLatLon(55.655283, 37.6052212);
-    TestRoute(from, end, true);
-  }
-  // 4 no
-  {
-    auto from = MercatorBounds::FromLatLon(55.7526598, 37.5849678);
-    auto end = MercatorBounds::FromLatLon(55.655283, 37.6052212);
-    TestRoute(from, end, false);
-  }
-
-  // 5 yes
-  {
-    auto from = MercatorBounds::FromLatLon(55.6641332, 37.7544071);
-    auto end = MercatorBounds::FromLatLon(55.8075016, 37.4656657);
-    TestRoute(from, end, true);
-  }
-  // 5 no
-  {
-    auto from = MercatorBounds::FromLatLon(55.6641332, 37.7544071);
-    auto end = MercatorBounds::FromLatLon(55.8075016, 37.4656657);
-    TestRoute(from, end, false);
-  }
-  // 6, yes
-  {
-    auto from = MercatorBounds::FromLatLon(55.6645119, 37.7536088);
-    auto end = MercatorBounds::FromLatLon(55.8075016, 37.4656657);
-    TestRoute(from, end, true);
-  }
-  // 6, no
-  {
-    auto from = MercatorBounds::FromLatLon(55.6645119, 37.7536088);
-    auto end = MercatorBounds::FromLatLon(55.8075016, 37.4656657);
-    TestRoute(from, end, false);
-  }
+  TestRoute(from, end, false);
 }
-*/
 /*
 UNIT_TEST(BenchmarkTest_Checker)
 {

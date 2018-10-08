@@ -239,7 +239,7 @@ static size_t counter = 0;
                           if (m_bmManager == nullptr)
                             return;
                           auto editSession = m_bmManager->GetEditSession();
-                          if (counter % 1 == 0)
+                          if (counter % 20 == 0)
                           {
                             editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
                             editSession.CreateUserMark<DebugMarkPoint>(pt);
@@ -285,7 +285,7 @@ static size_t counter = 0;
                             {
                               {
                                 //std::ifstream f("/tmp/simple_point");
-                                std::ifstream f("/tmp/yes");
+                                std::ifstream f("/tmp/points");
 
                                 char comma, bracket;
                                 double lat, lon;
@@ -312,8 +312,7 @@ static size_t counter = 0;
                                 LOG(LINFO, ("===========[LANDMARKS_BIDIRECTIONAL]==========="));
                               }
 
-                              {
-                                //std::ifstream f("/tmp/simple_point");
+                              /*{
                                 std::ifstream f("/tmp/no");
 
                                 char comma, bracket;
@@ -339,7 +338,7 @@ static size_t counter = 0;
                                 LOG(LINFO, ("===========[BIDIRECTIONAL]==========="));
                                 LOG(LINFO, ("dist:", dist));
                                 LOG(LINFO, ("===========[BIDIRECTIONAL]==========="));
-                              }
+                              }*/
                             }
                           }
                           counter++;

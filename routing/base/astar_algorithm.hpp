@@ -20,6 +20,7 @@
 
 //tmp
 #include <fstream>
+#include <tuple>
 #include "base/logging.hpp"
 //end tmp
 
@@ -165,11 +166,75 @@ public:
     template <typename IndexGraph>
     void ReconstructPath(Vertex const & v, std::vector<Vertex> & path, IndexGraph & graph) const;
 
+    template <typename IndexGraph>
+    void ReconstructPathForLeaps(Vertex const & v, std::vector<Vertex> & path,
+                                 std::vector<Weight> & weights, IndexGraph & graph) const;
+
   private:
     std::map<Vertex, Weight> m_distanceMap;
     std::map<Vertex, std::pair<Vertex, Weight>> m_parents;
 
     std::map<Vertex, Vertex> m_childs;
+  };
+
+  class LeapContext final
+  {
+  public:
+    struct Data
+    {
+      Data() = default;
+      Data(Vertex const & parent, Weight const & sumBeetweenMwms, size_t currentLeap, Weight const & distance)
+        : parent(parent), sumBetweenMwms(sumBeetweenMwms), currentLeap(currentLeap), distance(distance) {}
+
+      Vertex parent = Vertex();
+      Weight sumBetweenMwms = Weight(0);
+      size_t currentLeap = 0;
+      Weight distance = kInfiniteDistance;
+    };
+
+    void Clear()
+    {
+      m_parents.clear();
+    }
+
+    bool HasDistance(Vertex const & vertex)
+    {
+      return GetData(vertex).distance != kInfiniteDistance;
+    }
+
+    void SetDistance(Vertex const & vertex, Weight const & distance)
+    {
+      GetData(vertex).distance = distance;
+    }
+
+    void SetParent(Vertex const & parent, std::pair<Vertex, Weight> const & child)
+    {
+      GetData(child.first).parent = parent;
+      m_parents[parent] = child;
+    }
+
+    Vertex const & GetParent(Vertex const & child)
+    {
+      return GetData(child).parent;
+    }
+
+    Weight GetDistance(Vertex const & vertex)
+    {
+      return GetData(vertex).distance;
+    }
+
+    Data & GetData(Vertex const & vertex)
+    {
+      auto it = m_data.find(vertex);
+      if (it == m_data.cend())
+        std::tie(it, std::ignore) = m_data.emplace(vertex, Data());
+
+      return it->second;
+    }
+
+  private:
+    std::map<Vertex, Data> m_data;
+    std::map<Vertex, std::pair<Vertex, Weight>> m_parents;
   };
 
   // State is what is going to be put in the priority queue. See the
@@ -214,6 +279,12 @@ public:
                      Context & context, bool forwardWave = true, bool generator = false) const;
 
   template <typename VisitVertex, typename PotentialFunction, typename P>
+  void PropagateWaveLeaps(Graph & graph, P & params, Vertex const & startVertex,
+                          VisitVertex && visitVertex,
+                          PotentialFunction && potentialFunction,
+                          LeapContext & context, Weight const & sumBetween) const;
+
+  template <typename VisitVertex, typename PotentialFunction, typename P>
   void PropagateWaveLandmarks(Graph & graph, P & params, Vertex const & startVertex,
                               VisitVertex && visitVertex,
                               PotentialFunction && potentialFunction,
@@ -231,6 +302,10 @@ public:
 
   template <typename P>
   Result FindPathLandmarks(P & params, RoutingResult<Vertex, Weight> & result) const;
+
+  template <typename P>
+  Result FindPathLeaps(P & params, std::vector<Vertex> const & leaps, std::vector<Weight> const & leapsWeights,
+                       RoutingResult<Vertex, Weight> & result) const;
   // Adjust route to the previous one.
   // Expects |params.m_checkLengthCallback| to check wave propagation limit.
   template <typename P>
@@ -359,6 +434,11 @@ private:
                               std::vector<Vertex> & path, IndexGraph & graph, bool enableLogging = false);
 
   template <typename IndexGraph>
+  static void ReconstructPathForLeaps(Vertex const & v, std::map<Vertex, std::pair<Vertex, Weight>> const & parent,
+                                      std::vector<Vertex> & path, std::vector<Weight> & weights, IndexGraph & graph,
+                                      bool enableLogging = false);
+
+  template <typename IndexGraph>
   static void ReconstructPathBidirectional(Vertex const & v, Vertex const & w,
                                            std::map<Vertex, std::pair<Vertex, Weight>> const & parentV,
                                            std::map<Vertex, std::pair<Vertex, Weight>> const & parentW,
@@ -456,6 +536,81 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
 
 template <typename Graph>
 template <typename VisitVertex, typename PotentialFunction, typename P>
+void AStarAlgorithm<Graph>::PropagateWaveLeaps(Graph & graph, P & params, const Vertex & startVertex,
+                                               VisitVertex && visitVertex, PotentialFunction && potentialFunction,
+                                               AStarAlgorithm::LeapContext & context,
+                                               Weight const & sumBetween) const
+{
+  using LeapContextData = typename AStarAlgorithm<Graph>::LeapContext::Data;
+
+  context.Clear();
+
+  std::priority_queue<State, std::vector<State>, typename State::IsLess> queue;
+
+  LeapContextData & startData = context.GetData(startVertex);
+  startData = LeapContextData(Vertex(), sumBetween, 0L, kZeroDistance);
+
+  queue.push(State(startVertex, kZeroDistance));
+
+  std::vector<Edge> adj;
+
+  bool superPuperDebug = true;
+
+  while (!queue.empty())
+  {
+    State const stateV = queue.top();
+    queue.pop();
+
+    LeapContextData & vData = context.GetData(stateV.vertex);
+
+    if (stateV.previousDistance > vData.distance)
+      continue;
+
+    params.m_onVisitedVertexCallback(stateV.vertex, stateV.vertex);
+
+    if (!visitVertex(stateV.vertex, context.GetParent(stateV.vertex)))
+      return;
+
+    graph.GetOutgoingEdgesList(stateV.vertex, adj);
+    if (superPuperDebug)
+      LOG(LINFO, ("Current vertex:", MercatorBounds::ToLatLon(graph.GetPoint(stateV.vertex, true))));
+
+    for (auto const & edge : adj)
+    {
+      State stateW(edge.GetTarget(), kZeroDistance);
+      if (stateV.vertex == stateW.vertex)
+        continue;
+
+      LeapContextData & wData = context.GetData(stateW.vertex);
+      wData.sumBetweenMwms = vData.sumBetweenMwms;
+      wData.currentLeap = vData.currentLeap;
+
+      if (superPuperDebug)
+        LOG(LINFO, ("Go to:", MercatorBounds::ToLatLon(graph.GetPoint(stateW.vertex, true))));
+
+      auto const potential = potentialFunction(stateW.vertex, wData);
+      auto const newPreviousDistance = stateV.previousDistance + edge.GetWeight();
+
+      if (newPreviousDistance >= context.GetDistance(stateW.vertex) - kEpsilon)
+        continue;
+
+      if (superPuperDebug)
+        LOG(LINFO, ("Add last with weight =", newPreviousDistance.GetWeight(), "potential:", potential.GetWeight()));
+
+      stateW.previousDistance = newPreviousDistance;
+      stateW.potentialDistance = potential;
+
+      context.SetParent(stateW.vertex, std::make_pair(stateV.vertex, edge.GetWeight()));
+      wData.distance = newPreviousDistance;
+      wData.parent = stateV.vertex;
+
+      queue.push(stateW);
+    }
+  }
+}
+
+template <typename Graph>
+template <typename VisitVertex, typename PotentialFunction, typename P>
 void AStarAlgorithm<Graph>::PropagateWaveLandmarks(Graph & graph, P & params, Vertex const & startVertex,
                                                    VisitVertex && visitVertex,
                                                    PotentialFunction && potentialFunction,
@@ -476,10 +631,6 @@ void AStarAlgorithm<Graph>::PropagateWaveLandmarks(Graph & graph, P & params, Ve
   {
     State const stateV = queue.top();
     queue.pop();
-
-    /*LOG(LINFO, ("segment(", stateV.vertex, ") prevDist:", stateV.previousDistance,
-                "potentialDist:", stateV.potentialDistance,
-                MercatorBounds::ToLatLon(graph.GetPoint(stateV.vertex, true))));*/
 
     if (stateV.previousDistance > context.GetDistance(stateV.vertex))
       continue;
@@ -629,7 +780,11 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPath(
 
   if (resultCode == Result::OK)
   {
-    context.ReconstructPath(finalVertex, result.m_path, graph);
+    if (params.m_graph.GetMode() == WorldGraph::Mode::LeapsOnly)
+      context.ReconstructPathForLeaps(finalVertex, result.m_path, result.m_weights, graph);
+    else
+      context.ReconstructPath(finalVertex, result.m_path, graph);
+
     result.m_distance =
         reducedToFullLength(startVertex, finalVertex, context.GetDistance(finalVertex));
 
@@ -641,6 +796,90 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPath(
 
     if (!params.m_checkLengthCallback(result.m_distance))
       resultCode = Result::NoPath;
+  }
+
+  return resultCode;
+}
+
+template <typename Graph>
+template <typename P>
+typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathLeaps(
+  P & params, vector<Vertex> const & leaps, std::vector<Weight> const & leapsWeights, RoutingResult <Vertex, Weight> & result) const
+{
+  using LeapContextData = typename AStarAlgorithm<Graph>::LeapContext::Data;
+
+  CHECK_GREATER_OR_EQUAL(leaps.size(), 2, ("Leaps size at most 2"));
+  result.Clear();
+
+  auto & graph = params.m_graph;
+  auto const & finalVertex = params.m_finalVertex;
+  auto const & startVertex = params.m_startVertex;
+
+  LeapContext context;
+  Result resultCode = Result::NoPath;
+
+  size_t counter = 0;
+
+  Weight sumBetween = Weight(0);
+  for (auto & weight : leapsWeights)
+    sumBetween += weight;
+
+  Vertex lastLeap;
+  {
+    size_t index = leaps.size() - 1;
+    while (index > 0 && !leaps[index].IsRealSegment())
+      index--;
+
+    lastLeap = leaps[index];
+  }
+  //Weight upperBoundForFinal = graph.GetUpperBoundFor(finalVertex, lastLeap);
+  static auto constexpr kKekLOLCoef = 1.0;
+  Weight upperBoundForFinal = kKekLOLCoef * graph.HeuristicCostEstimate(finalVertex, lastLeap);
+
+  auto const potentialFunction = [&](Vertex const & vertex, LeapContextData & data)
+  {
+    if (vertex.GetMwmId() != data.parent.GetMwmId() && data.parent.IsRealSegment())
+    {
+      if (data.currentLeap < leapsWeights.size())
+        data.sumBetweenMwms = data.sumBetweenMwms - leapsWeights[data.currentLeap];
+
+      data.currentLeap++;
+    }
+
+
+    Weight withEuclidean(0.0);
+    if (data.currentLeap < leaps.size())
+      withEuclidean = graph.HeuristicCostEstimate(vertex, leaps[data.currentLeap]);
+
+    auto const potential = withEuclidean + data.sumBetweenMwms - upperBoundForFinal;
+
+    return potential;
+  };
+
+  auto visitVertex = [&](Vertex const & vertex, Vertex const & prev) {
+    counter++;
+    if (vertex == finalVertex)
+    {
+
+      result.m_distance = context.GetDistance(vertex);
+      std::ofstream output("/tmp/counter", std::ofstream::app);
+      output << "oneway_leaps: " << counter << std::endl;
+
+      resultCode = Result::OK;
+      return false;
+    }
+
+    return true;
+  };
+
+
+
+  PropagateWaveLeaps(graph, params, startVertex, visitVertex, potentialFunction, context, sumBetween);
+
+  if (resultCode == Result::OK)
+  {
+    LOG(LINFO, ("Done"));
+    //context.ReconstructPath(finalVertex, result.m_path, graph);
   }
 
   return resultCode;
@@ -1122,8 +1361,9 @@ void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
                                             std::vector<Vertex> & path, IndexGraph & graph, bool enableLogging)
 {
   enableLogging = true;
+
   if (enableLogging)
-    LOG(LINFO, ("==================[DEUBG_WEIGHTS]=================="));
+    LOG(LINFO, ("==================[DEBUG_WEIGHTS]=================="));
   path.clear();
   Vertex cur = v;
   Vertex prev = cur;
@@ -1136,9 +1376,12 @@ void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
       break;
     cur = it->second.first;
 
-    /*LOG(LINFO, ("from(", prev, "):", MercatorBounds::ToLatLon(graph.GetPoint(prev, true)),
-                "to(", cur, "):", MercatorBounds::ToLatLon(graph.GetPoint(cur, true)),
-                "weight:", it->second.second))*/
+    if (enableLogging)
+    {
+      LOG(LINFO, ("from(", prev, "):", MercatorBounds::ToLatLon(graph.GetPoint(prev, true)),
+        "to(", cur, "):", MercatorBounds::ToLatLon(graph.GetPoint(cur, true)),
+        "weight:", it->second.second));
+    }
 
     summ = summ + it->second.second;
     prev = cur;
@@ -1146,7 +1389,52 @@ void AStarAlgorithm<Graph>::ReconstructPath(Vertex const & v,
   if (enableLogging)
   {
     LOG(LINFO, ("Summary weight:", summ));
-    LOG(LINFO, ("==================[DEUBG_WEIGHTS]=================="));
+    LOG(LINFO, ("==================[DEBUG_WEIGHTS]=================="));
+  }
+  reverse(path.begin(), path.end());
+}
+
+
+// static
+template <typename Graph>
+template <typename IndexGraph>
+void AStarAlgorithm<Graph>::ReconstructPathForLeaps(Vertex const & v,
+                                                    std::map<Vertex, std::pair<Vertex, Weight>> const & parent,
+                                                    std::vector<Vertex> & path, std::vector<Weight> & weights,
+                                                    IndexGraph & graph, bool enableLogging)
+{
+  enableLogging = true;
+
+  if (enableLogging)
+    LOG(LINFO, ("==================[DEBUG_WEIGHTS]=================="));
+  path.clear();
+  Vertex cur = v;
+  Vertex prev = cur;
+  Weight summ(0);
+  while (true)
+  {
+    path.push_back(cur);
+    auto it = parent.find(cur);
+    if (it == parent.end())
+      break;
+    cur = it->second.first;
+
+    weights.push_back(it->second.second);
+
+    if (enableLogging)
+    {
+      LOG(LINFO, ("from(", prev, "):", MercatorBounds::ToLatLon(graph.GetPoint(prev, true)),
+        "to(", cur, "):", MercatorBounds::ToLatLon(graph.GetPoint(cur, true)),
+        "weight:", it->second.second));
+    }
+
+    summ = summ + it->second.second;
+    prev = cur;
+  }
+  if (enableLogging)
+  {
+    LOG(LINFO, ("Summary weight:", summ));
+    LOG(LINFO, ("==================[DEBUG_WEIGHTS]=================="));
   }
   reverse(path.begin(), path.end());
 }
@@ -1157,7 +1445,8 @@ template <typename IndexGraph>
 void AStarAlgorithm<Graph>::ReconstructPathBidirectional(Vertex const & v, Vertex const & w,
                                                          std::map<Vertex, std::pair<Vertex, Weight>> const & parentV,
                                                          std::map<Vertex, std::pair<Vertex, Weight>> const & parentW,
-                                                         std::vector<Vertex> & path, IndexGraph & graph, bool enableLogging)
+                                                         std::vector<Vertex> & path, IndexGraph & graph,
+                                                         bool enableLogging)
 {
   std::vector<Vertex> pathV;
   ReconstructPath(v, parentV, pathV, graph, enableLogging);
@@ -1175,5 +1464,15 @@ void AStarAlgorithm<Graph>::Context::ReconstructPath(Vertex const & v,
                                                      std::vector<Vertex> & path, IndexGraph & graph) const
 {
   AStarAlgorithm<Graph>::ReconstructPath(v, m_parents, path, graph);
+}
+
+template <typename Graph>
+template <typename IndexGraph>
+void AStarAlgorithm<Graph>::Context::ReconstructPathForLeaps(Vertex const & v,
+                                                             std::vector<Vertex> & path,
+                                                             std::vector<Weight> & weights,
+                                                             IndexGraph & graph) const
+{
+  AStarAlgorithm<Graph>::ReconstructPathForLeaps(v, m_parents, path, weights, graph);
 }
 }  // namespace routing

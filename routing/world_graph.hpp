@@ -65,6 +65,7 @@ public:
   virtual RouteWeight HeuristicCostEstimate(Segment const & from, Segment const & to) = 0;
   virtual RouteWeight HeuristicCostEstimate(m2::PointD const & from, m2::PointD const & to) = 0;
   virtual RouteWeight HeuristicCostEstimateLandmarks(Segment const & from, Segment const & to, bool) = 0;
+  virtual RouteWeight GetUpperBoundFor(Vertex const & from, Vertex const & to) const = 0;
   virtual RouteWeight CalcSegmentWeight(Segment const & segment) = 0;
   virtual RouteWeight CalcLeapWeight(m2::PointD const & from, m2::PointD const & to) const = 0;
   virtual RouteWeight CalcOffroadWeight(m2::PointD const & from, m2::PointD const & to) const = 0;

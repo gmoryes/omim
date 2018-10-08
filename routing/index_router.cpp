@@ -585,10 +585,35 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
 
   route.m_routeWeight = routingResult.m_distance;
 
+  /*
+   * eto nahui bolshe ne nuzhno
+   *
   RouterResultCode const leapsResult =
       ProcessLeaps(routingResult.m_path, delegate, starter.GetGraph().GetMode(), starter, subroute);
   if (leapsResult != RouterResultCode::NoError)
     return leapsResult;
+    *
+    */
+
+  if (starter.GetGraph().GetMode() == WorldGraph::Mode::LeapsOnly)
+  {
+    starter.GetGraph().SetMode(WorldGraph::Mode::NoLeaps);
+    // needs because of routingResult.Clear()
+    std::vector<Segment> leaps;
+    for (auto & leap : routingResult.m_path)
+    {
+      if (leap.IsRealSegment())
+        leaps.push_back(leap);
+    }
+
+    std::vector<RouteWeight> weights;
+    for (auto & weight : routingResult.m_weights)
+    {
+      if (weight > RouteWeight(1e-5))
+        weights.push_back(weight);
+    }
+    result = FindPathWithLeaps<IndexGraphStarter>(params, mwmIds, leaps, weights, routingResult);
+  }
 
   return RouterResultCode::NoError;
 }
@@ -797,6 +822,7 @@ RouterResultCode IndexRouter::ProcessLeaps(vector<Segment> const & input,
   // To avoid this behavior we collapse all leaps from start to last occurrence of startId to one leap and
   // use WorldGraph with NoLeaps mode to proccess these leap. Unlike SingleMwm mode used to process ordinary leaps
   // NoLeaps allows to use all mwms so if we really need to visit other mwm we will.
+
   auto const firstMwmId = input[1].GetMwmId();
   auto const startLeapEndReverseIt = find_if(input.rbegin() + 2, input.rend(),
                                              [firstMwmId](Segment const & s) { return s.GetMwmId() == firstMwmId; });

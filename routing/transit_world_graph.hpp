@@ -55,6 +55,7 @@ public:
   RouteWeight HeuristicCostEstimate(Segment const & from, Segment const & to) override;
   RouteWeight HeuristicCostEstimate(m2::PointD const & from, m2::PointD const & to) override;
   RouteWeight HeuristicCostEstimateLandmarks(Segment const & from, Segment const & to, bool) override { return {}; }
+  RouteWeight GetUpperBoundFor(Vertex const & from, Vertex const & to) const override { return {}; }
   RouteWeight CalcSegmentWeight(Segment const & segment) override;
   RouteWeight CalcLeapWeight(m2::PointD const & from, m2::PointD const & to) const override;
   RouteWeight CalcOffroadWeight(m2::PointD const & from, m2::PointD const & to) const override;

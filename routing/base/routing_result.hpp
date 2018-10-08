@@ -14,10 +14,12 @@ struct RoutingResult final
   void Clear()
   {
     m_path.clear();
+    m_weights.clear();
     m_distance = GetAStarWeightZero<Weight>();
   }
 
   std::vector<Vertex> m_path;
+  std::vector<Weight> m_weights;
   Weight m_distance;
 };
 }  // namespace routing

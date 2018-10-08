@@ -30,6 +30,7 @@ public:
 
   float GetProgressForBidirectedAlgo(m2::PointD const & point, m2::PointD const & target)
   {
+    return 0.0;
     if (target == m_finalPoint)
       m_forwardDistance = MercatorBounds::DistanceOnEarth(point, target);
     else if (target == m_startPoint)

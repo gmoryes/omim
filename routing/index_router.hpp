@@ -142,8 +142,29 @@ private:
       return ConvertTransitResult(mwmIds,
                                   ConvertResult<Graph>(algorithm.FindPath(params, routingResult)));
     }
-    return ConvertTransitResult(
-      mwmIds, ConvertResult<Graph>(algorithm.FindPathBidirectional(params, routingResult)));
+    bool oneDirect = true;
+    if (oneDirect)
+    {
+      return ConvertTransitResult(
+        mwmIds, ConvertResult<Graph>(algorithm.FindPath(params, routingResult)));
+    }
+    else
+    {
+      return ConvertTransitResult(
+        mwmIds, ConvertResult<Graph>(algorithm.FindPathBidirectional(params, routingResult)));
+    }
+  }
+
+  template <typename Graph>
+  RouterResultCode FindPathWithLeaps(
+    typename AStarAlgorithm<Graph>::Params & params, std::set<NumMwmId> const & mwmIds,
+    std::vector<typename Graph::Vertex> const & leaps,
+    std::vector<typename Graph::Weight> const & weights,
+    RoutingResult<typename Graph::Vertex, typename Graph::Weight> & routingResult) const
+  {
+    AStarAlgorithm<Graph> algorithm;
+    return ConvertTransitResult(mwmIds,
+                                ConvertResult<Graph>(algorithm.FindPathLeaps(params, leaps, weights, routingResult)));
   }
 
   template <typename Graph>
