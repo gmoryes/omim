@@ -4,6 +4,15 @@ namespace routing
 {
 using namespace std;
 
+void WorldGraph::GetOnlyTwinsEdges(Segment const & segment, bool isOutgoing, vector<SegmentEdge> & edges)
+{
+  vector<Segment> twins;
+  GetTwinsInner(segment, isOutgoing, twins);
+
+  for (auto const & twin : twins)
+    edges.emplace_back(twin, RouteWeight(0.0));
+}
+
 void WorldGraph::GetTwins(Segment const & segment, bool isOutgoing, vector<SegmentEdge> & edges)
 {
   vector<Segment> twins;
@@ -32,7 +41,7 @@ void WorldGraph::GetTwins(Segment const & segment, bool isOutgoing, vector<Segme
   auto prevMode = GetMode();
   SetMode(Mode::SingleMwm);
 
-  for (Segment const & twin : twins)
+  for (auto const & twin : twins)
     GetEdgeList(twin, isOutgoing, edges);
 
   SetMode(prevMode);
@@ -45,6 +54,7 @@ string DebugPrint(WorldGraph::Mode mode)
   case WorldGraph::Mode::LeapsOnly: return "LeapsOnly";
   case WorldGraph::Mode::NoLeaps: return "NoLeaps";
   case WorldGraph::Mode::SingleMwm: return "SingleMwm";
+  case WorldGraph::Mode::JointsOnly: return "JointsOnly";
   }
   ASSERT(false, ("Unknown mode:", static_cast<size_t>(mode)));
   return "Unknown mode";

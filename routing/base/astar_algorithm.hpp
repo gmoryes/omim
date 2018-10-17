@@ -3,6 +3,9 @@
 #include "routing/base/astar_weight.hpp"
 #include "routing/base/routing_result.hpp"
 
+//tmp
+#include "routing/world_graph.hpp"
+//end tmp
 #include "base/assert.hpp"
 #include "base/cancellable.hpp"
 
@@ -12,6 +15,12 @@
 #include <map>
 #include <queue>
 #include <vector>
+
+//tmp
+#include <fstream>
+#include <iomanip>
+#include "geometry/mercator.hpp"
+//end tmp
 
 namespace routing
 {
@@ -374,9 +383,23 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPath(
 {
   result.Clear();
 
+  bool draw = false;
+
   auto & graph = params.m_graph;
-  auto const & finalVertex = params.m_finalVertex;
-  auto const & startVertex = params.m_startVertex;
+
+  Vertex startVertex;
+  Vertex finalVertex;
+
+  if (graph.GetMode() == WorldGraph::Mode::JointsOnly)
+  {
+    startVertex = Vertex(771, 11031, 1, true);
+    finalVertex = Vertex(771, 119039, 0, false);
+  }
+  else
+  {
+    startVertex = params.m_startVertex;
+    finalVertex = params.m_finalVertex;
+  }
 
   Context context;
   PeriodicPollCancellable periodicCancellable(params.m_cancellable);
@@ -397,6 +420,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPath(
     return reducedLength + heuristicDiff(vertexFrom, vertexTo);
   };
 
+  size_t counter = 0;
   auto visitVertex = [&](Vertex const & vertex) {
     if (periodicCancellable.IsCancelled())
     {
@@ -404,10 +428,33 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPath(
       return false;
     }
 
+    if (draw)
+    {
+      if (counter == 0)
+      {
+        std::ofstream output("/tmp/points");
+      }
+
+      {
+        std::ofstream output("/tmp/points", std::ofstream::app);
+        output << std::setprecision(20);
+        auto p = MercatorBounds::ToLatLon(graph.GetPoint(vertex, true));
+        output << p.lat << " " << p.lon << std::endl;
+      }
+    }
+
     params.m_onVisitedVertexCallback(vertex, finalVertex);
 
+    counter++;
     if (vertex == finalVertex)
     {
+      {
+        std::ofstream output("/tmp/counter", std::ofstream::app);
+        if (graph.GetMode() == WorldGraph::Mode::JointsOnly)
+          output << "joints: " << counter << std::endl;
+        else
+          output << "simple: " << counter << std::endl;
+      }
       resultCode = Result::OK;
       return false;
     }
@@ -449,8 +496,22 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
     P & params, RoutingResult<Vertex, Weight> & result) const
 {
   auto & graph = params.m_graph;
-  auto const & finalVertex = params.m_finalVertex;
-  auto const & startVertex = params.m_startVertex;
+
+  bool draw = false;
+//TODO check what if checking meeting one time in switch will more effective ???
+  Vertex startVertex;
+  Vertex finalVertex;
+
+//  if (graph.GetMode() == WorldGraph::Mode::JointsOnly)
+//  {
+//    //startVertex = Vertex(803, 18216, 0, true);
+//    //finalVertex = Vertex(793, 42319, 0, true);
+//  }
+//  else
+//  {
+  startVertex = params.m_startVertex;
+  finalVertex = params.m_finalVertex;
+  //}
 
   BidirectionalStepContext forward(true /* forward */, startVertex, finalVertex, graph);
   BidirectionalStepContext backward(false /* forward */, startVertex, finalVertex, graph);
@@ -508,6 +569,13 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
 
       if (curTop + nxtTop >= bestPathReducedLength - kEpsilon)
       {
+        {
+          std::ofstream output("/tmp/counter", std::ofstream::app);
+          if (graph.GetMode() == WorldGraph::Mode::JointsOnly)
+            output << "joints_bidirect: " << steps << std::endl;
+          else
+            output << "simple_bidirect: " << steps << std::endl;
+        }
         if (!params.m_checkLengthCallback(bestPathRealLength))
           return Result::NoPath;
 
@@ -524,18 +592,58 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
     State const stateV = cur->queue.top();
     cur->queue.pop();
 
+    if (stateV.vertex.GetFeatureId() == 2107)
+    {
+      int asd = 5;
+      (void)asd;
+    }
+
     if (stateV.distance > cur->bestDistance[stateV.vertex])
       continue;
 
     params.m_onVisitedVertexCallback(stateV.vertex,
                                      cur->forward ? cur->finalVertex : cur->startVertex);
 
+    if (draw)
+    {
+      static int first = true;
+      if (first)
+      {
+        std::ofstream output("/tmp/points");
+        first = false;
+      }
+      {
+        std::ofstream output("/tmp/points", std::ofstream::app);
+        output << std::setprecision(20);
+        auto p = MercatorBounds::ToLatLon(graph.GetPoint(stateV.vertex, stateV.vertex.IsForward()));
+        output << p.lat << " " << p.lon << " " << stateV.distance.GetWeight() << std::endl;
+      }
+    }
+
+    if (stateV.vertex == Vertex(793, 54865, 0, true))
+    {
+      int asd = 5;
+      (void)asd;
+    }
+    auto p = MercatorBounds::FromLatLon({55.9917352, 46.1852242});
+    if (base::AlmostEqualAbs(p, graph.GetPoint(stateV.vertex, stateV.vertex.IsForward()), 1e-4))
+    {
+      int asd = 5;
+      (void)asd;
+    }
     cur->GetAdjacencyList(stateV.vertex, adj);
     for (auto const & edge : adj)
     {
       State stateW(edge.GetTarget(), kZeroDistance);
       if (stateV.vertex == stateW.vertex)
         continue;
+
+      auto p = MercatorBounds::FromLatLon({56.2285567, 42.7968019});
+      if (base::AlmostEqualAbs(p, graph.GetPoint(stateW.vertex, stateW.vertex.IsForward()), 1e-4))
+      {
+        int asd = 5;
+        (void)asd;
+      }
 
       auto const weight = edge.GetWeight();
       auto const pV = cur->ConsistentHeuristic(stateV.vertex);

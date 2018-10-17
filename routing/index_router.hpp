@@ -76,15 +76,15 @@ public:
   std::string GetName() const override { return m_name; }
   RouterResultCode CalculateRoute(Checkpoints const & checkpoints, m2::PointD const & startDirection,
                                   bool adjustToPrevRoute, RouterDelegate const & delegate,
-                                  Route & route) override;
+                                  Route & route, bool enableJoints = false) override;
 
 private:
   RouterResultCode DoCalculateRoute(Checkpoints const & checkpoints,
                                     m2::PointD const & startDirection,
-                                    RouterDelegate const & delegate, Route & route);
+                                    RouterDelegate const & delegate, Route & route, bool enableJoints = false);
   RouterResultCode CalculateSubroute(Checkpoints const & checkpoints, size_t subrouteIdx,
                                      RouterDelegate const & delegate, IndexGraphStarter & graph,
-                                     std::vector<Segment> & subroute);
+                                     std::vector<Segment> & subroute, bool enableJoints = false);
 
   RouterResultCode AdjustRoute(Checkpoints const & checkpoints,
                                m2::PointD const & startDirection,
@@ -137,11 +137,12 @@ private:
       RoutingResult<typename Graph::Vertex, typename Graph::Weight> & routingResult) const
   {
     AStarAlgorithm<Graph> algorithm;
-    if (params.m_graph.GetMode() == WorldGraph::Mode::LeapsOnly)
+    /*if (params.m_indexGraph.GetMode() == WorldGraph::Mode::LeapsOnly)// ||
+        //params.m_indexGraph.GetMode() == WorldGraph::Mode::JointsOnly)
     {
       return ConvertTransitResult(mwmIds,
                                   ConvertResult<Graph>(algorithm.FindPath(params, routingResult)));
-    }
+    }*/
     return ConvertTransitResult(
         mwmIds, ConvertResult<Graph>(algorithm.FindPathBidirectional(params, routingResult)));
   }

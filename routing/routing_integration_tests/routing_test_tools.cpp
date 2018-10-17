@@ -167,12 +167,12 @@ namespace integration
 
   TRouteResult CalculateRoute(IRouterComponents const & routerComponents,
                               m2::PointD const & startPoint, m2::PointD const & startDirection,
-                              m2::PointD const & finalPoint)
+                              m2::PointD const & finalPoint, bool enableJoints)
   {
     RouterDelegate delegate;
     shared_ptr<Route> route = make_shared<Route>("mapsme", 0 /* route id */);
     RouterResultCode result = routerComponents.GetRouter().CalculateRoute(
-        Checkpoints(startPoint, finalPoint), startDirection, false /* adjust */, delegate, *route);
+        Checkpoints(startPoint, finalPoint), startDirection, false /* adjust */, delegate, *route, enableJoints);
     ASSERT(route, ());
     return TRouteResult(route, result);
   }

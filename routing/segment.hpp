@@ -78,6 +78,12 @@ public:
     return m_mwmId != kFakeNumMwmId && !FakeFeatureIds::IsTransitFeature(m_featureId);
   }
 
+  Segment Next(bool forward) const
+  {
+    uint32_t nextSegmentId = forward ? m_segmentIdx + 1 : m_segmentIdx - 1;
+    return {m_mwmId, m_featureId, nextSegmentId, m_forward};
+  }
+
 private:
   uint32_t m_featureId = 0;
   uint32_t m_segmentIdx = 0;
@@ -88,11 +94,13 @@ private:
 class SegmentEdge final
 {
 public:
+  SegmentEdge() = default;
   SegmentEdge(Segment const & target, RouteWeight const & weight)
     : m_target(target), m_weight(weight)
-  {
-  }
+  {}
+
   Segment const & GetTarget() const { return m_target; }
+  Segment & GetTarget() { return m_target; }
   RouteWeight const & GetWeight() const { return m_weight; }
 
   bool operator==(SegmentEdge const & edge) const
@@ -105,6 +113,14 @@ public:
     if (m_target != edge.m_target)
       return m_target < edge.m_target;
     return m_weight < edge.m_weight;
+  }
+
+  SegmentEdge & operator=(SegmentEdge const & rhs)
+  {
+    m_target = rhs.m_target;
+    m_weight = rhs.m_weight;
+
+    return *this;
   }
 
 private:

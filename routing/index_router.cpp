@@ -325,7 +325,7 @@ bool IndexRouter::FindBestSegment(m2::PointD const & point, m2::PointD const & d
 RouterResultCode IndexRouter::CalculateRoute(Checkpoints const & checkpoints,
                                              m2::PointD const & startDirection,
                                              bool adjustToPrevRoute,
-                                             RouterDelegate const & delegate, Route & route)
+                                             RouterDelegate const & delegate, Route & route, bool enableJoints)
 {
   vector<string> outdatedMwms;
   GetOutdatedMwms(m_dataSource, outdatedMwms);
@@ -360,7 +360,7 @@ RouterResultCode IndexRouter::CalculateRoute(Checkpoints const & checkpoints,
           MercatorBounds::ToLatLon(finalPoint)));
       }
     }
-    return DoCalculateRoute(checkpoints, startDirection, delegate, route);
+    return DoCalculateRoute(checkpoints, startDirection, delegate, route, enableJoints);
   }
   catch (RootException const & e)
   {
@@ -372,7 +372,7 @@ RouterResultCode IndexRouter::CalculateRoute(Checkpoints const & checkpoints,
 
 RouterResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoints,
                                                m2::PointD const & startDirection,
-                                               RouterDelegate const & delegate, Route & route)
+                                               RouterDelegate const & delegate, Route & route, bool enableJoints)
 {
   m_lastRoute.reset();
 
@@ -440,7 +440,7 @@ RouterResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoints,
                                       isStartSegmentStrictForward, *graph);
 
     vector<Segment> subroute;
-    auto const result = CalculateSubroute(checkpoints, i, delegate, subrouteStarter, subroute);
+    auto const result = CalculateSubroute(checkpoints, i, delegate, subrouteStarter, subroute, enableJoints);
 
     if (result != RouterResultCode::NoError)
       return result;
@@ -484,7 +484,8 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
                                                 size_t subrouteIdx,
                                                 RouterDelegate const & delegate,
                                                 IndexGraphStarter & starter,
-                                                vector<Segment> & subroute)
+                                                vector<Segment> & subroute,
+                                                bool enableJoints)
 {
   subroute.clear();
 
@@ -498,12 +499,18 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
       break;
     case VehicleType::Car:
       starter.GetGraph().SetMode(AreMwmsNear(starter.GetMwms()) ? WorldGraph::Mode::NoLeaps
-                                                                : WorldGraph::Mode::LeapsOnly);
+                                                                : WorldGraph::Mode::NoLeaps);
       break;
     case VehicleType::Count:
       CHECK(false, ("Unknown vehicle type:", m_vehicleType));
       break;
   }
+
+  enableJoints = true;
+  //tmp code
+  if (enableJoints)
+    starter.GetGraph().SetMode(WorldGraph::Mode::JointsOnly);
+  //end tmp
 
   LOG(LINFO, ("Routing in mode:", starter.GetGraph().GetMode()));
 
@@ -540,7 +547,23 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
       delegate, onVisitJunction, checkLength);
 
   set<NumMwmId> const mwmIds = starter.GetMwms();
-  RouterResultCode const result = FindPath<IndexGraphStarter>(params, mwmIds, routingResult);
+
+  RouterResultCode result;
+  {
+    using std::chrono::milliseconds;
+    auto start = std::chrono::high_resolution_clock::now();
+    result = FindPath<IndexGraphStarter>(params, mwmIds, routingResult);
+    auto finish = std::chrono::high_resolution_clock::now();
+    auto time = std::chrono::duration_cast<milliseconds>(finish - start).count();
+    std::ofstream output("/tmp/counter", std::ofstream::app);
+    output << std::setprecision(20);
+    if (enableJoints)
+      output << "joints_time: " << time << "ms" << std::endl;
+    else
+      output << "simple_time: " << time << "ms" << std::endl;
+  }
+
+
   if (result != RouterResultCode::NoError)
     return result;
 

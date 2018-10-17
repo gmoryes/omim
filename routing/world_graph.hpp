@@ -33,6 +33,7 @@ public:
     NoLeaps,    // Mode for building route and getting outgoing/ingoing edges without leaps at all.
     SingleMwm,  // Mode for building route and getting outgoing/ingoing edges within mwm source
                 // segment belongs to.
+    JointsOnly
   };
 
   virtual ~WorldGraph() = default;
@@ -77,6 +78,7 @@ public:
   virtual std::vector<RouteSegment::SpeedCamera> GetSpeedCamInfo(Segment const & segment) = 0;
 
 protected:
+  void GetOnlyTwinsEdges(Segment const & segment, bool isOutgoing, vector<SegmentEdge> & edges);
   void GetTwins(Segment const & segment, bool isOutgoing, std::vector<SegmentEdge> & edges);
   virtual void GetTwinsInner(Segment const & segment, bool isOutgoing,
                              std::vector<Segment> & twins) = 0;

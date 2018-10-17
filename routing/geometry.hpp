@@ -104,7 +104,7 @@ public:
 
   /// \note The reference returned by the method is valid until the next call of GetRoad()
   /// of GetPoint() methods.
-  RoadGeometry const & GetRoad(uint32_t featureId);
+  RoadGeometry const & GetRoad(uint32_t featureId) const;
 
   /// \note The reference returned by the method is valid until the next call of GetRoad()
   /// of GetPoint() methods.

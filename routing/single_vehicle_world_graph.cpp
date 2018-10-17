@@ -1,5 +1,9 @@
 #include "routing/single_vehicle_world_graph.hpp"
 
+#include "routing/joint_graph.hpp"
+#include "single_vehicle_world_graph.hpp"
+
+
 #include <utility>
 
 namespace routing
@@ -32,10 +36,17 @@ void SingleVehicleWorldGraph::GetEdgeList(Segment const & segment, bool isOutgoi
   }
 
   IndexGraph & indexGraph = m_loader->GetIndexGraph(segment.GetMwmId());
-  indexGraph.GetEdgeList(segment, isOutgoing, edges);
+  if (m_mode == Mode::JointsOnly)
+  {
+    JointGraph(indexGraph, *this).GetEdgeList(segment, isOutgoing, edges);
+  }
+  else
+  {
+    indexGraph.GetEdgeList(segment, isOutgoing, edges);
 
-  if (m_mode != Mode::SingleMwm && m_crossMwmGraph && m_crossMwmGraph->IsTransition(segment, isOutgoing))
-    GetTwins(segment, isOutgoing, edges);
+    if (m_mode != Mode::SingleMwm && m_crossMwmGraph && m_crossMwmGraph->IsTransition(segment, isOutgoing))
+      GetTwins(segment, isOutgoing, edges);
+  }
 }
 
 Junction const & SingleVehicleWorldGraph::GetJunction(Segment const & segment, bool front)
@@ -133,5 +144,17 @@ void SingleVehicleWorldGraph::GetTwinsInner(Segment const & segment, bool isOutg
                                             vector<Segment> & twins)
 {
   m_crossMwmGraph->GetTwins(segment, isOutgoing, twins);
+}
+
+bool SingleVehicleWorldGraph::IsTransitForJoints(Segment const & segment, bool isOutgoing) const
+{
+  return (m_mode != Mode::SingleMwm && m_crossMwmGraph && m_crossMwmGraph->IsTransition(segment, isOutgoing));
+}
+
+void SingleVehicleWorldGraph::GetTwinsForJoints(Segment const & segment, bool isOutgoing,
+                                                std::vector<SegmentEdge> & edges)
+{
+  if (IsTransitForJoints(segment, isOutgoing))
+    GetOnlyTwinsEdges(segment, isOutgoing, edges);
 }
 }  // namespace routing

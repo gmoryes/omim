@@ -248,6 +248,7 @@ void DeserializeIndexGraph(MwmValue const & mwmValue, VehicleType vehicleType, I
   FilesContainerR::TReader reader(mwmValue.m_cont.GetReader(ROUTING_FILE_TAG));
   ReaderSource<FilesContainerR::TReader> src(reader);
   IndexGraphSerializer::Deserialize(graph, src, GetVehicleMask(vehicleType));
+  LOG(LINFO, ("size =", graph.GetRoadIndex().m_roads.size()));
   RestrictionLoader restrictionLoader(mwmValue, graph);
   if (restrictionLoader.HasRestrictions())
     graph.SetRestrictions(restrictionLoader.StealRestrictions());

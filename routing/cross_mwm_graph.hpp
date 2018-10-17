@@ -80,6 +80,9 @@ public:
   /// If not, |twins| could be emply after a GetTwins(...) call.
   void GetTwins(Segment const & s, bool isOutgoing, std::vector<Segment> & twins);
 
+  bool IsFeatureTransit(NumMwmId numMwmId, uint32_t featureId);
+  std::pair<NumMwmId, uint32_t> GetTwinFeature(Segment const & segment, bool isOutgoing);
+
   /// \brief Fills |edges| with edges outgoing from |s|.
   /// |s| should be an enter transition segment, |edges| is filled with all edges starting from |s|
   /// and ending at all reachable exit transition segments of the mwm of |s|.

@@ -35,7 +35,7 @@ public:
     else if (target == m_startPoint)
       m_backwardDistance = MercatorBounds::DistanceOnEarth(point, target);
     else
-      ASSERT(false, ());
+      return 0; //ASSERT(false, ());
     return CheckConstraints(2.0 - (m_forwardDistance + m_backwardDistance) / m_initialDistance);
   }
 

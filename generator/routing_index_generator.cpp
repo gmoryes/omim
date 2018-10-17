@@ -403,7 +403,7 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
   auto const numEnters = connector.GetEnters().size();
   size_t foundCount = 0;
   size_t notFoundCount = 0;
-  for (size_t i = 0; i < numEnters; ++i)
+  /*for (size_t i = 0; i < numEnters; ++i)
   {
     if (!disableCrossMwmProgress && (i % 10 == 0) && (i != 0))
       LOG(LINFO, ("Building leaps:", i, "/", numEnters, "waves passed"));
@@ -414,7 +414,7 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
     DijkstraWrapper wrapper(graph);
     AStarAlgorithm<DijkstraWrapper>::Context context;
     astar.PropagateWave(wrapper, enter,
-                        [](Segment const & /* vertex */) { return true; } /* visitVertex */,
+                        [](Segment const &) { return true; },
                         context);
 
     for (Segment const & exit : connector.GetExits())
@@ -430,7 +430,7 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
       }
     }
   }
-
+  */
   connector.FillWeights([&](Segment const & enter, Segment const & exit) {
     auto it0 = weights.find(enter);
     if (it0 == weights.end())

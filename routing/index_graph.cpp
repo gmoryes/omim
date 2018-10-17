@@ -64,7 +64,7 @@ IndexGraph::IndexGraph(shared_ptr<Geometry> geometry, shared_ptr<EdgeEstimator> 
   CHECK(m_estimator, ());
 }
 
-void IndexGraph::GetEdgeList(Segment const & segment, bool isOutgoing, vector<SegmentEdge> & edges)
+void IndexGraph::GetEdgeList(Segment const & segment, bool isOutgoing, vector<SegmentEdge> & edges) const
 {
   RoadPoint const roadPoint = segment.GetRoadPoint(isOutgoing);
   Joint::Id const jointId = m_roadIndex.GetJointId(roadPoint);
@@ -119,14 +119,14 @@ RouteWeight IndexGraph::HeuristicCostEstimate(Segment const & from, Segment cons
       m_estimator->CalcHeuristic(GetPoint(from, true /* front */), GetPoint(to, true /* front */)));
 }
 
-RouteWeight IndexGraph::CalcSegmentWeight(Segment const & segment)
+RouteWeight IndexGraph::CalcSegmentWeight(Segment const & segment) const
 {
   return RouteWeight(
       m_estimator->CalcSegmentWeight(segment, m_geometry->GetRoad(segment.GetFeatureId())));
 }
 
 void IndexGraph::GetNeighboringEdges(Segment const & from, RoadPoint const & rp, bool isOutgoing,
-                                     vector<SegmentEdge> & edges)
+                                     vector<SegmentEdge> & edges) const
 {
   RoadGeometry const & road = m_geometry->GetRoad(rp.GetFeatureId());
 
@@ -151,7 +151,7 @@ void IndexGraph::GetNeighboringEdges(Segment const & from, RoadPoint const & rp,
 }
 
 void IndexGraph::GetNeighboringEdge(Segment const & from, Segment const & to, bool isOutgoing,
-                                    vector<SegmentEdge> & edges)
+                                    vector<SegmentEdge> & edges) const
 {
   // Blocking U-turns on internal feature points.
   RoadPoint const rp = from.GetRoadPoint(isOutgoing);
@@ -175,7 +175,26 @@ void IndexGraph::GetNeighboringEdge(Segment const & from, Segment const & to, bo
   edges.emplace_back(to, weight);
 }
 
-RouteWeight IndexGraph::GetPenalties(Segment const & u, Segment const & v)
+bool IndexGraph::GetNeighboringEdge(Segment const & from, Segment const & to, bool isOutgoing,
+                                    SegmentEdge & edge) const
+{
+  if (from.GetFeatureId() == 61258 && from.GetSegmentIdx() == 4)
+  {
+    int asd = 5;
+    (void)asd;
+  }
+  std::vector<SegmentEdge> edges;
+  GetNeighboringEdge(from, to, isOutgoing, edges);
+  if (!edges.empty())
+  {
+    edge = edges.back();
+    return true;
+  }
+
+  return false;
+}
+
+RouteWeight IndexGraph::GetPenalties(Segment const & u, Segment const & v) const
 {
   bool const fromPassThroughAllowed = m_geometry->GetRoad(u.GetFeatureId()).IsPassThroughAllowed();
   bool const toPassThroughAllowed = m_geometry->GetRoad(v.GetFeatureId()).IsPassThroughAllowed();

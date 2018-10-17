@@ -12,6 +12,8 @@
 #include "base/stl_helpers.hpp"
 
 #include "defines.hpp"
+#include "cross_mwm_graph.hpp"
+
 
 #include <algorithm>
 #include <numeric>
@@ -151,6 +153,38 @@ void CrossMwmGraph::DeserializeTransitTransitions(vector<NumMwmId> const & mwmId
     // Some mwms may not have cross mwm transit section.
     if (TransitCrossMwmSectionExists(mwmId))
       m_crossMwmTransitGraph.LoadCrossMwmConnectorWithTransitions(mwmId);
+  }
+}
+
+bool CrossMwmGraph::IsFeatureTransit(NumMwmId numMwmId, uint32_t featureId)
+{
+  return m_crossMwmIndexGraph.IsFeatureTransit(numMwmId, featureId);
+}
+
+std::pair<NumMwmId, uint32_t> CrossMwmGraph::GetTwinFeature(Segment const & segment, bool isOutgoing)
+{
+
+  static std::pair<NumMwmId, uint32_t> constexpr kFail = {0, std::numeric_limits<uint32_t>::max()};
+
+  uint32_t transitSegmentId = m_crossMwmIndexGraph.GetTransitSegmentId(segment.GetMwmId(),
+                                                                       segment.GetFeatureId());
+
+  auto transitSegment = Segment(segment.GetMwmId(), segment.GetFeatureId(),
+                                transitSegmentId, segment.IsForward());
+
+  // когда перешли чуть заранее самого перехода и пытаемся выйти => не получается
+  if (!IsTransition(transitSegment, isOutgoing))
+    return kFail;
+
+  std::vector<Segment> twins;
+  GetTwins(transitSegment, isOutgoing, twins);
+  if (twins.empty())
+    return kFail;
+  else
+  {
+    auto mwmId = twins.back().GetMwmId();
+    auto featureId = twins.back().GetFeatureId();
+    return {mwmId, featureId};
   }
 }
 

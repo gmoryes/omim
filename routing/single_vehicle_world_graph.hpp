@@ -59,13 +59,17 @@ public:
     return m_loader->GetIndexGraph(numMwmId);
   }
 
+  bool IsTransitForJoints(Segment const & segment, bool isOutgoing) const;
+  void GetTwinsForJoints(Segment const & segment, bool isOutgoing, std::vector<SegmentEdge> & edges);
+
+  CrossMwmGraph & GetCrossMwmGraph() { return *m_crossMwmGraph; }
 private:
+  std::unique_ptr<CrossMwmGraph> m_crossMwmGraph;
   // WorldGraph overrides:
   void GetTwinsInner(Segment const & s, bool isOutgoing, std::vector<Segment> & twins) override;
 
   RoadGeometry const & GetRoadGeometry(NumMwmId mwmId, uint32_t featureId);
 
-  std::unique_ptr<CrossMwmGraph> m_crossMwmGraph;
   std::unique_ptr<IndexGraphLoader> m_loader;
   std::shared_ptr<EdgeEstimator> m_estimator;
   Mode m_mode = Mode::NoLeaps;

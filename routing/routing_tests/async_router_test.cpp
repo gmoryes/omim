@@ -38,7 +38,7 @@ public:
   string GetName() const override { return "Dummy"; }
   RouterResultCode CalculateRoute(Checkpoints const & checkpoints, m2::PointD const & startDirection,
                             bool adjustToPrevRoute, RouterDelegate const & delegate,
-                            Route & route) override
+                            Route & route, bool enableJoints = false) override
   {
     route = Route("dummy", checkpoints.GetPoints().cbegin(), checkpoints.GetPoints().cend(),
                   0 /* route id */);

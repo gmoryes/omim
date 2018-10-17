@@ -233,8 +233,53 @@ RoutingManager::RoutingManager(Callbacks && callbacks, Delegate & delegate)
                           if (m_bmManager == nullptr)
                             return;
                           auto editSession = m_bmManager->GetEditSession();
-                          editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
-                          editSession.CreateUserMark<DebugMarkPoint>(pt);
+                          static size_t counter = 0;
+                          /*if (counter % 30 == 0)
+                          {
+                            editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+                            editSession.CreateUserMark<DebugMarkPoint>(pt);
+                          }*/
+                          counter++;
+                          if (counter == 1)
+                          {
+                            auto rect =
+                              MercatorBounds::RectByCenterXYAndSizeInMeters(
+                                MercatorBounds::FromLatLon({56.0375068, 46.254187}),
+                                10000); // 10km
+                            (void)rect;
+
+                            double maxWeight = 0.0;
+                            {
+                              std::ifstream input("/tmp/points");
+                              double lat, lon;
+                              double weight;
+                              while (input >> lat >> lon >> weight)
+                                maxWeight = std::max(maxWeight, weight);
+                            }
+
+                            // hack, tmp
+                            maxWeight = 30000.0;
+                            // end hack, tmp
+
+                            std::ifstream input("/tmp/points");
+                            double lat, lon;
+                            double weight;
+
+                            int cnt = 0;
+                            while (input >> lat >> lon >> weight)
+                            {
+                              cnt++;
+                              auto const p = MercatorBounds::FromLatLon({lat, lon});
+                              //if (rect.IsPointInside(p))
+                              if (cnt % 50 == 0)
+                              {
+                                ColoredDebugMarkPoint * point =
+                                  editSession.CreateUserMark<ColoredDebugMarkPoint>(p);
+                                point->SetColor({static_cast<uint8_t>(255 * (1 - weight / maxWeight)),
+                                                 0, 0, 255});
+                              }
+                            }
+                          }
                         }
 #else
                         nullptr

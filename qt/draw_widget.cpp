@@ -174,12 +174,21 @@ void DrawWidget::mousePressEvent(QMouseEvent * e)
 
   m2::PointD const pt = GetDevicePoint(e);
 
+  ms::LatLon from = {55.7825299, 49.1308386};
+  ms::LatLon to =   {59.9366466, 30.3159968};
+
   if (IsLeftButton(e))
   {
     if (IsShiftModifier(e))
-      SubmitRoutingPoint(pt);
+    {
+      //SubmitRoutingPoint(pt);
+      SubmitRoutingPoint(MercatorBounds::FromLatLon(to));
+    }
     else if (IsAltModifier(e))
-      SubmitFakeLocationPoint(pt);
+    {
+      //SubmitFakeLocationPoint(pt);
+      SubmitFakeLocationPoint(MercatorBounds::FromLatLon(from));
+    }
     else
       m_framework.TouchEvent(GetTouchEvent(e, df::TouchEvent::TOUCH_DOWN));
   }
@@ -353,7 +362,8 @@ void DrawWidget::SetMapStyle(MapStyle mapStyle)
 void DrawWidget::SubmitFakeLocationPoint(m2::PointD const & pt)
 {
   m_emulatingLocation = true;
-  auto const point = m_framework.P3dtoG(pt);
+  //auto const point = m_framework.P3dtoG(pt);
+  auto const point = pt;
   m_framework.OnLocationUpdate(qt::common::MakeGpsInfo(point));
 
   if (m_framework.GetRoutingManager().IsRoutingActive())
@@ -387,7 +397,8 @@ void DrawWidget::SubmitRoutingPoint(m2::PointD const & pt)
   RouteMarkData point;
   point.m_pointType = m_routePointAddMode;
   point.m_isMyPosition = false;
-  point.m_position = m_framework.P3dtoG(pt);
+  //point.m_position = m_framework.P3dtoG(pt);
+  point.m_position = pt;
   routingManager.AddRoutePoint(std::move(point));
 
   if (routingManager.GetRoutePoints().size() >= 2)
@@ -401,7 +412,14 @@ void DrawWidget::SubmitBookmark(m2::PointD const & pt)
   kml::BookmarkData data;
   data.m_color.m_predefinedColor = kml::PredefinedColor::Red;
   data.m_point = m_framework.P3dtoG(pt);
-  m_framework.GetBookmarkManager().GetEditSession().CreateBookmark(std::move(data), m_bookmarksCategoryId);
+
+  {
+    auto editSession = m_framework.GetBookmarkManager().GetEditSession();
+    editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+    auto debugMark = editSession.CreateUserMark<ColoredDebugMarkPoint>(data.m_point);
+    debugMark->SetColor(dp::Color(100, 200, 150, 255));
+  }
+  //m_framework.GetBookmarkManager().GetEditSession().CreateBookmark(std::move(data), m_bookmarksCategoryId);
 }
 
 void DrawWidget::FollowRoute()

@@ -17,6 +17,11 @@ public:
   RoadPoint() : m_featureId(0), m_pointId(0) {}
 
   RoadPoint(uint32_t featureId, uint32_t pointId) : m_featureId(featureId), m_pointId(pointId) {}
+  RoadPoint(RoadPoint const & from)
+  {
+    m_featureId = from.m_featureId;
+    m_pointId = from.m_pointId;
+  }
 
   uint32_t GetFeatureId() const { return m_featureId; }
 

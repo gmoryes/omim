@@ -7,12 +7,14 @@
 #include "geometry/point2d.hpp"
 
 #include "base/assert.hpp"
+#include "base/logging.hpp"
 
 #include <cmath>
 #include <cstdint>
 #include <limits>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace routing
@@ -81,6 +83,12 @@ public:
 
     m_transitions[Key(featureId, segmentIdx)] = transition;
     m_crossMwmIdToFeatureId.emplace(crossMwmId, featureId);
+    m_transitFeatureToSegmentId.emplace(featureId, segmentIdx);
+  }
+
+  bool IsFeatureTransit(uint32_t featureId) const
+  {
+    return m_transitFeatureToSegmentId.find(featureId) != m_transitFeatureToSegmentId.end();
   }
 
   bool IsTransition(Segment const & segment, bool isOutgoing) const
@@ -201,6 +209,13 @@ public:
     }
   }
 
+  uint32_t GetTransitSegmentId(uint32_t featureId) const
+  {
+    auto it = m_transitFeatureToSegmentId.find(featureId);
+    ASSERT(it != m_transitFeatureToSegmentId.end(), ());
+    return it->second;
+  }
+
 private:
   struct Key
   {
@@ -292,6 +307,7 @@ private:
   std::vector<Segment> m_enters;
   std::vector<Segment> m_exits;
   std::unordered_map<Key, Transition<CrossMwmId>, HashKey> m_transitions;
+  std::unordered_map<uint32_t, uint32_t> m_transitFeatureToSegmentId;
   std::unordered_map<CrossMwmId, uint32_t, connector::HashKey> m_crossMwmIdToFeatureId;
   connector::WeightsLoadState m_weightsLoadState = connector::WeightsLoadState::Unknown;
   // For some connectors we may need to shift features with some offset.
