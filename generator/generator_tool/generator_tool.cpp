@@ -512,7 +512,8 @@ int main(int argc, char ** argv)
 
       routing::BuildRoadRestrictions(datFile, restrictionsFilename, osmToFeatureFilename);
       routing::BuildRoadAccessInfo(datFile, roadAccessFilename, osmToFeatureFilename);
-      routing::BuildRoutingIndex(datFile, country, *countryParentGetter);
+      routing::BuildRoutingIndex(path, datFile, country, *countryParentGetter);
+      routing::BuildJointIndexGraph(path, datFile, country, *countryParentGetter);
     }
 
     if (FLAGS_make_city_roads)

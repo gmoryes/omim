@@ -83,6 +83,40 @@ public:
            base::AlmostEqualAbs(m_transitTime, rhs.m_transitTime, epsilon);
   }
 
+  template <typename Sink>
+  static void Serialize(Sink & sink, RouteWeight const & routeWeight)
+  {
+    double weight = routeWeight.GetWeight();
+    sink.Write(&weight, sizeof(weight));
+
+    int8_t numPassThroughChanges = routeWeight.GetNumPassThroughChanges();
+    sink.Write(&numPassThroughChanges, sizeof(numPassThroughChanges));
+
+    int8_t numAccessChanges = routeWeight.GetNumAccessChanges();
+    sink.Write(&numAccessChanges, sizeof(numAccessChanges));
+
+    double transitTime = routeWeight.GetTransitTime();
+    sink.Write(&transitTime, sizeof(transitTime));
+  }
+
+  template <typename Source>
+  static RouteWeight Deserialize(Source & source)
+  {
+    double weight;
+    source.Read(&weight, sizeof(weight));
+
+    int8_t numPassThroughChanges;
+    source.Read(&numPassThroughChanges, sizeof(numPassThroughChanges));
+
+    int8_t numAccessChanges;
+    source.Read(&numAccessChanges, sizeof(numAccessChanges));
+
+    double transitTime;
+    source.Read(&transitTime, sizeof(transitTime));
+
+    return {weight, numPassThroughChanges, numAccessChanges, transitTime};
+  }
+
 private:
   // Regular weight (seconds).
   double m_weight = 0.0;

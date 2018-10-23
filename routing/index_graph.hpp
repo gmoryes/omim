@@ -60,6 +60,26 @@ public:
   void SetRestrictions(RestrictionVec && restrictions);
   void SetRoadAccess(RoadAccess && roadAccess);
 
+  template <typename Source>
+  void DesirializeJointGraph(Source & source, NumMwmId numMwmId)
+  {
+    uint32_t amount;
+    source.Read(&amount, sizeof(amount));
+
+    for (uint32_t i = 0; i < amount; ++i)
+    {
+      JointSegment jointSegment = JointSegment::Deserialize(source, numMwmId);
+
+      uint32_t featureId = jointSegment.GetFeatureId();
+      uint32_t startSegmentId = jointSegment.GetStartSegmentId();
+      uint32_t endSegmentId = jointSegment.GetEndSegmentId();
+      bool forward = jointSegment.IsForward();
+
+      m_jointSegmentIndex.emplace(Segment(numMwmId, featureId, startSegmentId, forward), jointSegment);
+      m_jointSegmentIndex.emplace(Segment(numMwmId, featureId, endSegmentId, forward), jointSegment);
+    }
+  }
+
   // Interface for AStarAlgorithm:
   void GetOutgoingEdgesList(Segment const & segment, vector<SegmentEdge> & edges);
   void GetIngoingEdgesList(Segment const & segment, vector<SegmentEdge> & edges);

@@ -246,19 +246,27 @@ bool ReadRoadAccessFromMwm(MwmValue const & mwmValue, VehicleType vehicleType,
 void DeserializeIndexGraph(MwmValue const & mwmValue, NumMwmId numMwmId,
                            VehicleType vehicleType, IndexGraph & graph)
 {
-  FilesContainerR::TReader reader(mwmValue.m_cont.GetReader(ROUTING_FILE_TAG));
-  ReaderSource<FilesContainerR::TReader> src(reader);
-  IndexGraphSerializer::Deserialize(graph, src, GetVehicleMask(vehicleType));
-  LOG(LINFO, ("size =", graph.GetRoadIndex().m_roads.size()));
-  RestrictionLoader restrictionLoader(mwmValue, graph);
-  if (restrictionLoader.HasRestrictions())
-    graph.SetRestrictions(restrictionLoader.StealRestrictions());
+  {
+    FilesContainerR::TReader reader(mwmValue.m_cont.GetReader(ROUTING_FILE_TAG));
+    ReaderSource<FilesContainerR::TReader> src(reader);
+    IndexGraphSerializer::Deserialize(graph, src, GetVehicleMask(vehicleType));
+    LOG(LINFO, ("size =", graph.GetRoadIndex().m_roads.size()));
+    RestrictionLoader restrictionLoader(mwmValue, graph);
+    if (restrictionLoader.HasRestrictions())
+      graph.SetRestrictions(restrictionLoader.StealRestrictions());
 
-  RoadAccess roadAccess;
-  if (ReadRoadAccessFromMwm(mwmValue, vehicleType, roadAccess))
-    graph.SetRoadAccess(move(roadAccess));
+    RoadAccess roadAccess;
+    if (ReadRoadAccessFromMwm(mwmValue, vehicleType, roadAccess))
+      graph.SetRoadAccess(move(roadAccess));
+  }
 
-  graph.BuildJointIndex(numMwmId);
+  {
+    base::HighResTimer timer;
+    FilesContainerR::TReader reader(mwmValue.m_cont.GetReader(ROUTING_JOINT_GRAPH_TAG));
+    ReaderSource<FilesContainerR::TReader> src(reader);
+    graph.DesirializeJointGraph(src, numMwmId);
+    LOG(LINFO, ("DesirializeJointGraph:", timer.ElapsedNano() / 1e6));
+  }
   LOG(LINFO, ("size jointIndex =", graph.GetJointSegmentIndex().size(), "sizeof JointSegment =", sizeof(JointSegment)));
 }
 }  // namespace routing

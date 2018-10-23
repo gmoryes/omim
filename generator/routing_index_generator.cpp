@@ -11,6 +11,7 @@
 #include "routing/index_graph.hpp"
 #include "routing/index_graph_loader.hpp"
 #include "routing/index_graph_serialization.hpp"
+#include "routing/restriction_loader.hpp"
 #include "routing/road_access_serialization.hpp"
 #include "routing/vehicle_mask.hpp"
 
@@ -398,7 +399,7 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
       EdgeEstimator::Create(VehicleType::Car, *vehicleModel, nullptr /* trafficStash */));
 
   MwmValue mwmValue(LocalCountryFile(path, platform::CountryFile(country), 0 /* version */));
-  DeserializeIndexGraph(mwmValue, VehicleType::Car, graph);
+  DeserializeIndexGraph(mwmValue, 0 /* NumMwmId */, VehicleType::Car, graph);
 
   map<Segment, map<Segment, RouteWeight>> weights;
   auto const numEnters = connector.GetEnters().size();
@@ -457,26 +458,20 @@ serial::GeometryCodingParams LoadGeometryCodingParams(string const & mwmFile)
 
 namespace routing
 {
-bool BuildRoutingIndex(string const & filename,
-                       string const & restrictionsFilename,
+bool BuildRoutingIndex(string const & path, string const & mwmFile,
                        string const & country,
                        CountryParentNameGetterFn const & countryParentNameGetterFn)
 {
-  LOG(LINFO, ("Building routing index for", filename));
+  LOG(LINFO, ("Building routing index for", mwmFile));
   try
   {
     Processor processor(country, countryParentNameGetterFn);
-    processor.ProcessAllFeatures(filename);
+    processor.ProcessAllFeatures(mwmFile);
 
     IndexGraph graph;
     processor.BuildGraph(graph);
 
-    RoadAccess roadAccess;
-    MwmValue mwmValue(LocalCountryFile(filename, platform::CountryFile(country), 0 /* version */));
-    if (ReadRoadAccessFromMwm(mwmValue, VehicleType::Car, roadAccess))
-      graph.SetRoadAccess(move(roadAccess));
-
-    FilesContainerW cont(filename, FileWriter::OP_WRITE_EXISTING);
+    FilesContainerW cont(mwmFile, FileWriter::OP_WRITE_EXISTING);
     FileWriter writer = cont.GetWriter(ROUTING_FILE_TAG);
 
     auto const startPos = writer.Pos();
@@ -490,6 +485,48 @@ bool BuildRoutingIndex(string const & filename,
   catch (RootException const & e)
   {
     LOG(LERROR, ("An exception happened while creating", ROUTING_FILE_TAG, "section:", e.what()));
+    return false;
+  }
+}
+
+bool BuildJointIndexGraph(std::string const & path, std::string const & mwmFile,
+                          std::string const & country,
+                          CountryParentNameGetterFn const & countryParentNameGetterFn)
+{
+  LOG(LINFO, ("Building joint_index_graph index for", mwmFile));
+  try
+  {
+    shared_ptr<VehicleModelInterface> vehicleModel =
+      CarModelFactory(countryParentNameGetterFn).GetVehicleModelForCountry(country);
+    IndexGraph graph(
+      make_shared<Geometry>(GeometryLoader::CreateFromFile(mwmFile, vehicleModel)),
+      EdgeEstimator::Create(VehicleType::Car, *vehicleModel, nullptr /* trafficStash */));
+
+    MwmValue mwmValue(LocalCountryFile(path, platform::CountryFile(country), 0 /* version */));
+
+    DeserializeIndexGraph(mwmValue, 0 /* NumMwmId */, VehicleType::Car, graph);
+
+    FilesContainerW cont(mwmFile, FileWriter::OP_WRITE_EXISTING);
+    FileWriter writer = cont.GetWriter(ROUTING_JOINT_GRAPH_TAG);
+
+    auto const startPos = writer.Pos();
+    auto const & jointGraph = graph.GetJointSegmentIndex();
+    auto amount = static_cast<uint32_t>(jointGraph.size());
+    writer.Write(&amount, sizeof(amount));
+    std::set<JointSegment> tmp;
+    for (auto const & item : jointGraph)
+      tmp.insert(item.second);
+    for (auto const & item : tmp)
+      JointSegment::Serialize(writer, item);
+
+    auto const sectionSize = writer.Pos() - startPos;
+
+    LOG(LINFO, ("JointIndexGraph section created:", sectionSize, "bytes,"));
+    return true;
+  }
+  catch (RootException const & e)
+  {
+    LOG(LERROR, ("An exception happened while creating", ROUTING_JOINT_GRAPH_TAG, "section:", e.what()));
     return false;
   }
 }

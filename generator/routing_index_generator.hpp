@@ -8,10 +8,13 @@ namespace routing
 {
 using CountryParentNameGetterFn = std::function<std::string(std::string const &)>;
 
-bool BuildRoutingIndex(std::string const & filename,
-                       std::string const & restrictionsFilename,
+bool BuildRoutingIndex(std::string const & path, std::string const & mwmFile,
                        std::string const & country,
                        CountryParentNameGetterFn const & countryParentNameGetterFn);
+
+bool BuildJointIndexGraph(std::string const & path, std::string const & mwmFile,
+                          std::string const & country,
+                          CountryParentNameGetterFn const & countryParentNameGetterFn);
 
 /// \brief Builds CROSS_MWM_FILE_TAG section.
 /// \note Before call of this method

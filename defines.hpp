@@ -40,6 +40,7 @@
 #define ROAD_ACCESS_FILE_TAG "roadaccess"
 #define RESTRICTIONS_FILE_TAG "restrictions"
 #define ROUTING_FILE_TAG "routing"
+#define ROUTING_JOINT_GRAPH_TAG "joint_graph"
 #define CROSS_MWM_FILE_TAG "cross_mwm"
 #define FEATURE_OFFSETS_FILE_TAG "offs"
 #define SEARCH_RANKS_FILE_TAG "ranks"
