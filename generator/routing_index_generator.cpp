@@ -512,11 +512,12 @@ bool BuildJointIndexGraph(std::string const & path, std::string const & mwmFile,
 
     auto const startPos = writer.Pos();
     auto const & jointGraph = graph.GetJointSegmentIndex();
-    auto amount = static_cast<uint32_t>(jointGraph.size());
-    writer.Write(&amount, sizeof(amount));
     std::set<JointSegment> tmp;
     for (auto const & item : jointGraph)
       tmp.insert(item.second);
+
+    auto amount = static_cast<uint32_t>(tmp.size());
+    writer.Write(&amount, sizeof(amount));
     for (auto const & item : tmp)
       JointSegment::Serialize(writer, item);
 
