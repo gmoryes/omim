@@ -505,6 +505,7 @@ bool BuildJointIndexGraph(std::string const & path, std::string const & mwmFile,
     MwmValue mwmValue(LocalCountryFile(path, platform::CountryFile(country), 0 /* version */));
 
     DeserializeIndexGraph(mwmValue, 0 /* NumMwmId */, VehicleType::Car, graph);
+    graph.BuildJointIndex(0 /* NumMwmId */);
 
     FilesContainerW cont(mwmFile, FileWriter::OP_WRITE_EXISTING);
     FileWriter writer = cont.GetWriter(ROUTING_JOINT_GRAPH_TAG);
