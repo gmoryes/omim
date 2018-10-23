@@ -36,5 +36,6 @@ public:
 
 bool ReadRoadAccessFromMwm(MwmValue const & mwmValue, VehicleType vehicleType,
                            RoadAccess & roadAccess);
-void DeserializeIndexGraph(MwmValue const & mwmValue, NumMwmId numMwmId, VehicleType vehicleType, IndexGraph & graph);
+void DeserializeIndexGraph(MwmValue const & mwmValue, NumMwmId numMwmId, VehicleType vehicleType, IndexGraph & graph,
+                           bool joints = false);
 }  // namespace routing

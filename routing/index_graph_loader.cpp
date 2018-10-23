@@ -201,7 +201,7 @@ IndexGraphLoaderImpl::GraphAttrs & IndexGraphLoaderImpl::CreateIndexGraph(
   graph.m_indexGraph = make_unique<IndexGraph>(graph.m_geometry, m_estimator);
   base::Timer timer;
   MwmValue const & mwmValue = *handle.GetValue<MwmValue>();
-  DeserializeIndexGraph(mwmValue, numMwmId, m_vehicleType, *graph.m_indexGraph);
+  DeserializeIndexGraph(mwmValue, numMwmId, m_vehicleType, *graph.m_indexGraph, true /* joints */);
   LOG(LINFO, (ROUTING_FILE_TAG, "section for", file.GetName(), "loaded in", timer.ElapsedSeconds(),
       "seconds"));
   return graph;
@@ -244,7 +244,7 @@ bool ReadRoadAccessFromMwm(MwmValue const & mwmValue, VehicleType vehicleType,
 }
 
 void DeserializeIndexGraph(MwmValue const & mwmValue, NumMwmId numMwmId,
-                           VehicleType vehicleType, IndexGraph & graph)
+                           VehicleType vehicleType, IndexGraph & graph, bool joints)
 {
   {
     FilesContainerR::TReader reader(mwmValue.m_cont.GetReader(ROUTING_FILE_TAG));
@@ -260,6 +260,7 @@ void DeserializeIndexGraph(MwmValue const & mwmValue, NumMwmId numMwmId,
       graph.SetRoadAccess(move(roadAccess));
   }
 
+  if (joints)
   {
     base::HighResTimer timer;
     FilesContainerR::TReader reader(mwmValue.m_cont.GetReader(ROUTING_JOINT_GRAPH_TAG));
