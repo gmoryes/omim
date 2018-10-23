@@ -25,6 +25,7 @@ public:
   RouteWeight HeuristicCostEstimate(Segment const & from, Segment const & to);
 
   void GetEdgeList(Segment const & from, bool isOutgoing, vector<SegmentEdge> & edges);
+  void GetEdgeListBoost(Segment const & from, bool isOutgoing, vector<SegmentEdge> & edges);
 private:
 
   bool CheckAndProcessTransitFeature(Segment const & segment, RouteWeight const & weight,

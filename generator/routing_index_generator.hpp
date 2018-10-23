@@ -8,7 +8,9 @@ namespace routing
 {
 using CountryParentNameGetterFn = std::function<std::string(std::string const &)>;
 
-bool BuildRoutingIndex(std::string const & filename, std::string const & country,
+bool BuildRoutingIndex(std::string const & filename,
+                       std::string const & restrictionsFilename,
+                       std::string const & country,
                        CountryParentNameGetterFn const & countryParentNameGetterFn);
 
 /// \brief Builds CROSS_MWM_FILE_TAG section.

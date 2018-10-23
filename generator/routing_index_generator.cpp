@@ -11,6 +11,7 @@
 #include "routing/index_graph.hpp"
 #include "routing/index_graph_loader.hpp"
 #include "routing/index_graph_serialization.hpp"
+#include "routing/road_access_serialization.hpp"
 #include "routing/vehicle_mask.hpp"
 
 #include "routing_common/bicycle_model.hpp"
@@ -456,7 +457,9 @@ serial::GeometryCodingParams LoadGeometryCodingParams(string const & mwmFile)
 
 namespace routing
 {
-bool BuildRoutingIndex(string const & filename, string const & country,
+bool BuildRoutingIndex(string const & filename,
+                       string const & restrictionsFilename,
+                       string const & country,
                        CountryParentNameGetterFn const & countryParentNameGetterFn)
 {
   LOG(LINFO, ("Building routing index for", filename));
@@ -467,6 +470,11 @@ bool BuildRoutingIndex(string const & filename, string const & country,
 
     IndexGraph graph;
     processor.BuildGraph(graph);
+
+    RoadAccess roadAccess;
+    MwmValue mwmValue(LocalCountryFile(filename, platform::CountryFile(country), 0 /* version */));
+    if (ReadRoadAccessFromMwm(mwmValue, VehicleType::Car, roadAccess))
+      graph.SetRoadAccess(move(roadAccess));
 
     FilesContainerW cont(filename, FileWriter::OP_WRITE_EXISTING);
     FileWriter writer = cont.GetWriter(ROUTING_FILE_TAG);

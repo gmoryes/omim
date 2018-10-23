@@ -12,6 +12,8 @@
 
 #include <unordered_map>
 
+using namespace std;
+
 namespace routing_test
 {
 using namespace routing;

@@ -387,19 +387,8 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPath(
 
   auto & graph = params.m_graph;
 
-  Vertex startVertex;
-  Vertex finalVertex;
-
-  if (graph.GetMode() == WorldGraph::Mode::JointsOnly)
-  {
-    startVertex = Vertex(771, 11031, 1, true);
-    finalVertex = Vertex(771, 119039, 0, false);
-  }
-  else
-  {
-    startVertex = params.m_startVertex;
-    finalVertex = params.m_finalVertex;
-  }
+  Vertex startVertex = params.m_startVertex;
+  Vertex finalVertex = params.m_finalVertex;
 
   Context context;
   PeriodicPollCancellable periodicCancellable(params.m_cancellable);
@@ -450,8 +439,10 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPath(
     {
       {
         std::ofstream output("/tmp/counter", std::ofstream::app);
-        if (graph.GetMode() == WorldGraph::Mode::JointsOnly)
-          output << "joints: " << counter << std::endl;
+        if (graph.GetMode() == WorldGraph::Mode::RunTimeJoints)
+          output << "runtime_joints: " << counter << std::endl;
+        else if (graph.GetMode() == WorldGraph::Mode::PrerocessJoints)
+          output << "preprocess_joints: " << counter << std::endl;
         else
           output << "simple: " << counter << std::endl;
       }
@@ -571,8 +562,10 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
       {
         {
           std::ofstream output("/tmp/counter", std::ofstream::app);
-          if (graph.GetMode() == WorldGraph::Mode::JointsOnly)
-            output << "joints_bidirect: " << steps << std::endl;
+          if (graph.GetMode() == WorldGraph::Mode::RunTimeJoints)
+            output << "runtime_joints_bidirect: " << steps << std::endl;
+          else if (graph.GetMode() == WorldGraph::Mode::PrerocessJoints)
+            output << "preprocess_joints_bidirect: " << steps << std::endl;
           else
             output << "simple_bidirect: " << steps << std::endl;
         }
@@ -592,7 +585,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
     State const stateV = cur->queue.top();
     cur->queue.pop();
 
-    if (stateV.vertex.GetFeatureId() == 2107)
+    if (stateV.vertex.GetFeatureId() == 15432)
     {
       int asd = 5;
       (void)asd;
@@ -625,7 +618,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
       int asd = 5;
       (void)asd;
     }
-    auto p = MercatorBounds::FromLatLon({55.9917352, 46.1852242});
+    auto p = MercatorBounds::FromLatLon({58.1116909, 33.6462241});
     if (base::AlmostEqualAbs(p, graph.GetPoint(stateV.vertex, stateV.vertex.IsForward()), 1e-4))
     {
       int asd = 5;

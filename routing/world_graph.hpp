@@ -33,7 +33,8 @@ public:
     NoLeaps,    // Mode for building route and getting outgoing/ingoing edges without leaps at all.
     SingleMwm,  // Mode for building route and getting outgoing/ingoing edges within mwm source
                 // segment belongs to.
-    JointsOnly
+    RunTimeJoints,
+    PrerocessJoints
   };
 
   virtual ~WorldGraph() = default;

@@ -4,6 +4,7 @@
 #include "routing/geometry.hpp"
 #include "routing/joint.hpp"
 #include "routing/joint_index.hpp"
+#include "routing/joint_segment.hpp"
 #include "routing/restrictions_serialization.hpp"
 #include "routing/road_access.hpp"
 #include "routing/road_index.hpp"
@@ -28,6 +29,8 @@ public:
   using Edge = SegmentEdge;
   using Weight = RouteWeight;
 
+  using JointSegmentIndex = std::unordered_map<Segment, JointSegment, Segment::Hash>;
+
   IndexGraph() = default;
   IndexGraph(shared_ptr<Geometry> geometry, shared_ptr<EdgeEstimator> estimator);
 
@@ -51,6 +54,7 @@ public:
   uint32_t GetNumPoints() const { return m_jointIndex.GetNumPoints(); }
 
   void Build(uint32_t numJoints);
+  void BuildJointIndex(NumMwmId numMwmId);
   void Import(vector<Joint> const & joints);
 
   void SetRestrictions(RestrictionVec && restrictions);
@@ -90,6 +94,8 @@ public:
   bool GetNeighboringEdge(Segment const & from, Segment const & to, bool isOutgoing,
                           SegmentEdge & edge) const;
 
+  JointSegmentIndex const & GetJointSegmentIndex() const { return m_jointSegmentIndex; }
+
 private:
   RouteWeight CalcSegmentWeight(Segment const & segment) const;
   void GetNeighboringEdges(Segment const & from, RoadPoint const & rp, bool isOutgoing,
@@ -98,10 +104,15 @@ private:
                           vector<SegmentEdge> & edges) const;
   RouteWeight GetPenalties(Segment const & u, Segment const & v) const;
 
+  void BuildRoadOfJoints(NumMwmId numMwmId, uint32_t featureId, RoadJointIds const & roadJointIds,
+                         uint32_t & maxJointId);
+  void BuildJointSegmentIndex(uint32_t maxJointId, NumMwmId numMwmId);
+
   shared_ptr<Geometry> m_geometry;
   shared_ptr<EdgeEstimator> m_estimator;
   RoadIndex m_roadIndex;
   JointIndex m_jointIndex;
+  JointSegmentIndex m_jointSegmentIndex;
   RestrictionVec m_restrictions;
   RoadAccess m_roadAccess;
 };

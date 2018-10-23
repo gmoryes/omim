@@ -53,6 +53,37 @@ bool JointGraph::CheckAndProcessTransitFeature(Segment const & segment, RouteWei
   return true;
 }
 
+void JointGraph::GetEdgeListBoost(Segment const & from, bool isOutgoing, std::vector<SegmentEdge> & edges)
+{
+  std::vector<SegmentEdge> segmentEdges(edges);
+  m_indexGraph.GetEdgeList(from, isOutgoing, segmentEdges);
+
+  auto const & jointIndex = m_indexGraph.GetJointSegmentIndex();
+
+  for (auto const & segmentEdge : segmentEdges)
+  {
+    auto segment = segmentEdge.GetTarget();
+
+    // Case of transit feature
+    if (CheckAndProcessTransitFeature(segment, segmentEdge.GetWeight(), isOutgoing, edges))
+      continue;
+
+    auto it = jointIndex.find(segment);
+    if (it == jointIndex.cend() || jointIndex.find(from) == jointIndex.cend())
+    {
+      // Can not find such joint
+      edges.emplace_back(segmentEdge);
+      continue;
+    }
+
+    edges.emplace_back(
+      Segment(it->second.GetMwmId(), it->second.GetFeatureId(),
+              it->second.GetOppositeSegmentId(segment.GetSegmentIdx()),
+              it->second.IsForward()),
+      segmentEdge.GetWeight() + it->second.GetWeight());
+  }
+}
+
 void JointGraph::GetEdgeList(Segment const & from, bool isOutgoing, std::vector<SegmentEdge> & edges)
 {
   RoadIndex const & roadIndex = m_indexGraph.GetRoadIndex();

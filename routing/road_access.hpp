@@ -65,8 +65,6 @@ public:
 
   void Swap(RoadAccess & rhs);
 
-  bool operator==(RoadAccess const & rhs) const;
-
   template <typename MF>
   void SetFeatureTypesForTests(MF && mf)
   {

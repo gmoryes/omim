@@ -1,4 +1,4 @@
-#include "testing/testing.hpp"
+JointsOnly#include "testing/testing.hpp"
 
 #include "routing/routing_tests/tools.hpp"
 

@@ -7,6 +7,7 @@
 #include "routing_common/num_mwm_id.hpp"
 
 #include <cstdint>
+#include <functional>
 #include <sstream>
 #include <string>
 
@@ -83,6 +84,24 @@ public:
     uint32_t nextSegmentId = forward ? m_segmentIdx + 1 : m_segmentIdx - 1;
     return {m_mwmId, m_featureId, nextSegmentId, m_forward};
   }
+
+  struct Hash // 66282082795521
+  {
+    size_t operator() (Segment const & segment) const
+    {
+      uint32_t featureId = segment.GetFeatureId();
+      uint32_t segmentId = segment.GetSegmentIdx();
+      bool forward = segment.IsForward();
+
+      static uint32_t constexpr kFirstBit = 1U << 31;
+      ASSERT_EQUAL(segmentId & kFirstBit, 0, ());
+      if (forward)
+        segmentId |= kFirstBit;
+
+      return std::hash<uint64_t>()(
+        (static_cast<uint64_t>(featureId) << 32) + static_cast<uint64_t>(segmentId));
+    }
+  };
 
 private:
   uint32_t m_featureId = 0;

@@ -54,7 +54,8 @@ string DebugPrint(WorldGraph::Mode mode)
   case WorldGraph::Mode::LeapsOnly: return "LeapsOnly";
   case WorldGraph::Mode::NoLeaps: return "NoLeaps";
   case WorldGraph::Mode::SingleMwm: return "SingleMwm";
-  case WorldGraph::Mode::JointsOnly: return "JointsOnly";
+  case WorldGraph::Mode::RunTimeJoints: return "RuntimeJoints";
+  case WorldGraph::Mode::PrerocessJoints: return "PreprocessJoints";
   }
   ASSERT(false, ("Unknown mode:", static_cast<size_t>(mode)));
   return "Unknown mode";

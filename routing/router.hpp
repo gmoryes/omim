@@ -63,7 +63,9 @@ public:
   /// @see Cancellable
   virtual RouterResultCode CalculateRoute(Checkpoints const & checkpoints,
                                           m2::PointD const & startDirection, bool adjust,
-                                          RouterDelegate const & delegate, Route & route, bool enableJoints = false) = 0;
+                                          RouterDelegate const & delegate, Route & route,
+                                          bool enableRuntimeJoints = false,
+                                          bool enablePreprocessJoints = false) = 0;
 };
 
 }  // namespace routing

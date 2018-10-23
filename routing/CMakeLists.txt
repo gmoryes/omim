@@ -47,8 +47,6 @@ set(
   geometry.cpp
   geometry.hpp
   index_graph.cpp
-        joint_graph.cpp
-        joint_graph.hpp
   index_graph.hpp
   index_graph_loader.cpp
   index_graph_loader.hpp
@@ -62,10 +60,14 @@ set(
   index_router.hpp
   joint.cpp
   joint.hpp
+  joint_graph.cpp
+  joint_graph.hpp
   joint_index.cpp
   joint_index.hpp
   joint_segment.cpp
   joint_segment.hpp
+  joint_segment_index.cpp
+  joint_segment_index.hpp
   loaded_path_segment.hpp
   nearest_edge_finder.cpp
   nearest_edge_finder.hpp

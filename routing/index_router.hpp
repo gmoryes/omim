@@ -76,15 +76,18 @@ public:
   std::string GetName() const override { return m_name; }
   RouterResultCode CalculateRoute(Checkpoints const & checkpoints, m2::PointD const & startDirection,
                                   bool adjustToPrevRoute, RouterDelegate const & delegate,
-                                  Route & route, bool enableJoints = false) override;
+                                  Route & route, bool enableRuntimeJoints = false,
+                                  bool enablePreprocessJoints = false) override;
 
 private:
   RouterResultCode DoCalculateRoute(Checkpoints const & checkpoints,
                                     m2::PointD const & startDirection,
-                                    RouterDelegate const & delegate, Route & route, bool enableJoints = false);
+                                    RouterDelegate const & delegate, Route & route, bool enableRuntimeJoints = false,
+                                    bool enablePreprocessJoints = false);
   RouterResultCode CalculateSubroute(Checkpoints const & checkpoints, size_t subrouteIdx,
                                      RouterDelegate const & delegate, IndexGraphStarter & graph,
-                                     std::vector<Segment> & subroute, bool enableJoints = false);
+                                     std::vector<Segment> & subroute, bool enableRuntimeJoints = false,
+                                     bool enablePreprocessJoints = false);
 
   RouterResultCode AdjustRoute(Checkpoints const & checkpoints,
                                m2::PointD const & startDirection,

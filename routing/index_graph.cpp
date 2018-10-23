@@ -5,8 +5,10 @@
 #include "base/assert.hpp"
 #include "base/checked_cast.hpp"
 #include "base/exception.hpp"
+#include "base/timer.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 
 namespace
@@ -84,6 +86,136 @@ void IndexGraph::GetEdgeList(Segment const & segment, bool isOutgoing, vector<Se
 void IndexGraph::Build(uint32_t numJoints)
 {
   m_jointIndex.Build(m_roadIndex, numJoints);
+}
+
+void IndexGraph::BuildJointIndex(NumMwmId numMwmId)
+{
+  /***********************************************/
+  base::HighResTimer timer;
+  BuildJointSegmentIndex(m_jointIndex.GetNumJoints(), numMwmId);
+  uint64_t counter = timer.ElapsedMillis();
+  std::ofstream output("/tmp/counter", std::ofstream::app);
+  output << std::setprecision(20);
+  output << "joint_segment_index_build_time: " << counter << "ms" << std::endl;
+}
+
+uint64_t countMainLoop;
+uint64_t emplaceToHashMap;
+uint64_t geometryCount;
+void IndexGraph::BuildRoadOfJoints(NumMwmId numMwmId, uint32_t featureId, RoadJointIds const & roadJointIds,
+                                   uint32_t & maxJointId)
+{
+  base::HighResTimer timer;
+  std::vector<JointSegment> jointSegments;
+  uint32_t const pointsNumber = GetGeometry().GetRoad(featureId).GetPointsCount();
+  geometryCount += timer.ElapsedNano();
+  ASSERT_GREATER_OR_EQUAL(pointsNumber, 2, ());
+
+  auto const IsStartPoint = [](uint32_t pointId) { return pointId == 0; };
+  auto const IsEndPoint = [pointsNumber](uint32_t pointId) { return pointId == pointsNumber - 1; };
+  auto const IsValidJointPoint = [&IsStartPoint, &IsEndPoint, &roadJointIds](uint32_t pointId)
+  {
+    return !(roadJointIds.GetJointId(pointId) == Joint::kInvalidId &&
+             !IsStartPoint(pointId) && !IsEndPoint(pointId));
+  };
+  auto const Diff = [](uint32_t a, uint32_t b) { return (a > b) ? a - b : b - a; };
+  bool forwardCase;
+  auto const InitPrevPoint = [pointsNumber, &forwardCase]() {
+    return forwardCase ? 0 : pointsNumber - 1;
+  };
+  auto const InitCurrPoint = [&forwardCase](uint32_t prevPointId) {
+    return forwardCase ? prevPointId + 1 : prevPointId - 1;
+  };
+  auto const Increment = [&forwardCase](uint32_t & currentPointId) {
+    forwardCase ? ++currentPointId : --currentPointId;
+  };
+
+  auto MainLoop = [&](bool isForward)
+  {
+    forwardCase = isForward;
+    uint32_t prevPointId = InitPrevPoint();
+    for (uint32_t curPointId = InitCurrPoint(prevPointId); curPointId < pointsNumber; Increment(curPointId))
+    {
+      if (!IsValidJointPoint(curPointId))
+        continue;
+
+      JointSegment jointSegment(numMwmId, featureId, prevPointId, curPointId);
+      if (Diff(prevPointId, curPointId) == 1)
+      {
+        jointSegments.push_back(jointSegment);
+        prevPointId = curPointId;
+        continue;
+      }
+
+      RouteWeight weight(0.0);
+      SegmentEdge edge;
+      uint32_t prevId = prevPointId;
+      prevPointId = curPointId;
+      while (Diff(prevId, curPointId) > 1)
+      {
+        uint32_t prevSegmentId = forwardCase ? prevId : prevId - 1;
+        uint32_t curSegmentId = forwardCase ? prevId + 1 :  prevId - 2;
+        Segment prevSegment(numMwmId, featureId, prevSegmentId, forwardCase);
+        Segment curSegment(numMwmId, featureId, curSegmentId, forwardCase);
+
+        if (GetNeighboringEdge(prevSegment, curSegment, true /* isOutgoing */, edge))
+        {
+          // Access from |prevSegment| to |curSegment| is OK.
+          weight += edge.GetWeight();
+        }
+        else
+        {
+          break;
+        }
+
+        forwardCase ? ++prevId : --prevId;
+      }
+
+      if (Diff(prevId, curPointId) > 1)
+        continue;
+
+      // We pass through all segments, that's means, all access is OK and we can jump
+      // from |prevPointId| to |curPointId| in routing.
+      jointSegment.SetWeight(weight);
+      jointSegments.push_back(jointSegment);
+    }
+  };
+
+  timer.Reset();
+  MainLoop(true /* isForward */);
+  MainLoop(false /* isForward */);
+  countMainLoop += timer.ElapsedNano();
+
+  timer.Reset();
+  for (auto const & jointSegment : jointSegments)
+  {
+    NumMwmId numMwmId = jointSegment.GetMwmId();
+    uint32_t featureId = jointSegment.GetFeatureId();
+    uint32_t startSegmentId = jointSegment.GetStartSegmentId();
+    uint32_t endSegmentId = jointSegment.GetEndSegmentId();
+    bool forward = jointSegment.IsForward();
+
+    m_jointSegmentIndex.emplace(Segment(numMwmId, featureId, startSegmentId, forward), jointSegment);
+    m_jointSegmentIndex.emplace(Segment(numMwmId, featureId, endSegmentId, forward), jointSegment);
+  }
+  emplaceToHashMap += timer.ElapsedNano();
+}
+
+void IndexGraph::BuildJointSegmentIndex(uint32_t maxJointId, NumMwmId numMwmId)
+{
+  base::HighResTimer timer;
+  countMainLoop = 0;
+  emplaceToHashMap = 0;
+  geometryCount = 0;
+  auto const callback = [this, &maxJointId, numMwmId](uint32_t featureId, RoadJointIds const & roadJointIds) {
+      BuildRoadOfJoints(numMwmId, featureId, roadJointIds, maxJointId);
+  };
+
+  m_roadIndex.ForEachRoad(callback);
+
+  uint64_t counter = timer.ElapsedNano();
+  LOG(LINFO, ("main_loop(", countMainLoop / 1e6, "ms ), emplace_to_map(", emplaceToHashMap / 1e6, "ms ),",
+              "geometry(", geometryCount/ 1e6, " ms), all(", counter / 1e6, "ms )"));
 }
 
 void IndexGraph::Import(vector<Joint> const & joints)
@@ -178,11 +310,6 @@ void IndexGraph::GetNeighboringEdge(Segment const & from, Segment const & to, bo
 bool IndexGraph::GetNeighboringEdge(Segment const & from, Segment const & to, bool isOutgoing,
                                     SegmentEdge & edge) const
 {
-  if (from.GetFeatureId() == 61258 && from.GetSegmentIdx() == 4)
-  {
-    int asd = 5;
-    (void)asd;
-  }
   std::vector<SegmentEdge> edges;
   GetNeighboringEdge(from, to, isOutgoing, edges);
   if (!edges.empty())

@@ -244,8 +244,8 @@ RoutingManager::RoutingManager(Callbacks && callbacks, Delegate & delegate)
                           {
                             auto rect =
                               MercatorBounds::RectByCenterXYAndSizeInMeters(
-                                MercatorBounds::FromLatLon({56.0375068, 46.254187}),
-                                10000); // 10km
+                                MercatorBounds::FromLatLon({58.1175136, 33.634936}),
+                                30000); // 10km
                             (void)rect;
 
                             double maxWeight = 0.0;
@@ -271,7 +271,7 @@ RoutingManager::RoutingManager(Callbacks && callbacks, Delegate & delegate)
                               cnt++;
                               auto const p = MercatorBounds::FromLatLon({lat, lon});
                               //if (rect.IsPointInside(p))
-                              if (cnt % 50 == 0)
+                              if (cnt % 20 == 0)
                               {
                                 ColoredDebugMarkPoint * point =
                                   editSession.CreateUserMark<ColoredDebugMarkPoint>(p);

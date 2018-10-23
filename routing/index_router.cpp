@@ -325,7 +325,9 @@ bool IndexRouter::FindBestSegment(m2::PointD const & point, m2::PointD const & d
 RouterResultCode IndexRouter::CalculateRoute(Checkpoints const & checkpoints,
                                              m2::PointD const & startDirection,
                                              bool adjustToPrevRoute,
-                                             RouterDelegate const & delegate, Route & route, bool enableJoints)
+                                             RouterDelegate const & delegate, Route & route,
+                                             bool enableRuntimeJoints,
+                                             bool enablePreprocessJoints)
 {
   vector<string> outdatedMwms;
   GetOutdatedMwms(m_dataSource, outdatedMwms);
@@ -360,7 +362,7 @@ RouterResultCode IndexRouter::CalculateRoute(Checkpoints const & checkpoints,
           MercatorBounds::ToLatLon(finalPoint)));
       }
     }
-    return DoCalculateRoute(checkpoints, startDirection, delegate, route, enableJoints);
+    return DoCalculateRoute(checkpoints, startDirection, delegate, route, enableRuntimeJoints, enablePreprocessJoints);
   }
   catch (RootException const & e)
   {
@@ -372,7 +374,9 @@ RouterResultCode IndexRouter::CalculateRoute(Checkpoints const & checkpoints,
 
 RouterResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoints,
                                                m2::PointD const & startDirection,
-                                               RouterDelegate const & delegate, Route & route, bool enableJoints)
+                                               RouterDelegate const & delegate, Route & route,
+                                               bool enableRuntimeJoints,
+                                               bool enablePreprocessJoints)
 {
   m_lastRoute.reset();
 
@@ -440,7 +444,8 @@ RouterResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoints,
                                       isStartSegmentStrictForward, *graph);
 
     vector<Segment> subroute;
-    auto const result = CalculateSubroute(checkpoints, i, delegate, subrouteStarter, subroute, enableJoints);
+    auto const result = CalculateSubroute(checkpoints, i, delegate, subrouteStarter,
+                                          subroute, enableRuntimeJoints, enablePreprocessJoints);
 
     if (result != RouterResultCode::NoError)
       return result;
@@ -485,7 +490,8 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
                                                 RouterDelegate const & delegate,
                                                 IndexGraphStarter & starter,
                                                 vector<Segment> & subroute,
-                                                bool enableJoints)
+                                                bool enableRuntimeJoints,
+                                                bool enablePreprocessJoints)
 {
   subroute.clear();
 
@@ -506,10 +512,12 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
       break;
   }
 
-  enableJoints = true;
+  enablePreprocessJoints = true;
   //tmp code
-  if (enableJoints)
-    starter.GetGraph().SetMode(WorldGraph::Mode::JointsOnly);
+  if (enableRuntimeJoints)
+    starter.GetGraph().SetMode(WorldGraph::Mode::RunTimeJoints);
+  if (enablePreprocessJoints)
+    starter.GetGraph().SetMode(WorldGraph::Mode::PrerocessJoints);
   //end tmp
 
   LOG(LINFO, ("Routing in mode:", starter.GetGraph().GetMode()));
@@ -557,10 +565,19 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
     auto time = std::chrono::duration_cast<milliseconds>(finish - start).count();
     std::ofstream output("/tmp/counter", std::ofstream::app);
     output << std::setprecision(20);
-    if (enableJoints)
-      output << "joints_time: " << time << "ms" << std::endl;
+    if (enableRuntimeJoints)
+    {
+      output << "runtime_joints_time: " << time << "ms" << std::endl;
+    }
+    else if (enablePreprocessJoints)
+    {
+      output << "preprocess_joints_time: " << time << "ms" << std::endl;
+      //output << "preprocess_without_loder: " << time - params.m_graph.GetMsInLoader() << "ms" << std::endl;
+    }
     else
+    {
       output << "simple_time: " << time << "ms" << std::endl;
+    }
   }
 
 

@@ -11,6 +11,8 @@
 #include "std/utility.hpp"
 #include "std/vector.hpp"
 
+#include "base/timer.hpp"
+
 namespace routing
 {
 class RoadJointIds final
@@ -142,7 +144,7 @@ public:
   // If forward == false: neighbor with smaller point id (left neighbor)
   //
   // If there is no nearest point, return {Joint::kInvalidId, 0}
-  pair<Joint::Id, uint32_t> FindNeighbor(RoadPoint const & rp, bool forward) const;
+  pair<Joint::Id, uint32_t> FindNeighbor(RoadPoint const & rp, bool forward, uint32_t pointsNumber) const;
 
   uint32_t GetSize() const { return base::asserted_cast<uint32_t>(m_roads.size()); }
 
@@ -160,6 +162,15 @@ public:
   {
     for (auto const & it : m_roads)
       f(it.first, it.second);
+  }
+
+  void Kek() const
+  {
+    base::HighResTimer timer;
+    auto const f = [](auto it) {};
+    for (auto const & it : m_roads)
+      f(it);
+    LOG(LINFO, ("iterator_hash_map(", timer.ElapsedMillis(), " ms)"));
   }
 
   unordered_map<uint32_t, RoadJointIds> m_roads;

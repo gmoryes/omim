@@ -52,11 +52,6 @@ RoadAccess::Type RoadAccess::GetPointType(RoadPoint const & point) const
   return RoadAccess::Type::Yes;
 }
 
-bool RoadAccess::operator==(RoadAccess const & rhs) const
-{
-  return m_featureTypes == rhs.m_featureTypes && m_pointTypes == rhs.m_pointTypes;
-}
-
 // Functions ---------------------------------------------------------------------------------------
 string ToString(RoadAccess::Type type)
 {

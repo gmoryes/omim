@@ -16,10 +16,12 @@ using namespace routing;
 
 namespace
 {
-double TestRoute(m2::PointD const & start, m2::PointD const & end, bool enableJoints)
+double TestRoute(m2::PointD const & start, m2::PointD const & end, bool enableRuntimeJoints,
+                 bool enablePreprocessJoints)
 {
   TRouteResult routeResult =
-    CalculateRoute(integration::GetVehicleComponents<VehicleType::Car>(), start, {0., 0.}, end, enableJoints);
+    CalculateRoute(integration::GetVehicleComponents<VehicleType::Car>(), start, {0., 0.}, end, enableRuntimeJoints,
+                   enablePreprocessJoints);
   RouterResultCode const result = routeResult.second;
   auto route = routeResult.first;
   TEST_EQUAL(result, RouterResultCode::NoError, ());
@@ -95,40 +97,58 @@ UNIT_TEST(Init)
 {
   UNUSED_VALUE(integration::GetVehicleComponents<VehicleType::Car>());
 }
-
+/*
 // Moscow case
-/*UNIT_TEST(BenchmarkTest_Joints_1_No)
+UNIT_TEST(BenchmarkTest_Joints_1_No)
 {
   auto from = MercatorBounds::FromLatLon(55.6227377, 37.5094052);
   auto end = MercatorBounds::FromLatLon(55.8818649, 37.6845326);
 
-  TestRoute(from, end, false);
+  TestRoute(from, end, false, false);
 }
 
-UNIT_TEST(BenchmarkTest_Joints_1_Yes)
+UNIT_TEST(BenchmarkTest_Joints_1_Yes_Runtime)
 {
   auto from = MercatorBounds::FromLatLon(55.6227377, 37.5094052);
   auto end = MercatorBounds::FromLatLon(55.8818649, 37.6845326);
 
-  TestRoute(from, end, true);
-}*/
+  TestRoute(from, end, true, false);
+}
+*/
+
+UNIT_TEST(BenchmarkTest_Joints_1_Yes_Preprocess)
+{
+  auto from = MercatorBounds::FromLatLon(55.6227377, 37.5094052);
+  auto end = MercatorBounds::FromLatLon(55.8818649, 37.6845326);
+
+  TestRoute(from, end, false, true);
+}
 
 // Kazan - Piter
-/*UNIT_TEST(BenchmarkTest_Joints_2_No)
+/*
+UNIT_TEST(BenchmarkTest_Joints_2_No)
 {
   auto from = MercatorBounds::FromLatLon(55.7825299, 49.1308386);
   auto end = MercatorBounds::FromLatLon(59.9366466, 30.3159968);
 
-  TestRoute(from, end, false);
-}*/
+  TestRoute(from, end, false, false);
+}
 
 UNIT_TEST(BenchmarkTest_Joints_2_Yes)
 {
   auto from = MercatorBounds::FromLatLon(55.7825299, 49.1308386);
   auto end = MercatorBounds::FromLatLon(59.9366466, 30.3159968);
 
-  TestRoute(from, end, true);
+  TestRoute(from, end, true, false);
 }
+
+UNIT_TEST(BenchmarkTest_Joints_2_Yes_Preprocess)
+{
+  auto from = MercatorBounds::FromLatLon(55.7825299, 49.1308386);
+  auto end = MercatorBounds::FromLatLon(59.9366466, 30.3159968);
+
+  TestRoute(from, end, false, true);
+}*/
 
 // Moscow - Piter
 /*UNIT_TEST(BenchmarkTest_Joints_3_No)
@@ -136,17 +156,17 @@ UNIT_TEST(BenchmarkTest_Joints_2_Yes)
   auto from = MercatorBounds::FromLatLon(55.6227377, 37.5094052);
   auto end = MercatorBounds::FromLatLon(59.9366466, 30.3159968);
 
-  TestRoute(from, end, false);
-}
-
-UNIT_TEST(BenchmarkTest_Joints_3_Yes)
+  TestRoute(from, end, false, false);
+}*/
+/*
+UNIT_TEST(BenchmarkTest_Joints_3_Yes_Preprocess)
 {
   auto from = MercatorBounds::FromLatLon(55.6227377, 37.5094052);
   auto end = MercatorBounds::FromLatLon(59.9366466, 30.3159968);
 
-  TestRoute(from, end, true);
-}*/
-
+  TestRoute(from, end, false, true);
+}
+*/
 /*
 UNIT_TEST(BenchmarkTest_Checker)
 {

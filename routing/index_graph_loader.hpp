@@ -34,5 +34,7 @@ public:
       std::shared_ptr<EdgeEstimator> estimator, DataSource & dataSource);
 };
 
-void DeserializeIndexGraph(MwmValue const & mwmValue, VehicleType vehicleType, IndexGraph & graph);
+bool ReadRoadAccessFromMwm(MwmValue const & mwmValue, VehicleType vehicleType,
+                           RoadAccess & roadAccess);
+void DeserializeIndexGraph(MwmValue const & mwmValue, NumMwmId numMwmId, VehicleType vehicleType, IndexGraph & graph);
 }  // namespace routing
