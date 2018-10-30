@@ -31,7 +31,8 @@ public:
   ~SingleVehicleWorldGraph() override = default;
 
   void GetEdgeList(Segment const & segment, bool isOutgoing,
-                   std::vector<SegmentEdge> & edges) override;
+                   std::vector<SegmentEdge> & edges,
+                   IndexGraphStarter const * indexGraphStarter = nullptr) override;
   bool CheckLength(RouteWeight const &, double) const override { return true; }
   Junction const & GetJunction(Segment const & segment, bool front) override;
   m2::PointD const & GetPoint(Segment const & segment, bool front) override;

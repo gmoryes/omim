@@ -17,6 +17,7 @@
 
 namespace routing
 {
+class IndexGraphStarter;
 class WorldGraph
 {
 public:
@@ -40,7 +41,7 @@ public:
   virtual ~WorldGraph() = default;
 
   virtual void GetEdgeList(Segment const & segment, bool isOutgoing,
-                           std::vector<SegmentEdge> & edges) = 0;
+                           std::vector<SegmentEdge> & edges, IndexGraphStarter const * indexGraphStarter = nullptr) = 0;
 
   // Checks whether path length meets restrictions. Restrictions may depend on the distance from
   // start to finish of the route.

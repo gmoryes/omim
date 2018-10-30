@@ -540,7 +540,11 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
       return Result::Cancelled;
 
     if (steps % kQueueSwitchPeriod == 0)
+    {
       std::swap(cur, nxt);
+      int asd = 5;
+      (void)asd;
+    }
 
     if (foundAnyPath)
     {
@@ -585,7 +589,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
     State const stateV = cur->queue.top();
     cur->queue.pop();
 
-    if (stateV.vertex.GetFeatureId() == 15432)
+    if (stateV.vertex.GetFeatureId() == 54919)
     {
       int asd = 5;
       (void)asd;
@@ -613,7 +617,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
       }
     }
 
-    if (stateV.vertex == Vertex(793, 54865, 0, true))
+    if (stateV.vertex == Vertex(Segment(651, 54919, 8, true)))
     {
       int asd = 5;
       (void)asd;

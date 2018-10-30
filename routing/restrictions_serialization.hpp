@@ -41,6 +41,23 @@ struct Restriction
   bool operator==(Restriction const & restriction) const;
   bool operator<(Restriction const & restriction) const;
 
+  struct Hash
+  {
+    std::uint64_t operator() (Restriction const & restriction)
+    {
+      ASSERT_EQUAL(restriction.m_featureIds.size(), 2, ());
+
+      uint64_t a = restriction.m_featureIds[0];
+      uint64_t b = restriction.m_featureIds[1];
+      uint64_t c = static_cast<uint32_t>(restriction.m_type);
+
+      static uint64_t constexpr kFirstBit = 1ULL << 63;
+      c = c ? kFirstBit : 0;
+
+      return std::hash<uint64_t>()((a << 32) | b | c);
+    }
+  };
+
   // Links of the restriction in feature ids term.
   vector<uint32_t> m_featureIds;
   Type m_type;

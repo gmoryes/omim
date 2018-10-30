@@ -486,7 +486,7 @@ Framework::Framework(FrameworkParams const & params)
     m_purchase->RegisterSubscription(&m_localAdsManager);
   }
 
-  m_routingManager.SetRouterImpl(RouterType::Vehicle);
+  m_routingManager.SetRouterImpl(RouterType::Bicycle);
 
   UpdateMinBuildingsTapZoom();
 

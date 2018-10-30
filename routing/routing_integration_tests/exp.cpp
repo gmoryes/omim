@@ -97,9 +97,33 @@ UNIT_TEST(Init)
 {
   UNUSED_VALUE(integration::GetVehicleComponents<VehicleType::Car>());
 }
-/*
+
+// Small Moscow case
+/*UNIT_TEST(BenchmarkTest_Joints_0_No)
+{
+  auto from = MercatorBounds::FromLatLon(55.773959, 37.591368);
+  auto end = MercatorBounds::FromLatLon(55.798806, 37.561802);
+
+  TestRoute(from, end, false, false);
+}
+
+UNIT_TEST(BenchmarkTest_Joints_0_Yes_Runtime)
+{
+  auto from = MercatorBounds::FromLatLon(55.773959, 37.591368);
+  auto end = MercatorBounds::FromLatLon(55.798806, 37.561802);
+
+  TestRoute(from, end, true, false);
+}
+
+UNIT_TEST(BenchmarkTest_Joints_0_Yes_Preprocess)
+{
+  auto from = MercatorBounds::FromLatLon(55.773959, 37.591368);
+  auto end = MercatorBounds::FromLatLon(55.798806, 37.561802);
+
+  TestRoute(from, end, false, true);
+}*/
 // Moscow case
-UNIT_TEST(BenchmarkTest_Joints_1_No)
+/*UNIT_TEST(BenchmarkTest_Joints_1_No)
 {
   auto from = MercatorBounds::FromLatLon(55.6227377, 37.5094052);
   auto end = MercatorBounds::FromLatLon(55.8818649, 37.6845326);
@@ -114,7 +138,6 @@ UNIT_TEST(BenchmarkTest_Joints_1_Yes_Runtime)
 
   TestRoute(from, end, true, false);
 }
-*/
 
 UNIT_TEST(BenchmarkTest_Joints_1_Yes_Preprocess)
 {
@@ -122,11 +145,37 @@ UNIT_TEST(BenchmarkTest_Joints_1_Yes_Preprocess)
   auto end = MercatorBounds::FromLatLon(55.8818649, 37.6845326);
 
   TestRoute(from, end, false, true);
+}*/
+
+// Moscow_Oblast
+/*UNIT_TEST(BenchmarkTest_Joints_2_No)
+{
+  auto from = MercatorBounds::FromLatLon(55.6259127, 37.5129502);
+  auto end = MercatorBounds::FromLatLon(57.4397482, 42.1343599);
+
+  TestRoute(from, end, false, false);
+}*/
+
+/*
+UNIT_TEST(BenchmarkTest_Joints_2_Yes_Runtime)
+{
+  auto from = MercatorBounds::FromLatLon(54.8396071, 39.2513564);
+  auto end = MercatorBounds::FromLatLon(56.3547024, 36.6996290);
+
+  TestRoute(from, end, true, false);
+}*/
+/*
+UNIT_TEST(BenchmarkTest_Joints_2_Yes_Preprocess)
+{
+  auto from = MercatorBounds::FromLatLon(55.6259127, 37.5129502);
+  auto end = MercatorBounds::FromLatLon(57.4397482, 42.1343599);
+
+  TestRoute(from, end, false, true);
 }
+*/
 
 // Kazan - Piter
-/*
-UNIT_TEST(BenchmarkTest_Joints_2_No)
+UNIT_TEST(BenchmarkTest_Joints_3_No)
 {
   auto from = MercatorBounds::FromLatLon(55.7825299, 49.1308386);
   auto end = MercatorBounds::FromLatLon(59.9366466, 30.3159968);
@@ -134,7 +183,7 @@ UNIT_TEST(BenchmarkTest_Joints_2_No)
   TestRoute(from, end, false, false);
 }
 
-UNIT_TEST(BenchmarkTest_Joints_2_Yes)
+UNIT_TEST(BenchmarkTest_Joints_3_Yes_Runtime)
 {
   auto from = MercatorBounds::FromLatLon(55.7825299, 49.1308386);
   auto end = MercatorBounds::FromLatLon(59.9366466, 30.3159968);
@@ -142,16 +191,16 @@ UNIT_TEST(BenchmarkTest_Joints_2_Yes)
   TestRoute(from, end, true, false);
 }
 
-UNIT_TEST(BenchmarkTest_Joints_2_Yes_Preprocess)
+UNIT_TEST(BenchmarkTest_Joints_3_Yes_Preprocess)
 {
   auto from = MercatorBounds::FromLatLon(55.7825299, 49.1308386);
   auto end = MercatorBounds::FromLatLon(59.9366466, 30.3159968);
 
   TestRoute(from, end, false, true);
-}*/
+}
 
 // Moscow - Piter
-/*UNIT_TEST(BenchmarkTest_Joints_3_No)
+/*UNIT_TEST(BenchmarkTest_Joints_4_No)
 {
   auto from = MercatorBounds::FromLatLon(55.6227377, 37.5094052);
   auto end = MercatorBounds::FromLatLon(59.9366466, 30.3159968);
@@ -159,7 +208,7 @@ UNIT_TEST(BenchmarkTest_Joints_2_Yes_Preprocess)
   TestRoute(from, end, false, false);
 }*/
 /*
-UNIT_TEST(BenchmarkTest_Joints_3_Yes_Preprocess)
+UNIT_TEST(BenchmarkTest_Joints_4_Yes_Preprocess)
 {
   auto from = MercatorBounds::FromLatLon(55.6227377, 37.5094052);
   auto end = MercatorBounds::FromLatLon(59.9366466, 30.3159968);

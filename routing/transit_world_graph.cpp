@@ -25,7 +25,7 @@ TransitWorldGraph::TransitWorldGraph(unique_ptr<CrossMwmGraph> crossMwmGraph,
 }
 
 void TransitWorldGraph::GetEdgeList(Segment const & segment, bool isOutgoing,
-                                    vector<SegmentEdge> & edges)
+                                    vector<SegmentEdge> & edges, IndexGraphStarter const * indexGraphStarter)
 {
   auto & transitGraph = GetTransitGraph(segment.GetMwmId());
 

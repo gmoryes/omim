@@ -35,7 +35,7 @@ public:
   ~TransitWorldGraph() override = default;
 
   void GetEdgeList(Segment const & segment, bool isOutgoing,
-                   std::vector<SegmentEdge> & edges) override;
+                   std::vector<SegmentEdge> & edges, IndexGraphStarter const * indexGraphStarter = nullptr) override;
   bool CheckLength(RouteWeight const & weight, double startToFinishDistanceM) const override
   {
     return weight.GetWeight() - weight.GetTransitTime() <=

@@ -412,6 +412,8 @@ RouterResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoints,
     return RouterResultCode::StartPointNotFound;
   }
 
+  LOG(LINFO, ("startSegment(", startSegment, ")"));
+
   size_t subrouteSegmentsBegin = 0;
   vector<Route::SubrouteAttrs> subroutes;
   PushPassedSubroutes(checkpoints, subroutes);
@@ -433,6 +435,8 @@ RouterResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoints,
       return isLastSubroute ? RouterResultCode::EndPointNotFound
                             : RouterResultCode::IntermediatePointNotFound;
     }
+
+    LOG(LINFO, ("finishSegment(", finishSegment, ")"));
 
     bool isStartSegmentStrictForward = (m_vehicleType == VehicleType::Car);
     if (isFirstSubroute)
@@ -512,13 +516,30 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
       break;
   }
 
-  enablePreprocessJoints = true;
+  //super_tmp_code
+  //enablePreprocessJoints = true;
+  enableRuntimeJoints = true;
+  //end_super_tmp_code
+
   //tmp code
   if (enableRuntimeJoints)
     starter.GetGraph().SetMode(WorldGraph::Mode::RunTimeJoints);
   if (enablePreprocessJoints)
     starter.GetGraph().SetMode(WorldGraph::Mode::PrerocessJoints);
   //end tmp
+
+  /*static auto constexpr kJointMinDistMeters = 1000.0;
+  if (MercatorBounds::DistanceOnEarth(
+    starter.GetPoint(starter.GetStartSegment(), true),
+    starter.GetPoint(starter.GetFinishSegment(), true)) < kJointMinDistMeters)
+  {
+    auto const mode = starter.GetGraph().GetMode();
+    if (mode == WorldGraph::Mode::RunTimeJoints ||
+        mode == WorldGraph::Mode::PrerocessJoints)
+    {
+      starter.GetGraph().SetMode(WorldGraph::Mode::NoLeaps);
+    }
+  }*/
 
   LOG(LINFO, ("Routing in mode:", starter.GetGraph().GetMode()));
 
@@ -558,38 +579,113 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
 
   RouterResultCode result;
   {
-    using std::chrono::milliseconds;
-    auto start = std::chrono::high_resolution_clock::now();
+    base::HighResTimer timer;
     result = FindPath<IndexGraphStarter>(params, mwmIds, routingResult);
-    auto finish = std::chrono::high_resolution_clock::now();
-    auto time = std::chrono::duration_cast<milliseconds>(finish - start).count();
+    double time = timer.ElapsedNano() / 1e6;
     std::ofstream output("/tmp/counter", std::ofstream::app);
     output << std::setprecision(20);
     if (enableRuntimeJoints)
     {
+      LOG(LINFO, ("runtime_joints_time: ", time, "ms"));
       output << "runtime_joints_time: " << time << "ms" << std::endl;
     }
     else if (enablePreprocessJoints)
     {
       output << "preprocess_joints_time: " << time << "ms" << std::endl;
-      //output << "preprocess_without_loder: " << time - params.m_graph.GetMsInLoader() << "ms" << std::endl;
+      LOG(LINFO, ("preprocess_joints_time: ", time, "ms"));
     }
     else
     {
       output << "simple_time: " << time << "ms" << std::endl;
+      LOG(LINFO, ("simple_time: ", time, "ms"));
     }
   }
-
 
   if (result != RouterResultCode::NoError)
     return result;
 
-  RouterResultCode const leapsResult =
+  if (starter.GetGraph().GetMode() == WorldGraph::Mode::LeapsOnly)
+  {
+    RouterResultCode const leapsResult =
       ProcessLeaps(routingResult.m_path, delegate, starter.GetGraph().GetMode(), starter, subroute);
-  if (leapsResult != RouterResultCode::NoError)
-    return leapsResult;
+    if (leapsResult != RouterResultCode::NoError)
+      return leapsResult;
+  }
+  else if (starter.GetGraph().GetMode() == WorldGraph::Mode::RunTimeJoints ||
+           starter.GetGraph().GetMode() == WorldGraph::Mode::PrerocessJoints)
+  {
+    ProcessJoints(routingResult.m_path, starter, subroute);
+  }
+  else
+  {
+    subroute = std::move(routingResult.m_path);
+  }
+
+/*
+  // LOG each segment DEBUG
+  int i = 0;
+  for (auto const & item : subroute)
+  {
+    LOG(LINFO, (i, ":", item));
+    ++i;
+  }
+  */
+  // END DEBUG
+
 
   return RouterResultCode::NoError;
+}
+
+void IndexRouter::ProcessJoints(vector<Segment> const & jointsPath, IndexGraphStarter & starter,
+                                vector<Segment> & segmentPath)
+{
+  auto const Step = [](uint32_t prevId, uint32_t curId) { return prevId < curId ? prevId + 1 : prevId - 1; };
+
+  Segment prev = jointsPath[0];
+  Segment cur = prev;
+  size_t index = 0;
+  while (!starter.ConvertToReal(cur))
+  {
+    ++index;
+    CHECK_LESS(index, jointsPath.size(), ("No real segments in path."));
+    prev = jointsPath[index];
+    cur = prev;
+  }
+
+  segmentPath.insert(segmentPath.end(), jointsPath.begin(), jointsPath.begin() + index);
+
+  ++index;
+  while (index < jointsPath.size())
+  {
+    // Sometimes the last fake segments can be part of real, and we could joint-jump
+    // from this fake segment. So, if we want correct sequence of segment, we should
+    // try to convert it to real, but we must save in path exactly fake segments.
+    segmentPath.emplace_back(prev);
+    starter.ConvertToReal(prev);
+
+    cur = jointsPath[index];
+    starter.ConvertToReal(cur);
+    if (cur.GetFeatureId() == prev.GetFeatureId() && prev.IsForward() == cur.IsForward())
+    {
+      uint32_t currentSegmentId = cur.GetSegmentIdx();
+      uint32_t prevSegmentId = prev.GetSegmentIdx();
+
+      // We have already add |prev| some lines upper.
+      prevSegmentId = Step(prevSegmentId, currentSegmentId);
+
+      while (prevSegmentId != currentSegmentId)
+      {
+        segmentPath.emplace_back(prev.GetMwmId(), prev.GetFeatureId(),
+                                 prevSegmentId, prev.IsForward());
+        prevSegmentId = Step(prevSegmentId, currentSegmentId);
+      }
+    }
+
+    // Can not write |prev = cur|, because cur can be fake segment, that we converted.
+    prev = jointsPath[index];
+    ++index;
+  }
+  segmentPath.emplace_back(prev);
 }
 
 RouterResultCode IndexRouter::AdjustRoute(Checkpoints const & checkpoints,
@@ -771,12 +867,6 @@ RouterResultCode IndexRouter::ProcessLeaps(vector<Segment> const & input,
                                            IndexGraphStarter & starter,
                                            vector<Segment> & output)
 {
-  if (prevMode != WorldGraph::Mode::LeapsOnly)
-  {
-    output = input;
-    return RouterResultCode::NoError;
-  }
-
   CHECK_GREATER_OR_EQUAL(input.size(), 4,
                          ("Route in LeapsOnly mode must have at least start and finish leaps."));
 

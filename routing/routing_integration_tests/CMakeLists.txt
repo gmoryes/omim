@@ -10,7 +10,7 @@ project(routing_integration_tests)
 set(
   SRC
   #bicycle_route_test.cpp
-  #bicycle_turn_test.cpp
+  bicycle_turn_test.cpp
   #get_altitude_test.cpp
   #online_cross_tests.cpp
   #pedestrian_route_test.cpp
@@ -18,7 +18,7 @@ set(
   #route_test.cpp
   routing_test_tools.cpp
   routing_test_tools.hpp
-  exp.cpp
+  #exp.cpp
   #speed_camera_notifications_tests.cpp
   #street_names_test.cpp
   #turn_test.cpp

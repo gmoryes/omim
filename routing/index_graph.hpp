@@ -68,7 +68,6 @@ public:
 
     for (uint32_t i = 0; i < amount; ++i)
     {
-      LOG(LINFO, (i));
       JointSegment jointSegment = JointSegment::Deserialize(source, numMwmId);
 
       uint32_t featureId = jointSegment.GetFeatureId();

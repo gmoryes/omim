@@ -42,7 +42,7 @@ void WorldGraph::GetTwins(Segment const & segment, bool isOutgoing, vector<Segme
   SetMode(Mode::SingleMwm);
 
   for (auto const & twin : twins)
-    GetEdgeList(twin, isOutgoing, edges);
+    GetEdgeList(twin, isOutgoing, edges, nullptr);
 
   SetMode(prevMode);
 }

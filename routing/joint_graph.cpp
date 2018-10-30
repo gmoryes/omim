@@ -117,17 +117,20 @@ void JointGraph::GetEdgeList(Segment const & from, bool isOutgoing, std::vector<
   }
 }
 
+bool JointGraph::ProcessFakeEdge(Segment const & prev, Segment const & current, bool isOutgoing,
+                                 SegmentEdge & edge)
+{
+  return m_indexGraphStarter.AddFakeEdgeForSegment(prev, current, isOutgoing, edge);
+}
+
 void JointGraph::GetSegmentEdge(Segment const & prevSegment, Segment const & firstNext, uint32_t lastPointId,
                                 bool isOutgoing, std::vector<SegmentEdge> & edges)
 {
   uint32_t currentPointId = firstNext.GetPointId(!isOutgoing /* front */);
-  CHECK_NOT_EQUAL(currentPointId, lastPointId, ("NO, NO NO NO PLEASE NO!!!"));
-  auto const increment = [currentPointId, lastPointId](uint32_t const pointId)
-  {
-    if (currentPointId <= lastPointId)
-      return pointId + 1;
-    else
-      return pointId - 1;
+  CHECK_NOT_EQUAL(currentPointId, lastPointId, ());
+
+  auto const increment = [currentPointId, lastPointId](uint32_t const pointId) {
+    return currentPointId < lastPointId ? pointId + 1 : pointId - 1;
   };
 
   RouteWeight summaryWeight;
@@ -139,9 +142,18 @@ void JointGraph::GetSegmentEdge(Segment const & prevSegment, Segment const & fir
 
   do {
     if (m_indexGraph.GetNeighboringEdge(prev, current, isOutgoing, edge)) // Access ok
+    {
+      if (ProcessFakeEdge(prev, current, isOutgoing, edge))
+      {
+        summaryWeight += edge.GetWeight();
+        edges.emplace_back(edge.GetTarget(), summaryWeight);
+        return;
+      }
+
       summaryWeight += edge.GetWeight();
+    }
     else
-      return; // TODO check that it is true
+      return;
 
     prev = current;
     current = current.Next(forward);

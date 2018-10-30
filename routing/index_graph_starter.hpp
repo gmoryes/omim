@@ -23,6 +23,7 @@
 
 namespace routing
 {
+class WorldGraph;
 class FakeEdgesContainer;
 
 // IndexGraphStarter adds fake start and finish vertices for AStarAlgorithm.
@@ -104,6 +105,13 @@ public:
   RouteWeight CalcRouteSegmentWeight(std::vector<Segment> const & route, size_t segmentIndex) const;
   double CalcSegmentETA(Segment const & segment) const;
 
+  // Adds fake edges of type PartOfReal which correspond real edges from |edges| and are connected
+  // to |segment|
+  void AddFakeEdges(Segment const & segment, bool isOutgoing, std::vector<SegmentEdge> & edges) const;
+
+  bool AddFakeEdgeForSegment(Segment const & prev, Segment const & segment, bool isOutgoing,
+                             SegmentEdge & edge) const;
+
 private:
   // Start or finish ending information. 
   struct Ending
@@ -138,10 +146,6 @@ private:
                 uint32_t & fakeNumerationStart);
   void AddFinish(FakeEnding const & finishEnding, FakeEnding const & startEnding,
                  uint32_t & fakeNumerationStart);
-
-  // Adds fake edges of type PartOfReal which correspond real edges from |edges| and are connected
-  // to |segment|
-  void AddFakeEdges(Segment const & segment, bool isOutgoing, std::vector<SegmentEdge> & edges) const;
 
   // Checks whether ending belongs to pass-through or non-pass-through zone.
   bool EndingPassThroughAllowed(Ending const & ending);

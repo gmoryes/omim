@@ -201,7 +201,7 @@ IndexGraphLoaderImpl::GraphAttrs & IndexGraphLoaderImpl::CreateIndexGraph(
   graph.m_indexGraph = make_unique<IndexGraph>(graph.m_geometry, m_estimator);
   base::Timer timer;
   MwmValue const & mwmValue = *handle.GetValue<MwmValue>();
-  DeserializeIndexGraph(mwmValue, numMwmId, m_vehicleType, *graph.m_indexGraph, true /* joints */);
+  DeserializeIndexGraph(mwmValue, numMwmId, m_vehicleType, *graph.m_indexGraph, false /* joints */);
   LOG(LINFO, (ROUTING_FILE_TAG, "section for", file.GetName(), "loaded in", timer.ElapsedSeconds(),
       "seconds"));
   return graph;

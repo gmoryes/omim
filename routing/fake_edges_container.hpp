@@ -4,6 +4,8 @@
 #include "routing/fake_vertex.hpp"
 #include "routing/index_graph_starter.hpp"
 #include "routing/segment.hpp"
+#include "index_graph_starter.hpp"
+
 
 #include <cstddef>
 #include <cstdint>

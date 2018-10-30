@@ -81,9 +81,16 @@ void FillSegmentInfo(vector<Segment> const & segments, vector<Junction> const & 
         ++timeIdx;
     }
 
-    routeLengthMeters +=
-      MercatorBounds::DistanceOnEarth(junctions[i].GetPoint(), junctions[i + 1].GetPoint());
+    routeLengthMeters += MercatorBounds::DistanceOnEarth(junctions[i].GetPoint(), junctions[i + 1].GetPoint());
     routeLengthMerc += junctions[i].GetPoint().Length(junctions[i + 1].GetPoint());
+
+    /*
+    LOG(LINFO, ("dist[",
+                i,     " => (", junctions[i],     ", ", MercatorBounds::ToLatLon(junctions[i].GetPoint()), "),",
+                i + 1, " => (", junctions[i + 1], ", ", MercatorBounds::ToLatLon(junctions[i + 1].GetPoint()), "),",
+                ") =",
+                MercatorBounds::DistanceOnEarth(junctions[i].GetPoint(), junctions[i + 1].GetPoint())));
+    */
 
     routeSegment.emplace_back(
         segments[i], curTurn, junctions[i + 1], curStreet, routeLengthMeters, routeLengthMerc,
@@ -91,6 +98,8 @@ void FillSegmentInfo(vector<Segment> const & segments, vector<Junction> const & 
         trafficStash ? trafficStash->GetSpeedGroup(segments[i]) : traffic::SpeedGroup::Unknown,
         nullptr /* transitInfo */);
   }
+
+  LOG(LINFO, ("Distance:", routeLengthMeters));
 }
 
 void ReconstructRoute(IDirectionsEngine & engine, IndexRoadGraph const & graph,

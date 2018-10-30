@@ -5,6 +5,9 @@
 #include "routing/route_weight.hpp"
 #include "routing/world_graph.hpp"
 #include "routing/single_vehicle_world_graph.hpp"
+#include "routing/fake_graph.hpp"
+#include "routing/fake_vertex.hpp"
+#include "routing/index_graph_starter.hpp"
 
 namespace routing
 {
@@ -15,9 +18,11 @@ public:
   using Weight = RouteWeight;
   using Edge = SegmentEdge;
 
-  JointGraph(IndexGraph const & indexGraph, SingleVehicleWorldGraph & singleVehicleWorldGraph):
+  JointGraph(IndexGraph const & indexGraph, SingleVehicleWorldGraph & singleVehicleWorldGraph,
+             IndexGraphStarter const & starter):
     m_indexGraph(indexGraph),
-    m_singleVehicleWorldGraph(singleVehicleWorldGraph) {}
+    m_singleVehicleWorldGraph(singleVehicleWorldGraph),
+    m_indexGraphStarter(starter) {}
 
   // Interface for AStarAlgorithm:
   void GetOutgoingEdgesList(Segment const & segment, vector<SegmentEdge> & edges);
@@ -28,6 +33,9 @@ public:
   void GetEdgeListBoost(Segment const & from, bool isOutgoing, vector<SegmentEdge> & edges);
 private:
 
+  bool ProcessFakeEdge(Segment const & prev, Segment const & current, bool isOutgoing,
+                       SegmentEdge & edge);
+
   bool CheckAndProcessTransitFeature(Segment const & segment, RouteWeight const & weight,
                                      bool isOutgoing, vector<SegmentEdge> & edges);
   void GetSegmentEdge(Segment const & prevSegment, Segment const & firstNext, uint32_t lastPointId, bool isOutgoing,
@@ -35,5 +43,6 @@ private:
 
   IndexGraph const & m_indexGraph;
   SingleVehicleWorldGraph & m_singleVehicleWorldGraph;
+  IndexGraphStarter const & m_indexGraphStarter;
 };
 }  // namespace routing

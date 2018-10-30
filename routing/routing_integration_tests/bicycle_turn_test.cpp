@@ -32,7 +32,7 @@ UNIT_TEST(RussiaMoscowSevTushinoParkBicycleWayTurnTest)
       {CarDirection::TurnSlightRight, CarDirection::TurnRight});
   integration::TestRouteLength(route, 753.0);
 }
-
+/*
 UNIT_TEST(RussiaMoscowGerPanfilovtsev22BicycleWayTurnTest)
 {
   TRouteResult const routeResult =
@@ -147,4 +147,4 @@ UNIT_TEST(RussiaMoscowSvobodiOnewayBicycleWayTurnTest)
   integration::GetNthTurn(route, 5).TestValid().TestDirection(CarDirection::TurnLeft);
 
   integration::TestRouteLength(route, 768.0);
-}
+}*/

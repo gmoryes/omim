@@ -193,7 +193,7 @@ void IndexGraphStarter::GetEdgesList(Segment const & segment, bool isOutgoing,
       return;
     }
 
-    m_graph.GetEdgeList(segment, isOutgoing, edges);
+    m_graph.GetEdgeList(segment, isOutgoing, edges, this);
     return;
   }
 
@@ -205,7 +205,7 @@ void IndexGraphStarter::GetEdgesList(Segment const & segment, bool isOutgoing,
       bool const haveSameFront = GetJunction(segment, true /* front */) == GetJunction(real, true);
       bool const haveSameBack = GetJunction(segment, false /* front */) == GetJunction(real, false);
       if ((isOutgoing && haveSameFront) || (!isOutgoing && haveSameBack))
-        m_graph.GetEdgeList(real, isOutgoing, edges);
+        m_graph.GetEdgeList(real, isOutgoing, edges, this);
     }
 
     for (auto const & s : m_fake.GetEdges(segment, isOutgoing))
@@ -213,7 +213,7 @@ void IndexGraphStarter::GetEdgesList(Segment const & segment, bool isOutgoing,
   }
   else
   {
-    m_graph.GetEdgeList(segment, isOutgoing, edges);
+    m_graph.GetEdgeList(segment, isOutgoing, edges, this);
   }
 
   AddFakeEdges(segment, isOutgoing, edges);
@@ -381,6 +381,34 @@ void IndexGraphStarter::AddFakeEdges(Segment const & segment, bool isOutgoing, v
   edges.insert(edges.end(), fakeEdges.begin(), fakeEdges.end());
 }
 
+bool IndexGraphStarter::AddFakeEdgeForSegment(Segment const & prev, Segment const & segment, bool isOutgoing,
+                                              SegmentEdge & edge) const
+{
+  for (auto const & s : m_fake.GetFake(segment))
+  {
+    //     |segment|       |s|
+    //  *------------>*----------->
+    bool const sIsOutgoing =
+      GetJunction(prev, true /*front */) == GetJunction(s, false /* front */);
+
+    //        |s|       |segment|
+    //  *------------>*----------->
+    bool const sIsIngoing =
+      GetJunction(s, true /*front */) == GetJunction(prev, false /* front */);
+
+    if ((isOutgoing && sIsOutgoing) || (!isOutgoing && sIsIngoing))
+    {
+      // For ingoing edges we use source weight which is the same for |s| and for |edge| and is
+      // already calculated.
+      edge = SegmentEdge(s, isOutgoing ? CalcSegmentWeight(s) : edge.GetWeight());
+      return true;
+    }
+  }
+
+  return false;
+}
+
+
 bool IndexGraphStarter::EndingPassThroughAllowed(Ending const & ending)
 {
   return any_of(ending.m_real.cbegin(), ending.m_real.cend(),
@@ -398,5 +426,11 @@ bool IndexGraphStarter::StartPassThroughAllowed()
 bool IndexGraphStarter::FinishPassThroughAllowed()
 {
   return EndingPassThroughAllowed(m_finish);
+}
+
+void AddFakeEdgesWithGraph(Segment const & segment, bool isOutgoing, std::vector<SegmentEdge> & edges,
+                           FakeGraph<Segment, FakeVertex, Segment> & fakeGraph)
+{
+
 }
 }  // namespace routing
