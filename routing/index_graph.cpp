@@ -66,6 +66,11 @@ IndexGraph::IndexGraph(shared_ptr<Geometry> geometry, shared_ptr<EdgeEstimator> 
   CHECK(m_estimator, ());
 }
 
+bool IndexGraph::IsJoint(RoadPoint const & roadPoint) const
+{
+  return m_roadIndex.GetJointId(roadPoint) != Joint::kInvalidId;
+}
+
 void IndexGraph::GetEdgeList(Segment const & segment, bool isOutgoing, vector<SegmentEdge> & edges) const
 {
   RoadPoint const roadPoint = segment.GetRoadPoint(isOutgoing);

@@ -411,16 +411,19 @@ bool IndexGraphStarter::AddFakeEdgeForSegment(Segment const & prev, Segment cons
 
 std::vector<JointSegment> IndexGraphStarter::BFS(Segment const & startFakeSegment)
 {
+  CHECK(!startFakeSegment.IsRealSegment(), ());
+  bool forward = startFakeSegment.IsForward();
   std::queue<Segment> queue;
   queue.push(startFakeSegment);
 
-  auto const isSegmentPartOfJoint = [&](Segment const & segment)
+  while (!queue.empty())
   {
+    Segment segment = queue.back();
+    queue.pop();
     if (!segment.IsRealSegment())
-      return false;
+      /* create JointSegment from startFakeSegment to segment */
 
-    size_t pointsNumberInFeature;
-    if (m_graph.GetIndexGraph(segment.GetMwmId()).)
+    if (m_graph.GetIndexGraph(segment.GetMwmId()).IsJoint(segment.GetRoadPoint(forward)))
   };
 
 }

@@ -11,6 +11,22 @@ namespace routing
 class JointSegment
 {
 public:
+  JointSegment(Segment const & from, Segment const & to)
+  {
+    if (from.GetMwmId() == kFakeNumMwmId || to.GetMwmId() == kFakeNumMwmId)
+    {
+      m_numMwmId = kFakeNumMwmId;
+    }
+    else
+    {
+      CHECK_EQUAL(from.GetMwmId(), to.GetMwmId(), ("Different mwmIds in segments for JointSegment"));
+      m_numMwmId = from.GetMwmId();
+
+      CHECK_EQUAL(from.IsForward(), to.IsForward(), ("Different forward in segments for JointSegment"));
+      m_forward = from.IsForward();
+    }
+  }
+
   JointSegment(NumMwmId numMwmId, uint32_t featureId, uint32_t startPointId, uint32_t endPointId)
     : m_featureId(featureId), m_numMwmId(numMwmId)
   {
@@ -30,12 +46,12 @@ public:
     }
   }
 
-  JointSegment(RouteWeight const & weight,  NumMwmId numMwmId, uint32_t featureId, uint32_t firstSegmentId,
-               uint32_t lastSegmentId, bool forward)
-    : m_weight(weight), m_featureId(featureId), m_firstSegmentId(firstSegmentId),
-      m_lastSegmentId(lastSegmentId), m_numMwmId(numMwmId), m_forward(forward) {}
+//  JointSegment(RouteWeight const & weight,  NumMwmId numMwmId, uint32_t featureId, uint32_t firstSegmentId,
+//               uint32_t lastSegmentId, bool forward)
+//    : m_weight(weight), m_featureId(featureId), m_firstSegmentId(firstSegmentId),
+//      m_lastSegmentId(lastSegmentId), m_numMwmId(numMwmId), m_forward(forward) {}
 
-  void SetWeight(RouteWeight const & weight) { m_weight = weight; }
+//  void SetWeight(RouteWeight const & weight) { m_weight = weight; }
   uint32_t GetFeatureId() const { return m_featureId; }
   NumMwmId GetMwmId() const { return m_numMwmId; }
   uint32_t GetStartSegmentId() const { return m_firstSegmentId; }

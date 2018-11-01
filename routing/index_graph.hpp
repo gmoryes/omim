@@ -116,6 +116,8 @@ public:
 
   JointSegmentIndex const & GetJointSegmentIndex() const { return m_jointSegmentIndex; }
 
+  bool IsJoint(RoadPoint const & roadPoint) const;
+
 private:
   RouteWeight CalcSegmentWeight(Segment const & segment) const;
   void GetNeighboringEdges(Segment const & from, RoadPoint const & rp, bool isOutgoing,
