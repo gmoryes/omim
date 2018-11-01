@@ -79,6 +79,8 @@ public:
 
   virtual std::vector<RouteSegment::SpeedCamera> GetSpeedCamInfo(Segment const & segment) = 0;
 
+  virtual IndexGraph & GetIndexGraph(NumMwmId numMwmId) = 0;
+
 protected:
   void GetOnlyTwinsEdges(Segment const & segment, bool isOutgoing, vector<SegmentEdge> & edges);
   void GetTwins(Segment const & segment, bool isOutgoing, std::vector<SegmentEdge> & edges);

@@ -38,7 +38,7 @@ void SingleVehicleWorldGraph::GetEdgeList(Segment const & segment, bool isOutgoi
 
   IndexGraph & indexGraph = m_loader->GetIndexGraph(segment.GetMwmId());
   if (m_mode == Mode::RunTimeJoints)
-    JointGraph(indexGraph, *this, *starter).GetEdgeList(segment, isOutgoing, edges);
+    JointGraph(indexGraph, *this, *starter).GetEdgesList(segment, isOutgoing, edges);
   else if (m_mode == Mode::PrerocessJoints)
     JointGraph(indexGraph, *this, *starter).GetEdgeListBoost(segment, isOutgoing, edges);
   else

@@ -12,12 +12,12 @@ namespace routing
 {
 void JointGraph::GetOutgoingEdgesList(Segment const & segment, vector<SegmentEdge> & edges)
 {
-  GetEdgeList(segment, true /* IsOutgoing */, edges);
+  GetEdgesList(segment, true /* IsOutgoing */, edges);
 }
 
 void JointGraph::GetIngoingEdgesList(Segment const & segment, vector<SegmentEdge> & edges)
 {
-  GetEdgeList(segment, false /* IsOutgoing */, edges);
+  GetEdgesList(segment, false /* IsOutgoing */, edges);
 }
 
 RouteWeight JointGraph::HeuristicCostEstimate(Segment const & from, Segment const & to)
@@ -84,12 +84,12 @@ void JointGraph::GetEdgeListBoost(Segment const & from, bool isOutgoing, std::ve
   }
 }
 
-void JointGraph::GetEdgeList(Segment const & from, bool isOutgoing, std::vector<SegmentEdge> & edges)
+void JointGraph::GetEdgesList(Segment const & from, bool isOutgoing, vector<JointEdge> & edges)
 {
   RoadIndex const & roadIndex = m_indexGraph.GetRoadIndex();
 
-  std::vector<SegmentEdge> segmentEdges(edges);
-  m_indexGraph.GetEdgeList(from, isOutgoing, segmentEdges);
+  std::vector<SegmentEdge> segmentEdges;
+  IndexGraphStarter::GetEdgesList(from, isOutgoing, segmentEdges);
 
   for (auto const & segmentEdge : segmentEdges)
   {
@@ -120,7 +120,7 @@ void JointGraph::GetEdgeList(Segment const & from, bool isOutgoing, std::vector<
 bool JointGraph::ProcessFakeEdge(Segment const & prev, Segment const & current, bool isOutgoing,
                                  SegmentEdge & edge)
 {
-  return m_indexGraphStarter.AddFakeEdgeForSegment(prev, current, isOutgoing, edge);
+  return IndexGraphStarter::AddFakeEdgeForSegment(prev, current, isOutgoing, edge);
 }
 
 void JointGraph::GetSegmentEdge(Segment const & prevSegment, Segment const & firstNext, uint32_t lastPointId,
@@ -145,6 +145,12 @@ void JointGraph::GetSegmentEdge(Segment const & prevSegment, Segment const & fir
     {
       if (ProcessFakeEdge(prev, current, isOutgoing, edge))
       {
+        if (prevSegment != prev)
+        {
+          edges.emplace_back(prev, summaryWeight);
+          return;
+        }
+
         summaryWeight += edge.GetWeight();
         edges.emplace_back(edge.GetTarget(), summaryWeight);
         return;

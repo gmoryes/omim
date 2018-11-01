@@ -528,6 +528,9 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
     starter.GetGraph().SetMode(WorldGraph::Mode::PrerocessJoints);
   //end tmp
 
+  if (starter.GetGraph().GetMode() == WorldGraph::Mode::RunTimeJoints)
+    starter.CreateFakeJoints();
+
   /*static auto constexpr kJointMinDistMeters = 1000.0;
   if (MercatorBounds::DistanceOnEarth(
     starter.GetPoint(starter.GetStartSegment(), true),
@@ -614,7 +617,7 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
   else if (starter.GetGraph().GetMode() == WorldGraph::Mode::RunTimeJoints ||
            starter.GetGraph().GetMode() == WorldGraph::Mode::PrerocessJoints)
   {
-    ProcessJoints(routingResult.m_path, starter, subroute);
+    ProcessJointsBidirectional(routingResult.m_path, starter, subroute);
   }
   else
   {
@@ -629,63 +632,111 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
     LOG(LINFO, (i, ":", item));
     ++i;
   }
-  */
-  // END DEBUG
 
+  // END DEBUG
+*/
 
   return RouterResultCode::NoError;
 }
 
-void IndexRouter::ProcessJoints(vector<Segment> const & jointsPath, IndexGraphStarter & starter,
-                                vector<Segment> & segmentPath)
+std::pair<size_t, std::vector<Segment>>
+IndexRouter::ProcessJoints(vector<Segment> const & jointsPath, IndexGraphStarter & starter,
+                           bool forward)
 {
   auto const Step = [](uint32_t prevId, uint32_t curId) { return prevId < curId ? prevId + 1 : prevId - 1; };
 
-  Segment prev = jointsPath[0];
-  Segment cur = prev;
-  size_t index = 0;
-  while (!starter.ConvertToReal(cur))
+  std::vector<Segment> path;
+
+  CHECK(!jointsPath.empty(), ());
+  size_t n = jointsPath.size();
+  size_t index = forward ? 0 : n - 1;
+  while (index < n)
   {
-    ++index;
-    CHECK_LESS(index, jointsPath.size(), ("No real segments in path."));
-    prev = jointsPath[index];
-    cur = prev;
-  }
+    Segment prev = jointsPath[index];
+    Segment cur = jointsPath[forward ? index + 1 : index - 1];
 
-  segmentPath.insert(segmentPath.end(), jointsPath.begin(), jointsPath.begin() + index);
+    std::vector<SegmentEdge> edges;
+    starter.GetEdgesList(prev, forward, edges);
+    CHECK(!edges.empty(), ());
 
-  ++index;
-  while (index < jointsPath.size())
-  {
-    // Sometimes the last fake segments can be part of real, and we could joint-jump
-    // from this fake segment. So, if we want correct sequence of segment, we should
-    // try to convert it to real, but we must save in path exactly fake segments.
-    segmentPath.emplace_back(prev);
-    starter.ConvertToReal(prev);
-
-    cur = jointsPath[index];
-    starter.ConvertToReal(cur);
-    if (cur.GetFeatureId() == prev.GetFeatureId() && prev.IsForward() == cur.IsForward())
+    bool find = false;
+    for (auto const & edge : edges)
     {
-      uint32_t currentSegmentId = cur.GetSegmentIdx();
-      uint32_t prevSegmentId = prev.GetSegmentIdx();
-
-      // We have already add |prev| some lines upper.
-      prevSegmentId = Step(prevSegmentId, currentSegmentId);
-
-      while (prevSegmentId != currentSegmentId)
+      Segment prevChild = edge.GetTarget();
+      if (prevChild == cur)
       {
-        segmentPath.emplace_back(prev.GetMwmId(), prev.GetFeatureId(),
-                                 prevSegmentId, prev.IsForward());
-        prevSegmentId = Step(prevSegmentId, currentSegmentId);
+        find = true;
+        path.emplace_back(cur);
+        break;
       }
     }
 
-    // Can not write |prev = cur|, because cur can be fake segment, that we converted.
-    prev = jointsPath[index];
-    ++index;
+    if (find)
+      continue;
+
+    Segment next;
+    for (auto const & edge : edges)
+    {
+      Segment child = edge.GetTarget();
+      if (child.GetFeatureId() == cur.GetFeatureId() && child.GetMwmId() == cur.GetMwmId() &&
+          child.IsForward() == cur.IsForward())
+      {
+        next = child;
+        find = true;
+        break;
+      }
+    }
+
+    if (!find)
+    {
+      path.emplace_back(prev);
+      break;
+    }
+
+    uint32_t currentSegmentId = cur.GetSegmentIdx();
+    uint32_t nextSegmentId = next.GetSegmentIdx();
+
+    while (nextSegmentId != currentSegmentId)
+    {
+      path.emplace_back(next.GetMwmId(), next.GetFeatureId(),
+                               nextSegmentId, next.IsForward());
+      nextSegmentId = Step(nextSegmentId, currentSegmentId);
+    }
+
+    path.emplace_back(cur);
+
+    forward ? ++index : --index;
   }
-  segmentPath.emplace_back(prev);
+
+  return {index, std::move(path)};
+}
+
+void IndexRouter::ProcessJointsBidirectional(vector<Segment> const & jointsPath, IndexGraphStarter & starter,
+                                             vector<Segment> & segmentPath)
+{
+  auto prevMode = starter.GetGraph().GetMode();
+  starter.GetGraph().SetMode(WorldGraph::Mode::NoLeaps);
+
+  std::vector<Segment> forward;
+  size_t maxForwardIndex;
+  std::vector<Segment> backward;
+  size_t maxBackwardIndex;
+
+  std::tie(maxForwardIndex, forward) = ProcessJoints(jointsPath, starter, true /* forward */);
+  std::tie(maxBackwardIndex, backward) = ProcessJoints(jointsPath, starter, false /* forward */);
+
+  ASSERT_GREATER_OR_EQUAL(maxForwardIndex, maxBackwardIndex, ());
+
+  size_t index;
+  for (index = 0; index < maxBackwardIndex; ++index)
+    segmentPath.emplace_back(forward[index]);
+
+  std::reverse(backward.begin(), backward.end());
+
+  for (; index < backward.size(); ++index)
+    segmentPath.emplace_back(backward[index]);
+
+  starter.GetGraph().SetMode(prevMode);
 }
 
 RouterResultCode IndexRouter::AdjustRoute(Checkpoints const & checkpoints,

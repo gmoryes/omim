@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <map>
+#include <queue>
 
 namespace
 {
@@ -408,6 +409,35 @@ bool IndexGraphStarter::AddFakeEdgeForSegment(Segment const & prev, Segment cons
   return false;
 }
 
+std::vector<JointSegment> IndexGraphStarter::BFS(Segment const & startFakeSegment)
+{
+  std::queue<Segment> queue;
+  queue.push(startFakeSegment);
+
+  auto const isSegmentPartOfJoint = [&](Segment const & segment)
+  {
+    if (!segment.IsRealSegment())
+      return false;
+
+    size_t pointsNumberInFeature;
+    if (m_graph.GetIndexGraph(segment.GetMwmId()).)
+  };
+
+}
+
+void IndexGraphStarter::CreateFakeJoints() const
+{
+  std::vector<Segment> boundaryFakeSegments;
+
+  for (auto const & item : m_fake.GetIngoingSegments())
+    boundaryFakeSegments.emplace_back(item);
+
+  std::map<Segment, std::vector<JointSegment>> fakeJoints;
+  for (auto const & item : m_fake.GetOutgoingSegments())
+  {
+
+  }
+}
 
 bool IndexGraphStarter::EndingPassThroughAllowed(Ending const & ending)
 {
@@ -426,11 +456,5 @@ bool IndexGraphStarter::StartPassThroughAllowed()
 bool IndexGraphStarter::FinishPassThroughAllowed()
 {
   return EndingPassThroughAllowed(m_finish);
-}
-
-void AddFakeEdgesWithGraph(Segment const & segment, bool isOutgoing, std::vector<SegmentEdge> & edges,
-                           FakeGraph<Segment, FakeVertex, Segment> & fakeGraph)
-{
-
 }
 }  // namespace routing

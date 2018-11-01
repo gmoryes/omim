@@ -85,7 +85,7 @@ public:
     return {m_mwmId, m_featureId, nextSegmentId, m_forward};
   }
 
-  struct Hash // 66282082795521
+  struct Hash
   {
     size_t operator() (Segment const & segment) const
     {
@@ -135,13 +135,7 @@ public:
     return m_weight < edge.m_weight;
   }
 
-  SegmentEdge & operator=(SegmentEdge const & rhs)
-  {
-    m_target = rhs.m_target;
-    m_weight = rhs.m_weight;
-
-    return *this;
-  }
+  SegmentEdge & operator=(SegmentEdge const & rhs) = default;
 
 private:
   // Target is vertex going to for outgoing edges, vertex going from for ingoing edges.

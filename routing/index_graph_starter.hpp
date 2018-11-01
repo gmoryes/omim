@@ -112,6 +112,8 @@ public:
   bool AddFakeEdgeForSegment(Segment const & prev, Segment const & segment, bool isOutgoing,
                              SegmentEdge & edge) const;
 
+  void CreateFakeJoints() const;
+
 private:
   // Start or finish ending information. 
   struct Ending
@@ -146,6 +148,8 @@ private:
                 uint32_t & fakeNumerationStart);
   void AddFinish(FakeEnding const & finishEnding, FakeEnding const & startEnding,
                  uint32_t & fakeNumerationStart);
+
+  std::vector<JointSegment> BFS(Segment const & startFakeSegment);
 
   // Checks whether ending belongs to pass-through or non-pass-through zone.
   bool EndingPassThroughAllowed(Ending const & ending);

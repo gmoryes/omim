@@ -60,6 +60,11 @@ public:
     return m_loader->GetIndexGraph(numMwmId);
   }
 
+  IndexGraph & GetIndexGraph(NumMwmId numMwmId) override
+  {
+    return m_loader->GetIndexGraph(numMwmId);
+  }
+
   bool IsTransitForJoints(Segment const & segment, bool isOutgoing) const;
   void GetTwinsForJoints(Segment const & segment, bool isOutgoing, std::vector<SegmentEdge> & edges);
 

@@ -93,8 +93,10 @@ private:
                                m2::PointD const & startDirection,
                                RouterDelegate const & delegate, Route & route);
 
-  void ProcessJoints(vector<Segment> const & jointsPath, IndexGraphStarter & starter,
-                     vector<Segment> & segmentPath);
+  void ProcessJointsBidirectional(vector<Segment> const & jointsPath, IndexGraphStarter & starter,
+                                  vector<Segment> & segmentPath);
+  std::pair<size_t, std::vector<Segment>> ProcessJoints(vector<Segment> const & jointsPath,
+                                                        IndexGraphStarter & starter, bool forward);
 
   std::unique_ptr<WorldGraph> MakeWorldGraph();
 

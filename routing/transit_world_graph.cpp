@@ -202,11 +202,6 @@ void TransitWorldGraph::AddRealEdges(Segment const & segment, bool isOutgoing,
   GetTwins(segment, isOutgoing, edges);
 }
 
-IndexGraph & TransitWorldGraph::GetIndexGraph(NumMwmId mwmId)
-{
-  return m_indexLoader->GetIndexGraph(mwmId);
-}
-
 TransitGraph & TransitWorldGraph::GetTransitGraph(NumMwmId mwmId)
 {
   auto & indexGraph = GetIndexGraph(mwmId);

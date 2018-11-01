@@ -21,7 +21,7 @@
 
 namespace routing
 {
-class IndexGraph final
+class IndexGraph
 {
 public:
   // AStarAlgorithm types aliases:

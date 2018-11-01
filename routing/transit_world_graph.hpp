@@ -63,6 +63,9 @@ public:
   std::unique_ptr<TransitInfo> GetTransitInfo(Segment const & segment) override;
   std::vector<RouteSegment::SpeedCamera> GetSpeedCamInfo(Segment const & segment) override;
 
+  static IndexGraph kDummyIndexGraph;
+  IndexGraph & GetIndexGraph(NumMwmId mwmId) override { return m_indexLoader->GetIndexGraph(mwmId); }
+
 private:
   // WorldGraph overrides:
   void GetTwinsInner(Segment const & s, bool isOutgoing, std::vector<Segment> & twins) override;
@@ -76,7 +79,6 @@ private:
 
   RoadGeometry const & GetRealRoadGeometry(NumMwmId mwmId, uint32_t featureId);
   void AddRealEdges(Segment const & segment, bool isOutgoing, vector<SegmentEdge> & edges);
-  IndexGraph & GetIndexGraph(NumMwmId mwmId);
   TransitGraph & GetTransitGraph(NumMwmId mwmId);
 
   std::unique_ptr<CrossMwmGraph> m_crossMwmGraph;

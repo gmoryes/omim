@@ -32,7 +32,7 @@ UNIT_TEST(RussiaMoscowSevTushinoParkBicycleWayTurnTest)
       {CarDirection::TurnSlightRight, CarDirection::TurnRight});
   integration::TestRouteLength(route, 753.0);
 }
-/*
+
 UNIT_TEST(RussiaMoscowGerPanfilovtsev22BicycleWayTurnTest)
 {
   TRouteResult const routeResult =
@@ -44,7 +44,7 @@ UNIT_TEST(RussiaMoscowGerPanfilovtsev22BicycleWayTurnTest)
   RouterResultCode const result = routeResult.second;
   TEST_EQUAL(result, RouterResultCode::NoError, ());
 
-  integration::TestTurnCount(route, 2 /* expectedTurnCount */);
+  integration::TestTurnCount(route, 2);
 
   integration::GetNthTurn(route, 0).TestValid().TestDirection(CarDirection::TurnLeft);
   integration::GetNthTurn(route, 1).TestValid().TestDirection(CarDirection::TurnLeft);
@@ -61,7 +61,7 @@ UNIT_TEST(RussiaMoscowSalameiNerisPossibleTurnCorrectionBicycleWayTurnTest)
   RouterResultCode const result = routeResult.second;
   TEST_EQUAL(result, RouterResultCode::NoError, ());
 
-  integration::TestTurnCount(route, 4 /* expectedTurnCount */);
+  integration::TestTurnCount(route, 4 );
   integration::GetNthTurn(route, 0).TestValid().TestDirection(CarDirection::TurnSlightRight);
   integration::GetNthTurn(route, 1).TestValid().TestDirection(CarDirection::TurnSlightRight);
   integration::GetNthTurn(route, 2).TestValid().TestDirection(CarDirection::TurnLeft);
@@ -79,7 +79,7 @@ UNIT_TEST(RussiaMoscowSalameiNerisNoUTurnBicycleWayTurnTest)
   RouterResultCode const result = routeResult.second;
   TEST_EQUAL(result, RouterResultCode::NoError, ());
 
-  integration::TestTurnCount(route, 2 /* expectedTurnCount */);
+  integration::TestTurnCount(route, 2);
   integration::GetNthTurn(route, 0).TestValid().TestDirection(CarDirection::TurnLeft);
   integration::GetNthTurn(route, 1).TestValid().TestDirection(CarDirection::TurnLeft);
 }
@@ -115,7 +115,7 @@ UNIT_TEST(RussiaMoscowTatishchevaOnewayCarRoadTurnTest)
   RouterResultCode const result = routeResult.second;
   TEST_EQUAL(result, RouterResultCode::NoError, ());
 
-  integration::TestTurnCount(route, 4 /* expectedTurnCount */);
+  integration::TestTurnCount(route, 4);
 
   integration::GetNthTurn(route, 0).TestValid().TestDirection(CarDirection::TurnLeft);
   integration::GetNthTurn(route, 1).TestValid().TestDirection(CarDirection::TurnLeft);
@@ -136,7 +136,7 @@ UNIT_TEST(RussiaMoscowSvobodiOnewayBicycleWayTurnTest)
   RouterResultCode const result = routeResult.second;
   TEST_EQUAL(result, RouterResultCode::NoError, ());
 
-  integration::TestTurnCount(route, 6 /* expectedTurnCount */);
+  integration::TestTurnCount(route, 6);
 
   integration::GetNthTurn(route, 0).TestValid().TestDirection(CarDirection::TurnLeft);
   integration::GetNthTurn(route, 1).TestValid().TestDirection(CarDirection::TurnSlightRight);
@@ -147,4 +147,4 @@ UNIT_TEST(RussiaMoscowSvobodiOnewayBicycleWayTurnTest)
   integration::GetNthTurn(route, 5).TestValid().TestDirection(CarDirection::TurnLeft);
 
   integration::TestRouteLength(route, 768.0);
-}*/
+}

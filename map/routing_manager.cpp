@@ -233,6 +233,9 @@ RoutingManager::RoutingManager(Callbacks && callbacks, Delegate & delegate)
                           if (m_bmManager == nullptr)
                             return;
                           auto editSession = m_bmManager->GetEditSession();
+                          ColoredDebugMarkPoint * point =
+                            editSession.CreateUserMark<ColoredDebugMarkPoint>(pt);
+                          point->SetColor({static_cast<uint8_t>(255), 0, 0, 255});
                           static size_t counter = 0;
                           /*if (counter % 30 == 0)
                           {

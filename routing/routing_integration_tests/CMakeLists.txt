@@ -9,7 +9,7 @@ project(routing_integration_tests)
 
 set(
   SRC
-  #bicycle_route_test.cpp
+  bicycle_route_test.cpp
   bicycle_turn_test.cpp
   #get_altitude_test.cpp
   #online_cross_tests.cpp

@@ -132,6 +132,9 @@ public:
     return true;
   }
 
+  std::map<SegmentType, std::set<SegmentType>> const & GetOutgoingSegments() const { return m_outgoing; }
+  std::map<SegmentType, std::set<SegmentType>> const & GetIngoingSegments() const { return m_ingoing; }
+
 private:
   // Key is fake segment, value is set of outgoing fake segments.
   std::map<SegmentType, std::set<SegmentType>> m_outgoing;

@@ -489,7 +489,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
   auto & graph = params.m_graph;
 
   bool draw = false;
-//TODO check what if checking meeting one time in switch will more effective ???
+
   Vertex startVertex;
   Vertex finalVertex;
 
@@ -589,7 +589,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
     State const stateV = cur->queue.top();
     cur->queue.pop();
 
-    if (stateV.vertex.GetFeatureId() == 54919)
+    if (stateV.vertex.GetFeatureId() == 96404)
     {
       int asd = 5;
       (void)asd;
@@ -617,7 +617,7 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
       }
     }
 
-    if (stateV.vertex == Vertex(Segment(651, 54919, 8, true)))
+    if (stateV.vertex == Vertex(Segment(773, 18282, 5, true)))
     {
       int asd = 5;
       (void)asd;

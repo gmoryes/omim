@@ -119,4 +119,17 @@ private:
   NumMwmId m_numMwmId;
   bool m_forward;
 };
+
+class JointEdge
+{
+public:
+  JointEdge(JointSegment const & target, RouteWeight const & weight) : m_target(target), m_weight(weight) {}
+
+  JointSegment const & GetTarget() const { return m_target; }
+  RouteWeight const & GetWeight() const { return m_weight; }
+
+private:
+  JointSegment m_target;
+  RouteWeight m_weight;
+};
 }  // namespace routing
