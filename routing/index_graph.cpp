@@ -2,6 +2,7 @@
 
 #include "routing/restrictions_serialization.hpp"
 #include "routing/routing_options.hpp"
+#include "routing/world_graph.hpp"
 
 #include "platform/settings.hpp"
 
@@ -408,4 +409,6 @@ RouteWeight IndexGraph::GetPenalties(Segment const & u, Segment const & v)
 
   return RouteWeight(uTurnPenalty /* weight */, passThroughPenalty, accessPenalty, 0.0 /* transitTime */);
 }
+
+WorldGraphMode IndexGraph::GetMode() const { return WorldGraphMode::Undefined; }
 }  // namespace routing
