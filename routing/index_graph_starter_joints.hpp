@@ -97,6 +97,7 @@ private:
   Segment m_startSegment;
   Segment m_endSegment;
 
+<<<<<<< HEAD
   // See comments in |GetEdgeList()| about |m_savedWeight|.
   std::map<JointSegment, Weight> m_savedWeight;
 
@@ -110,6 +111,23 @@ private:
   // List of JointEdges that are outgoing from start.
   std::vector<JointEdge> m_startOutEdges;
   // List of incoming to finish.
+=======
+  // В случае определения веса ребер для обратного поиска при нахождении связи:
+  // "родитель" - "ребенок" мы в процессе построения joint'a посчитали вес ребенка, но
+  // вернуть должны вес "родителя", поэтому надо запомнимать вес ребенка и возвращать его
+  // тогда, когда он сам будет в роли родителя, после удалять из std::map.
+  std::map<JointSegment, Weight> m_savedWeight;
+
+  // Для фейковых joint'ов получаем начальный и конечный сегмент фейкового joint'a.
+  // Нужно потому, что в JointSegment могут храниться сегменты только одной фичи, в случае
+  // фейкового joint'a конец и начало могут принадлежать разным фичам (фейковый и реальные сегменты).
+  std::map<JointSegment, FakeJointSegment> m_fakeJointSegments;
+  std::map<JointSegment, std::vector<Segment>> m_reconstructedFakeJoints;
+
+  // Список joint'ов выходящих из стартовой вершины.
+  std::vector<JointEdge> m_startOutEdges;
+  // Это список входящих в конечную.
+>>>>>>> [routing] Add IndexGraphStarterJoints for routing between joints, instead of segments, routing_integration_tests OK.
   std::vector<JointEdge> m_endOutEdges;
 
   uint32_t m_fakeId = 0;
