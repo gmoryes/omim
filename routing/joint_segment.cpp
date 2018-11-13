@@ -6,7 +6,7 @@
 
 namespace routing
 {
-
+bool IsRealSegment(Segment const & segment) { return segment.GetSegmentIdx() != std::numeric_limits<uint32_t>::max(); }
 JointSegment::JointSegment(Segment const & from, Segment const & to)
 {
   CHECK(from.IsRealSegment() && to.IsRealSegment(),

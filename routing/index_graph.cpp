@@ -6,6 +6,8 @@
 #include "base/checked_cast.hpp"
 #include "base/exception.hpp"
 
+#include "routing/world_graph.hpp"
+
 #include <algorithm>
 #include <limits>
 
@@ -123,6 +125,21 @@ void IndexGraph::GetEdgeList(Segment const & parent, bool isOutgoing, vector<Joi
 
   ReconstructJointSegment(parent, possibleChildren, lastPoints,
                           isOutgoing, edges, parentWeights);
+}
+
+JointEdge IndexGraph::GetJointEdgeByLastPoint(Segment const & parent, Segment const & firstChild,
+                                              bool isOutgoing, uint32_t lastPoint)
+{
+  std::vector<Segment> possibleChilds = {firstChild};
+  std::vector<uint32_t> lastPoints = {lastPoint};
+
+  std::vector<JointEdge> edges;
+  std::vector<RouteWeight> parentWeights;
+  ReconstructJointSegment(parent, possibleChilds, lastPoints,
+                          isOutgoing, edges, parentWeights);
+
+  CHECK_EQUAL(edges.size(), 1, ());
+  return edges.back();
 }
 
 void IndexGraph::Build(uint32_t numJoints)
@@ -331,6 +348,8 @@ void IndexGraph::ReconstructJointSegment(Segment const & parent,
                             summaryWeight);
   }
 }
+
+WorldGraphMode IndexGraph::GetMode() const { return WorldGraphMode::Undefined; }
 
 void IndexGraph::GetNeighboringEdge(Segment const & from, Segment const & to, bool isOutgoing,
                                     vector<SegmentEdge> & edges)

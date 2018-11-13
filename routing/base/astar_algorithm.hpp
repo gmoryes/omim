@@ -7,11 +7,15 @@
 #include "base/cancellable.hpp"
 
 #include <algorithm>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <map>
 #include <queue>
 #include <vector>
+
+#include "geometry/mercator.hpp"
+#include "base/math.hpp"
 
 namespace routing
 {
@@ -139,6 +143,13 @@ public:
 
     void SetParent(Vertex const & parent, Vertex const & child) { m_parents[parent] = child; }
 
+    Vertex const & GetParent(Vertex const & child)
+    {
+      auto const it = m_parents.find(child);
+      CHECK(it != m_parents.cend(), ("Can not find parent of child:", child));
+      return it->second;
+    }
+
     void ReconstructPath(Vertex const & v, std::vector<Vertex> & path) const;
 
   private:
@@ -171,7 +182,7 @@ public:
 
 private:
   // Periodicity of switching a wave of bidirectional algorithm.
-  static uint32_t constexpr kQueueSwitchPeriod = 128;
+  static uint32_t constexpr kQueueSwitchPeriod = 32;
 
   // Precision of comparison weights.
   static Weight constexpr kEpsilon = GetAStarWeightEpsilon<Weight>();
@@ -317,6 +328,19 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
 
     if (!visitVertex(stateV.vertex))
       return;
+
+    auto p = MercatorBounds::FromLatLon({55.4903624, 36.8742321});
+    if (base::AlmostEqualAbs(graph.GetPoint(stateV.vertex, stateV.vertex.IsForward()), p, 1e-4))
+    {
+      int asd = 5;
+      (void)asd;
+    }
+
+    if (stateV.vertex.GetFeatureId() == 64880)
+    {
+      int asd = 5;
+      (void)asd;
+    }
 
     graph.GetOutgoingEdgesList(stateV.vertex, adj);
     for (auto const & edge : adj)
@@ -524,12 +548,32 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
     State const stateV = cur->queue.top();
     cur->queue.pop();
 
+    auto p = MercatorBounds::FromLatLon({55.6762275, 37.4219626});
+    if (base::AlmostEqualAbs(graph.GetPoint(stateV.vertex, stateV.vertex.IsForward()), p, 1e-4))
+    {
+      int asd = 5;
+      (void)asd;
+    }
+
+    if (stateV.vertex.GetFeatureId() == 64880)
+    {
+      int asd = 5;
+      (void)asd;
+    }
+
     if (stateV.distance > cur->bestDistance[stateV.vertex])
       continue;
 
     params.m_onVisitedVertexCallback(stateV.vertex,
                                      cur->forward ? cur->finalVertex : cur->startVertex);
-
+/*
+    {
+      std::ofstream output("/tmp/points_astar", std::ofstream::app);
+      output << std::setprecision(20);
+      auto latlon = MercatorBounds::ToLatLon(graph.GetPoint(stateV.vertex, stateV.vertex.IsForward()));
+      output << latlon.lat << ' ' << latlon.lon << std::endl;
+    }
+*/
     cur->GetAdjacencyList(stateV.vertex, adj);
     for (auto const & edge : adj)
     {

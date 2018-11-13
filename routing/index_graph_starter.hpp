@@ -53,7 +53,7 @@ public:
   void Append(FakeEdgesContainer const & container);
 
   WorldGraph & GetGraph() const { return m_graph; }
-  WorldGraph::Mode GetMode() const { return m_graph.GetMode(); }
+  WorldGraphMode GetMode() const { return m_graph.GetMode(); }
   Junction const & GetStartJunction() const;
   Junction const & GetFinishJunction() const;
   Segment GetStartSegment() const { return GetFakeSegment(m_start.m_id); }
@@ -98,6 +98,11 @@ public:
   {
     return m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */),
                                          GetPoint(to, true /* front */));
+  }
+
+  bool IsJoint(Segment const & segment, bool fromStart)
+  {
+    return GetGraph().GetIndexGraph(segment.GetMwmId()).IsJoint(segment.GetRoadPoint(fromStart));
   }
 
   RouteWeight CalcSegmentWeight(Segment const & segment) const;

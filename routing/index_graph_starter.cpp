@@ -163,7 +163,7 @@ void IndexGraphStarter::GetEdgesList(Segment const & segment, bool isOutgoing,
   edges.clear();
 
   // If mode is LeapsOnly we need to connect start/finish segment to transitions.
-  if (m_graph.GetMode() == WorldGraph::Mode::LeapsOnly)
+  if (m_graph.GetMode() == WorldGraphMode::LeapsOnly)
   {
     // Ingoing edges listing is not supported in LeapsOnly mode because we do not have enough
     // information to calculate |segment| weight. See https://jira.mail.ru/browse/MAPSME-5743 for details.

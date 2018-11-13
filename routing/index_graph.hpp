@@ -21,6 +21,7 @@
 
 namespace routing
 {
+enum class WorldGraphMode;
 class IndexGraph final
 {
 public:
@@ -82,6 +83,14 @@ public:
   }
 
   bool IsJoint(RoadPoint const & roadPoint) const;
+  WorldGraphMode GetMode() const;
+  m2::PointD const & GetPoint(Segment const & segment, bool front)
+  {
+    return GetGeometry().GetRoad(segment.GetFeatureId()).GetPoint(segment.GetPointId(front));
+  }
+
+  JointEdge GetJointEdgeByLastPoint(Segment const & parent, Segment const & firstChild,
+                                    bool isOutgoing, uint32_t lastPoint);
 
 private:
   RouteWeight CalcSegmentWeight(Segment const & segment);
@@ -90,10 +99,6 @@ private:
   void GetNeighboringEdge(Segment const & from, Segment const & to, bool isOutgoing,
                           vector<SegmentEdge> & edges);
   RouteWeight GetPenalties(Segment const & u, Segment const & v);
-  m2::PointD const & GetPoint(Segment const & segment, bool front)
-  {
-    return GetGeometry().GetRoad(segment.GetFeatureId()).GetPoint(segment.GetPointId(front));
-  }
 
   void GetLastPointsForJoint(std::vector<Segment> const & children, bool isOutgoing, std::vector<uint32_t> & lastPoints);
   void GetSegmentCandidateForJoint(Segment const & parent, bool isOutgoing, std::vector<Segment> & children);

@@ -224,9 +224,124 @@ RoutingManager::RoutingManager(Callbacks && callbacks, Delegate & delegate)
   , m_extrapolator(
         [this](location::GpsInfo const & gpsInfo) { this->OnExtrapolatedLocationUpdate(gpsInfo); })
 {
-  auto const routingStatisticsFn = [](map<string, string> const & statistics) {
+  auto const routingStatisticsFn = [this](map<string, string> const & statistics) {
     alohalytics::LogEvent("Routing_CalculatingRoute", statistics);
     GetPlatform().GetMarketingService().SendMarketingEvent(marketing::kRoutingCalculatingRoute, {});
+
+    auto const checker = [](auto const & pt) {
+      auto p = MercatorBounds::FromLatLon(55.2292398, 37.3265186);
+      return MercatorBounds::DistanceOnEarth(p, pt) < 5000;
+    };
+
+    bool draw = true;
+    bool drawAstar = false;
+
+    if (drawAstar) {
+      std::ifstream input("/tmp/points_astar");
+      double lat, lon;
+      int cnt = 0;
+      std::vector<ms::LatLon> points;
+      while (input >> lat >> lon)
+      {
+        cnt++;
+        if (cnt % 10000 == 0)
+          LOG(LINFO, ("cnt =", cnt));
+        points.emplace_back(lat, lon);
+      }
+
+      cnt = 0;
+      for (auto const & latlon : points)
+      {
+        cnt++;
+
+        if (cnt % 10000 == 0)
+          LOG(LINFO, ("cnt_points =", cnt));
+
+        lat = latlon.lat;
+        lon = latlon.lon;
+
+        auto pt = MercatorBounds::FromLatLon(lat, lon);
+        auto editSession = m_bmManager->GetEditSession();
+        editSession.SetIsVisible(UserMark::Type::SEARCH, true);
+        editSession.CreateUserMark<DebugMarkPoint>(pt);
+      }
+    }
+
+    int eachN = 10;
+    if (draw)
+    {
+      std::ifstream input("/tmp/joints");
+      double lat, lon;
+      int cnt = 0;
+      std::vector<ms::LatLon> points;
+      while (input >> lat >> lon)
+      {
+        cnt++;
+        if (cnt % 10000 == 0)
+          LOG(LINFO, ("cnt =", cnt));
+        points.emplace_back(lat, lon);
+      }
+
+      cnt = 0;
+      for (auto const & latlon : points)
+      {
+        cnt++;
+        if (cnt % eachN != 0)
+          continue;
+
+        if (cnt % 10000 == 0)
+          LOG(LINFO, ("cnt_points =", cnt));
+
+        lat = latlon.lat;
+        lon = latlon.lon;
+
+        auto pt = MercatorBounds::FromLatLon(lat, lon);
+        if (checker(pt))
+        {
+          auto editSession = m_bmManager->GetEditSession();
+          editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+          auto mark = editSession.CreateUserMark<ColoredDebugMarkPoint>(pt);
+          mark->SetColor({0, 0, 200, 255});
+        }
+      }
+    }
+
+    eachN = 100;
+    if (draw) {
+      std::ifstream input("/tmp/noleaps");
+      double lat, lon;
+      int cnt = 0;
+      std::vector<ms::LatLon> points;
+      while (input >> lat >> lon)
+      {
+        cnt++;
+        if (cnt % 10000 == 0)
+          LOG(LINFO, ("cnt =", cnt));
+        points.emplace_back(lat, lon);
+      }
+
+      cnt = 0;
+      for (auto const & latlon : points)
+      {
+        cnt++;
+        if (cnt % eachN != 0)
+          continue;
+
+        if (cnt % 10000 == 0)
+          LOG(LINFO, ("cnt_points =", cnt));
+
+        lat = latlon.lat;
+        lon = latlon.lon;
+
+        auto pt = MercatorBounds::FromLatLon(lat, lon);
+        if (checker(pt))
+        {
+          auto editSession = m_bmManager->GetEditSession();
+          editSession.SetIsVisible(UserMark::Type::SEARCH, true);
+          editSession.CreateUserMark<DebugMarkPoint>(pt);
+        }
+      }
+    }
   };
 
   m_routingSession.Init(routingStatisticsFn,
@@ -234,6 +349,7 @@ RoutingManager::RoutingManager(Callbacks && callbacks, Delegate & delegate)
                         [this](m2::PointD const & pt) {
                           if (m_bmManager == nullptr)
                             return;
+
                           auto editSession = m_bmManager->GetEditSession();
                           editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
                           editSession.CreateUserMark<DebugMarkPoint>(pt);
