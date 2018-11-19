@@ -492,8 +492,8 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
 
     if (foundAnyPath)
     {
-      auto const curTop = cur->TopDistance();
-      auto const nxtTop = nxt->TopDistance();
+      auto const curTop = cur->queue.top().distance;
+      auto const nxtTop = nxt->queue.top().distance;
 
       // The intuition behind this is that we cannot obtain a path shorter
       // than the left side of the inequality because that is how any path we find
