@@ -36,6 +36,7 @@
 #include "platform/country_file.hpp"
 #include "platform/mwm_traits.hpp"
 
+#include "base/timer.hpp";
 #include "base/exception.hpp"
 #include "base/stl_helpers.hpp"
 
@@ -535,6 +536,7 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
 
   RoutingResult<Segment, RouteWeight> routingResult;
 
+  base::HighResTimer timer;
   AStarAlgorithm<IndexGraphStarter>::Params params(
       starter, starter.GetStartSegment(), starter.GetFinishSegment(), nullptr /* prevRoute */,
       delegate, onVisitJunction, checkLength);
@@ -548,6 +550,9 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
       ProcessLeaps(routingResult.m_path, delegate, starter.GetGraph().GetMode(), starter, subroute);
   if (leapsResult != RouterResultCode::NoError)
     return leapsResult;
+
+  LOG(LINFO, ("Routing in mode:", starter.GetGraph().GetMode(),
+              "time:", timer.ElapsedNano() / 1e6, "ms"));
 
   return RouterResultCode::NoError;
 }
