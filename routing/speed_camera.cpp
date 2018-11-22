@@ -9,6 +9,9 @@ namespace routing
 bool SpeedCameraOnRoute::IsDangerous(double distanceToCameraMeters, double speedMpS,
                                      SpeedCameraManager::Mode mode) const
 {
+  CHECK(mode != SpeedCameraManager::Mode::Never,
+        ("This method should use only in Auto and Always mode."));
+
   if (distanceToCameraMeters < kInfluenceZoneMeters + kDistanceEpsilonMeters)
     return true;
 

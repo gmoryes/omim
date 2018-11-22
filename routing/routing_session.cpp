@@ -60,7 +60,7 @@ RoutingSession::RoutingSession()
   , m_passedDistanceOnRouteMeters(0.0)
   , m_lastCompletionPercent(0.0)
 {
-  m_speedCameraManager.SetRoute(m_route);
+  m_speedCameraManager.SetRoute(m_route.get());
 }
 
 void RoutingSession::Init(RoutingStatisticsCallback const & routingStatisticsFn,
@@ -137,7 +137,7 @@ void RoutingSession::RemoveRoute()
 
   m_route = std::make_shared<Route>(string() /* router */, 0 /* route id */);
   m_speedCameraManager.Reset();
-  m_speedCameraManager.SetRoute(m_route);
+  m_speedCameraManager.SetRoute(m_route.get());
 }
 
 void RoutingSession::RebuildRouteOnTrafficUpdate()
@@ -480,7 +480,8 @@ void RoutingSession::AssignRoute(shared_ptr<Route> route, RouterResultCode e)
 
   route->SetRoutingSettings(m_routingSettings);
   m_route = route;
-  m_speedCameraManager.SetRoute(m_route);
+  m_speedCameraManager.Reset();
+  m_speedCameraManager.SetRoute(m_route.get());
 }
 
 void RoutingSession::SetRouter(unique_ptr<IRouter> && router,
