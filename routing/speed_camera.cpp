@@ -6,7 +6,8 @@
 
 namespace routing
 {
-bool SpeedCameraOnRoute::IsDangerous(double distanceToCameraMeters, double speedMpS) const
+bool SpeedCameraOnRoute::IsDangerous(double distanceToCameraMeters, double speedMpS,
+                                     SpeedCameraManager::Mode mode) const
 {
   if (distanceToCameraMeters < kInfluenceZoneMeters + kDistanceEpsilonMeters)
     return true;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "routing/speed_camera_manager.hpp"
+
 #include "geometry/point2d.hpp"
 
 #include <cstdint>
@@ -45,7 +47,7 @@ struct SpeedCameraOnRoute
   static double constexpr kLookAheadDistanceMeters = 750.0;
 
   /// \breaf Return true if user must be warned about camera and false otherwise.
-  bool IsDangerous(double distanceToCameraMeters, double speedMpS) const;
+  bool IsDangerous(double distanceToCameraMeters, double speedMpS, SpeedCameraManager::Mode mode) const;
 
   /// \brief Return true if current camera should highlight in UI.
   bool NeedShow(double distanceToCameraMeters) const;
