@@ -39,6 +39,8 @@
 #include "platform/preferred_languages.hpp"
 #include "platform/settings.hpp"
 
+#include "routing/speed_camera_manager.hpp"
+
 #include "base/logging.hpp"
 #include "base/math.hpp"
 #include "base/sunrise_sunset.hpp"
@@ -1098,6 +1100,29 @@ Java_com_mapswithme_maps_Framework_nativeGenerateNotifications(JNIEnv * env, jcl
     return nullptr;
 
   return jni::ToJavaStringArray(env, notifications);
+}
+
+JNIEXPORT void JNICALL
+Java_com_mapswithme_maps_Framework_nativeSetSpeedCamManagerMode(JNIEnv * env, jclass, jint mode)
+{
+ frm()->GetRoutingManager().SetSpeedCamManagerMode(
+   static_cast<routing::SpeedCameraManager::Mode>(mode));
+}
+
+JNIEXPORT jint JNICALL
+Java_com_mapswithme_maps_Framework_nativeGetSpeedCamManagerMode(JNIEnv * env, jclass)
+{
+  return static_cast<int>(frm()->GetRoutingManager().GetSpeedCamManagerMode());
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_mapswithme_maps_Framework_nativeIsSpeedLimitExceeded(JNIEnv * env, jclass)
+{
+  ::Framework * fr = frm();
+  if (!fr->GetRoutingManager().IsRoutingActive())
+    return false;
+
+  return fr->GetRoutingManager().IsSpeedLimitExceeded();
 }
 
 JNIEXPORT jobject JNICALL

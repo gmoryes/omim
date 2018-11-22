@@ -6,6 +6,7 @@
 #include "routing/routing_callbacks.hpp"
 #include "routing/routing_exceptions.hpp"
 #include "routing/speed_camera.hpp"
+#include "routing/speed_camera_manager.hpp"
 #include "routing/turns.hpp"
 #include "routing/turns_notification_manager.hpp"
 
@@ -187,6 +188,10 @@ public:
 
   void FindCamerasOnRouteAndCache(double passedDistanceMeters);
 
+  void SetSpeedCamManagerMode(SpeedCameraManager::Mode mode) { m_speedCamMode = mode; }
+  SpeedCameraManager::Mode GetSpeedCamManagerMode() const { return m_speedCamMode; }
+  bool IsSpeedLimitExceeded() const { return true; }
+
 private:
   struct DoReadyCallback
   {
@@ -231,6 +236,8 @@ private:
   bool m_makeNotificationAboutSpeedCam = false;
 
   size_t m_firstNotCheckedSpeedCameraIndex = 0;
+
+  SpeedCameraManager::Mode m_speedCamMode = SpeedCameraManager::Mode::Auto;
 
   /// Current position metrics to check for RouteNeedRebuild state.
   double m_lastDistance = 0.0;

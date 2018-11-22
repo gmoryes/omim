@@ -1356,3 +1356,18 @@ void RoutingManager::SetSubroutesVisibility(bool visible)
   for (auto const & subrouteId : m_drapeSubroutes)
     lock.Get()->SetSubrouteVisibility(subrouteId, visible);
 }
+
+void RoutingManager::SetSpeedCamManagerMode(routing::SpeedCameraManager::Mode mode)
+{
+  m_routingSession.SetSpeedCamManagerMode(mode);
+}
+
+routing::SpeedCameraManager::Mode RoutingManager::GetSpeedCamManagerMode() const
+{
+  return m_routingSession.GetSpeedCamManagerMode();
+}
+
+bool RoutingManager::IsSpeedLimitExceeded() const
+{
+  return m_routingSession.IsSpeedLimitExceeded();
+}
