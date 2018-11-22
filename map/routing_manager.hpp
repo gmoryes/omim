@@ -222,8 +222,7 @@ public:
     m_trackingReporter.SetAllowSendingPoints(isAllowed);
   }
 
-  void SetSpeedCamManagerMode(routing::SpeedCameraManager::Mode mode);
-  routing::SpeedCameraManager::Mode GetSpeedCamManagerMode() const;
+  routing::SpeedCameraManager & GetSpeedCamManager() { return m_routingSession.GetSpeedCamManager(); }
   bool IsSpeedLimitExceeded() const;
 
   void SetTurnNotificationsUnits(measurement_utils::Units const units)
