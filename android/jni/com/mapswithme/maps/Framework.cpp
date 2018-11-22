@@ -1105,8 +1105,8 @@ Java_com_mapswithme_maps_Framework_nativeGenerateNotifications(JNIEnv * env, jcl
 JNIEXPORT void JNICALL
 Java_com_mapswithme_maps_Framework_nativeSetSpeedCamManagerMode(JNIEnv * env, jclass, jint mode)
 {
- frm()->GetRoutingManager().GetSpeedCamManager().SetMode(
-   static_cast<routing::SpeedCameraManager::Mode>(mode));
+  frm()->GetRoutingManager().GetSpeedCamManager().SetMode(
+    static_cast<routing::SpeedCameraManager::Mode>(mode));
 }
 
 JNIEXPORT jint JNICALL
