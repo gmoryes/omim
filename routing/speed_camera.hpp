@@ -1,5 +1,7 @@
 #pragma once
 
+#include "geometry/point2d.hpp"
+
 #include <cstdint>
 #include <limits>
 
@@ -8,8 +10,8 @@ namespace routing
 struct SpeedCameraOnRoute
 {
   SpeedCameraOnRoute() = default;
-  SpeedCameraOnRoute(double distFromBegin, uint8_t maxSpeedKmH)
-    : m_distFromBeginMeters(distFromBegin), m_maxSpeedKmH(maxSpeedKmH)
+  SpeedCameraOnRoute(double distFromBegin, uint8_t maxSpeedKmH, m2::PointD const & position)
+    : m_distFromBeginMeters(distFromBegin), m_maxSpeedKmH(maxSpeedKmH), m_position(position)
   {}
 
   // According to https://en.wikibooks.org/wiki/Physics_Study_Guide/Frictional_coefficients
@@ -27,6 +29,9 @@ struct SpeedCameraOnRoute
   static_assert(kAverageAccelerationOfBraking != 0, "");
   static_assert(kAverageAccelerationOfBraking < 0, "AverageAccelerationOfBraking must be negative");
 
+  // We highlight camera in UI if the closest camera is placed in |kShowCameraDistanceM|
+  // from us.
+  static double constexpr kShowCameraDistanceM = 700.0;
   static double constexpr kInfluenceZoneMeters = 450.0;  // Influence zone of speed camera.
   static double constexpr kDistanceEpsilonMeters = 10.0;
   static double constexpr kDistToReduceSpeedBeforeUnknownCameraM = 50.0;
@@ -42,7 +47,15 @@ struct SpeedCameraOnRoute
   /// \breaf Return true if user must be warned about camera and false otherwise.
   bool IsDangerous(double distanceToCameraMeters, double speedMpS) const;
 
+  /// \brief Return true if current camera should highlight in UI.
+  bool NeedShow(double distanceToCameraMeters) const;
+
+  bool IsValid() const;
+  void Invalidate();
+  bool InInfluenseZone(double distToCameraMeters) const;
+
   double m_distFromBeginMeters = 0.0;    // Distance from beginning of route to current camera.
   uint8_t m_maxSpeedKmH = kNoSpeedInfo;  // Maximum speed allowed by the camera.
+  m2::PointD m_position = m2::PointD::Zero();
 };
 }  // namespace routing

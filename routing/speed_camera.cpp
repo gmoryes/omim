@@ -1,6 +1,8 @@
 #include "routing/speed_camera.hpp"
 
 #include "routing/routing_helpers.hpp"
+#include "speed_camera.hpp"
+
 
 namespace routing
 {
@@ -32,5 +34,25 @@ bool SpeedCameraOnRoute::IsDangerous(double distanceToCameraMeters, double speed
     return true;
 
   return false;
+}
+
+bool SpeedCameraOnRoute::NeedShow(double distanceToCameraMeters) const
+{
+  return distanceToCameraMeters < kShowCameraDistanceM;
+}
+
+bool SpeedCameraOnRoute::IsValid() const
+{
+  return m_position != m2::PointD::Zero();
+}
+
+bool SpeedCameraOnRoute::InInfluenseZone(double distToCameraMeters) const
+{
+  return std::abs(distToCameraMeters) < kInfluenceZoneMeters;
+}
+
+void SpeedCameraOnRoute::Invalidate()
+{
+  m_position = m2::PointD::Zero();
 }
 }  // namespace routing

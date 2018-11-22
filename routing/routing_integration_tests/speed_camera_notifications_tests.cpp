@@ -61,7 +61,6 @@ void InitRoutingSession(ms::LatLon const & from, ms::LatLon const & to, RoutingS
   routingSession.SetRoutingSettings(routing::GetRoutingSettings(routing::VehicleType::Car));
   routingSession.AssignRouteForTesting(make_shared<Route>(route), result);
   routingSession.SetTurnNotificationsUnits(measurement_utils::Units::Metric);
-  routingSession.ToggleSpeedCameras(true);
   string const engShortJson = R"(
     {
       "unknown_camera": ")" + kCameraOnTheWay + R"("

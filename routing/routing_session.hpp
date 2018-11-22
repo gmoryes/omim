@@ -17,6 +17,8 @@
 #include "platform/location.hpp"
 #include "platform/measurement_utils.hpp"
 
+#include "indexer/data_source.hpp"
+
 #include "geometry/point2d.hpp"
 #include "geometry/polyline2d.hpp"
 
@@ -144,9 +146,6 @@ public:
   /// Returns true if following was enabled, false if a route is not ready for the following yet.
   bool EnableFollowMode();
 
-  // TODO (@gmoryes) delete this function (or not?) after tests of speed cameras end.
-  void ToggleSpeedCameras(bool enable);
-
   void SetRoutingSettings(RoutingSettings const & routingSettings);
   void SetRoutingCallbacks(ReadyCallback const & buildReadyCallback,
                            ReadyCallback const & rebuildReadyCallback,
@@ -154,6 +153,9 @@ public:
                            RemoveRouteCallback const & removeRouteCallback);
   void SetProgressCallback(ProgressCallback const & progressCallback);
   void SetCheckpointCallback(CheckpointCallback const & checkpointCallback);
+
+  void SetSpeedCamShowCallback(SpeedCameraShowCallback && callback);
+  void SetSpeedCamClearCallback(SpeedCameraClearCallback && callback);
 
   // Sound notifications for turn instructions.
   void GenerateNotifications(std::vector<std::string> & notifications);
@@ -182,15 +184,8 @@ public:
 
   void AssignRouteForTesting(std::shared_ptr<Route> route, RouterResultCode e) { AssignRoute(route, e); }
 
-  /// \brief Find and save speed cameras on the following route.
-  /// Also analyze |info| and previously cached camera to make warn about them.
-  void ProcessSpeedCameras(location::GpsInfo const & info);
-
-  void FindCamerasOnRouteAndCache(double passedDistanceMeters);
-
-  void SetSpeedCamManagerMode(SpeedCameraManager::Mode mode) { m_speedCamMode = mode; }
-  SpeedCameraManager::Mode GetSpeedCamManagerMode() const { return m_speedCamMode; }
   bool IsSpeedLimitExceeded() const { return true; }
+  SpeedCameraManager & GetSpeedCamManager() { return m_speedCameraManager; }
 
 private:
   struct DoReadyCallback
@@ -213,9 +208,6 @@ private:
   double GetCompletionPercent() const;
   void PassCheckpoints();
 
-  void ProcessCameraWarning();
-  void PassCameraToWarned();
-
 private:
   std::unique_ptr<AsyncRouter> m_router;
   std::shared_ptr<Route> m_route;
@@ -223,21 +215,6 @@ private:
   bool m_isFollowing;
   Checkpoints m_checkpoints;
 
-  // Queue of speedCams, warnings about which has been pronounced.
-  std::queue<SpeedCameraOnRoute> m_warnedSpeedCameras;
-
-  // Queue of speedCams, that we have found, but they are too far, to make warning about them.
-  std::queue<SpeedCameraOnRoute> m_cachedSpeedCameras;
-
-  // Big red button about camera in user interface.
-  bool m_showWarningAboutSpeedCam = false;
-
-  // Flag of doing sound notification about camera on a way.
-  bool m_makeNotificationAboutSpeedCam = false;
-
-  size_t m_firstNotCheckedSpeedCameraIndex = 0;
-
-  SpeedCameraManager::Mode m_speedCamMode = SpeedCameraManager::Mode::Auto;
 
   /// Current position metrics to check for RouteNeedRebuild state.
   double m_lastDistance = 0.0;
@@ -253,6 +230,7 @@ private:
   // Sound turn notification parameters.
   turns::sound::NotificationManager m_turnNotificationsMgr;
 
+  SpeedCameraManager m_speedCameraManager;
   RoutingSettings m_routingSettings;
 
   ReadyCallback m_buildReadyCallback;
