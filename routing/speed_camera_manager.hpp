@@ -14,10 +14,13 @@
 #include <cstdint>
 #include <memory>
 #include <queue>
+#include <string>
 #include <vector>
 
 namespace routing
 {
+static std::string const kSpeedCamModeKey = "speed_cam_mode";
+
 class SpeedCameraManager
 {
 public:
@@ -29,7 +32,14 @@ public:
   };
 
   explicit SpeedCameraManager(turns::sound::NotificationManager & notificationManager)
-    : m_notificationManager(notificationManager) {}
+    : m_notificationManager(notificationManager)
+  {
+    int mode;
+    if (!settings::Get(kSpeedCamModeKey, mode))
+      m_mode = Mode::Auto;
+    else
+      m_mode = static_cast<Mode>(mode);
+  }
 
   void SetRoute(std::shared_ptr<Route> route) { m_route = std::move(route); }
 
@@ -121,7 +131,12 @@ public:
     m_cachedSpeedCameras = std::queue<SpeedCameraOnRoute>();
   }
 
-  void SetMode(Mode mode) { m_mode = mode; }
+  void SetMode(Mode mode)
+  {
+    m_mode = mode;
+    settings::Set(kSpeedCamModeKey, static_cast<int>(mode));
+  }
+
   Mode GetMode() const { return m_mode; }
 
 private:

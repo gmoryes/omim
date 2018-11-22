@@ -17,8 +17,6 @@
 #include "platform/location.hpp"
 #include "platform/measurement_utils.hpp"
 
-#include "indexer/data_source.hpp"
-
 #include "geometry/point2d.hpp"
 #include "geometry/polyline2d.hpp"
 
@@ -186,6 +184,7 @@ public:
 
   bool IsSpeedLimitExceeded() const { return true; }
   SpeedCameraManager & GetSpeedCamManager() { return m_speedCameraManager; }
+  SpeedCameraManager const & GetSpeedCamManager() const { return m_speedCameraManager; }
 
 private:
   struct DoReadyCallback
