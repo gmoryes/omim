@@ -1,5 +1,9 @@
 #include "routing/speed_camera_manager.hpp"
 
+#include "routing/speed_camera.hpp"
+#include "speed_camera_manager.hpp"
+
+
 namespace routing
 {
 std::string const SpeedCameraManager::kSpeedCamModeKey = "speed_cam_mode";
@@ -9,9 +13,28 @@ SpeedCameraManager::SpeedCameraManager(turns::sound::NotificationManager & notif
 {
   int mode;
   if (settings::Get(kSpeedCamModeKey, mode))
-    m_mode = static_cast<Mode>(mode);
+    m_mode = static_cast<SpeedCameraManagerMode>(mode);
   else
-    m_mode = Mode::Auto;
+    m_mode = SpeedCameraManagerMode::Auto;
+}
+
+//static
+SpeedCameraManager::Interval SpeedCameraManager::GetIntervalByDistToCam(
+  double distanceToCameraMeters, double speedMpS)
+{
+  Interval interval;
+  if (distanceToCameraMeters < kInfluenceZoneMeters)
+    interval = Interval::ImpactZone;
+  else
+  {
+    double beepDist = kBeepSignalTime * speedMpS;
+    if (distanceToCameraMeters < kInfluenceZoneMeters + beepDist)
+      interval = Interval::BeepSignalZone;
+    else
+      interval = Interval::VoiceNotificationZone;
+  }
+
+  return interval;
 }
 
 void SpeedCameraManager::OnLocationPositionChanged(location::GpsInfo const & info)
@@ -19,55 +42,60 @@ void SpeedCameraManager::OnLocationPositionChanged(location::GpsInfo const & inf
   if (!Enable())
     return;
 
-  CHECK(m_route, ());
+  CHECK(!m_route.expired(), ());
 
-  auto const passedDistanceMeters = m_route->GetCurrentDistanceFromBeginMeters();
+  auto const passedDistanceMeters = m_route.lock()->GetCurrentDistanceFromBeginMeters();
 
   // Step 1. Find new cameras and cache them.
   FindCamerasOnRouteAndCache(passedDistanceMeters);
 
-  // Step 2. Process warned cameras.
-  while (!m_warnedSpeedCameras.empty())
-  {
-    auto const & oldestCamera = m_warnedSpeedCameras.front();
-    double const distBetweenCameraAndCurrentPos = passedDistanceMeters - oldestCamera.m_distFromBeginMeters;
-    if (distBetweenCameraAndCurrentPos < SpeedCameraOnRoute::kInfluenceZoneMeters)
-      break;
+  double distFromCurrentPosAndClosestCam = -1.0;
+  if (m_closestCamera.IsValid())
+    distFromCurrentPosAndClosestCam = m_closestCamera.m_distFromBeginMeters - passedDistanceMeters;
 
-    m_warnedSpeedCameras.pop();
-  }
-
-  // Step 3. Check cached cameras.
-  if (!m_cachedSpeedCameras.empty())
+  // Step 2. Check cached cameras. Do it only after pass through closest camera.
+  if (!m_cachedSpeedCameras.empty() && distFromCurrentPosAndClosestCam < 0)
   {
     // Do not use reference here, because ProcessCameraWarning() can
-    // invalidate |closestSpeedCamera|.
-    auto const closestSpeedCamera = m_cachedSpeedCameras.front();
-    if (closestSpeedCamera.m_distFromBeginMeters < passedDistanceMeters)
-    {
-      PassCameraToWarned();
-    }
-    else
-    {
-      auto const distanceToCameraMeters = closestSpeedCamera.m_distFromBeginMeters - passedDistanceMeters;
-      if (closestSpeedCamera.IsDangerous(distanceToCameraMeters, info.m_speedMpS))
-        ProcessCameraWarning();
+    // invalidate |closestSpeedCam|.
+    auto const closestSpeedCam = m_cachedSpeedCameras.front();
 
-      if (closestSpeedCamera.NeedShow(distanceToCameraMeters))
-        PassCameraToUI(closestSpeedCamera);
+    bool needUpdateClosestCamera = false;
+    auto const distToCamMeters = closestSpeedCam.m_distFromBeginMeters - passedDistanceMeters;
+
+    if (closestSpeedCam.m_distFromBeginMeters + kInfluenceZoneMeters > passedDistanceMeters)
+    {
+      needUpdateClosestCamera =
+        NeedUpdateClosestCamera(distToCamMeters, info.m_speedMpS, closestSpeedCam);
+
+      if (needUpdateClosestCamera)
+      {
+        m_closestCamera = closestSpeedCam;
+        m_makeVoiceSignal = false;
+        m_makeBeepSignal = false;
+        m_voiceSignalCounter = 0;
+        m_beepSignalCounter = 0;
+        m_cachedSpeedCameras.pop();
+      }
     }
+
+    if (NeedChangeHighlightedCamera(distToCamMeters, needUpdateClosestCamera))
+      PassCameraToUI(closestSpeedCam);
   }
 
-  // Step 4. Check UI camera (stop or not stop to highlight it).
-  if (m_currentHighlightedSpeedCamera.IsValid())
-  {
-    auto const distanceToCameraMeters =
-      m_currentHighlightedSpeedCamera.m_distFromBeginMeters - passedDistanceMeters;
+  if (m_closestCamera.IsValid())
+    SetNotificationFlags(passedDistanceMeters, info.m_speedMpS, m_closestCamera);
 
-    if (!m_currentHighlightedSpeedCamera.InInfluenseZone(distanceToCameraMeters))
+  // Step 3. Check UI camera (stop or not stop to highlight it).
+  if (m_currentHighlightedCamera.IsValid())
+  {
+    auto const distToCameraMeters =
+      m_currentHighlightedCamera.m_distFromBeginMeters - passedDistanceMeters;
+
+    if (IsHighlightedCameraExpired(distToCameraMeters))
     {
       m_speedCamClearCallback();
-      m_currentHighlightedSpeedCamera.Invalidate();
+      m_currentHighlightedCamera.Invalidate();
     }
   }
 }
@@ -77,28 +105,42 @@ void SpeedCameraManager::GenerateNotifications(std::vector<std::string> & notifi
   if (!Enable())
     return;
 
-  if (m_makeNotificationAboutSpeedCam)
+  if (m_makeVoiceSignal && m_voiceSignalCounter < kVoiceNotificationNumber)
   {
     notifications.emplace_back(m_notificationManager.GenerateSpeedCameraText());
-    m_makeNotificationAboutSpeedCam = false;
+    m_makeVoiceSignal = false;
+    ++m_voiceSignalCounter;
   }
+}
+
+bool SpeedCameraManager::MakeBeepSignal()
+{
+  if (!Enable())
+    return false;
+
+  if (m_makeBeepSignal && m_beepSignalCounter < kBeepSignalNumber)
+  {
+    m_makeBeepSignal = false;
+    ++m_beepSignalCounter;
+    return true;
+  }
+
+  return false;
 }
 
 void SpeedCameraManager::Reset()
 {
   m_firstNotCheckedSpeedCameraIndex = 1;
-  m_makeNotificationAboutSpeedCam = false;
-  m_warnedSpeedCameras = std::queue<SpeedCameraOnRoute>();
+  m_makeVoiceSignal = false;
   m_cachedSpeedCameras = std::queue<SpeedCameraOnRoute>();
-  m_route = nullptr;
 }
 
 void SpeedCameraManager::FindCamerasOnRouteAndCache(double passedDistanceMeters)
 {
   CHECK(Enable(), ("Speed camera manager is off."));
-  CHECK(m_route, ());
+  CHECK(!m_route.expired(), ());
 
-  auto const & segments = m_route->GetRouteSegments();
+  auto const & segments = m_route.lock()->GetRouteSegments();
   size_t firstNotChecked = m_firstNotCheckedSpeedCameraIndex;
   if (firstNotChecked == segments.size())
     return;
@@ -109,7 +151,7 @@ void SpeedCameraManager::FindCamerasOnRouteAndCache(double passedDistanceMeters)
   double distFromCurPosToLatestCheckedSegmentM = distToPrevSegment - passedDistanceMeters;
 
   while (firstNotChecked < segments.size() &&
-         distFromCurPosToLatestCheckedSegmentM < SpeedCameraOnRoute::kLookAheadDistanceMeters)
+         distFromCurPosToLatestCheckedSegmentM < kLookAheadDistanceMeters)
   {
     ASSERT_GREATER(firstNotChecked, 0, ());
 
@@ -121,7 +163,7 @@ void SpeedCameraManager::FindCamerasOnRouteAndCache(double passedDistanceMeters)
     auto const direction = endPoint - startPoint;
 
     auto const & speedCamsVector = lastSegment.GetSpeedCams();
-    double segmentLength = m_route->GetSegLenMeters(firstNotChecked);
+    double segmentLength = m_route.lock()->GetSegLenMeters(firstNotChecked);
 
     for (auto const & speedCam : speedCamsVector)
     {
@@ -136,5 +178,125 @@ void SpeedCameraManager::FindCamerasOnRouteAndCache(double passedDistanceMeters)
   }
 
   m_firstNotCheckedSpeedCameraIndex = firstNotChecked;
+}
+
+bool SpeedCameraManager::IsSpeedHigh(double distanceToCameraMeters, double speedMpS,
+                                     SpeedCameraOnRoute const & camera) const
+{
+  if (camera.NoSpeed())
+    return distanceToCameraMeters < kInfluenceZoneMeters + kDistToReduceSpeedBeforeUnknownCameraM;
+
+  double const distToDangerousZone = distanceToCameraMeters - kInfluenceZoneMeters;
+
+  if (speedMpS < routing::KMPH2MPS(camera.m_maxSpeedKmH))
+    return false;
+
+  double timeToSlowSpeed =
+    (routing::KMPH2MPS(camera.m_maxSpeedKmH) - speedMpS) / kAverageAccelerationOfBraking;
+
+  // Look to: https://en.wikipedia.org/wiki/Acceleration#Uniform_acceleration
+  // S = V_0 * t + at^2 / 2, where
+  //   V_0 - current speed
+  //   a - kAverageAccelerationOfBraking
+  double distanceNeedsToSlowDown = timeToSlowSpeed * speedMpS +
+                                   (kAverageAccelerationOfBraking * timeToSlowSpeed * timeToSlowSpeed) / 2;
+  distanceNeedsToSlowDown += kTimeForDecision * speedMpS;
+
+  return distToDangerousZone < distanceNeedsToSlowDown + kDistanceEpsilonMeters;
+}
+
+bool SpeedCameraManager::SetNotificationFlags(double passedDistanceMeters, double speedMpS,
+                                              SpeedCameraOnRoute const & camera)
+{
+  CHECK(m_mode != SpeedCameraManagerMode::Never,
+        ("This method should use only in Auto and Always mode."));
+
+  auto const distToCameraMeters = camera.m_distFromBeginMeters - passedDistanceMeters;
+
+  Interval interval = SpeedCameraManager::GetIntervalByDistToCam(distToCameraMeters, speedMpS);
+  switch (interval)
+  {
+    case Interval::ImpactZone:
+    {
+      if (IsSpeedHigh(distToCameraMeters, speedMpS, camera))
+      {
+        m_makeBeepSignal = true;
+        return true;
+      }
+
+      if (m_mode == SpeedCameraManagerMode::Always)
+      {
+        m_makeVoiceSignal = true;
+        return true;
+      }
+
+      return false;
+    }
+    case Interval::BeepSignalZone:
+    {
+      // If we exceeding speed limit, in |BeepSignalZone|, we should make "beep" signal.
+      if (IsSpeedHigh(distToCameraMeters, speedMpS, camera))
+      {
+        m_makeBeepSignal = true;
+        return true;
+      }
+
+      // If we did voice notification, we should do "beep" signal before |ImpactZone|.
+      if (m_voiceSignalCounter > 0)
+      {
+        m_makeBeepSignal = true;
+        return true;
+      }
+
+      return false;
+    }
+    case Interval::VoiceNotificationZone:
+    {
+      // If we exceeding speed limit, in |VoiceNotificationZone|, we should make "voice"
+      // notification.
+      if (IsSpeedHigh(distToCameraMeters, speedMpS, camera))
+      {
+        m_makeVoiceSignal = true;
+        return true;
+      }
+
+      return false;
+    }
+  }
+
+  CHECK_SWITCH();
+  return false;
+}
+
+bool SpeedCameraManager::NeedUpdateClosestCamera(double distanceToCameraMeters, double speedMpS,
+                                                 SpeedCameraOnRoute const & camera)
+{
+  if (IsSpeedHigh(distanceToCameraMeters, speedMpS, camera))
+    return true;
+
+  if (m_mode == SpeedCameraManagerMode::Always && distanceToCameraMeters < kInfluenceZoneMeters)
+    return true;
+
+  return false;
+}
+
+bool SpeedCameraManager::IsHighlightedCameraExpired(double distToCameraMeters) const
+{
+  return !m_currentHighlightedCamera.IsValid() && distToCameraMeters < -kInfluenceZoneMeters;
+}
+
+bool SpeedCameraManager::NeedChangeHighlightedCamera(double distToCameraMeters,
+                                                     bool needUpdateClosestCamera) const
+{
+  if (needUpdateClosestCamera)
+    return true;
+
+  if (!m_currentHighlightedCamera.IsValid() &&
+      -kInfluenceZoneMeters < distToCameraMeters && distToCameraMeters < kShowCameraDistanceM)
+  {
+    return true;
+  }
+
+  return false;
 }
 }  // namespace routing

@@ -157,6 +157,7 @@ public:
 
   // Sound notifications for turn instructions.
   void GenerateNotifications(std::vector<std::string> & notifications);
+  bool MakeBeepSignalForSpeedCam();
   void EnableTurnNotifications(bool enable);
   void SetTurnNotificationsUnits(measurement_utils::Units const units);
   void SetTurnNotificationsLocale(std::string const & locale);

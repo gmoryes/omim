@@ -60,7 +60,7 @@ RoutingSession::RoutingSession()
   , m_passedDistanceOnRouteMeters(0.0)
   , m_lastCompletionPercent(0.0)
 {
-  m_speedCameraManager.SetRoute(m_route.get());
+  m_speedCameraManager.SetRoute(m_route);
 }
 
 void RoutingSession::Init(RoutingStatisticsCallback const & routingStatisticsFn,
@@ -137,7 +137,7 @@ void RoutingSession::RemoveRoute()
 
   m_route = std::make_shared<Route>(string() /* router */, 0 /* route id */);
   m_speedCameraManager.Reset();
-  m_speedCameraManager.SetRoute(m_route.get());
+  m_speedCameraManager.SetRoute(m_route);
 }
 
 void RoutingSession::RebuildRouteOnTrafficUpdate()
@@ -436,6 +436,12 @@ void RoutingSession::PassCheckpoints()
   }
 }
 
+bool RoutingSession::MakeBeepSignalForSpeedCam()
+{
+  CHECK_THREAD_CHECKER(m_threadChecker, ());
+  return m_speedCameraManager.MakeBeepSignal();
+}
+
 void RoutingSession::GenerateNotifications(vector<string> & notifications)
 {
   CHECK_THREAD_CHECKER(m_threadChecker, ());
@@ -481,7 +487,7 @@ void RoutingSession::AssignRoute(shared_ptr<Route> route, RouterResultCode e)
   route->SetRoutingSettings(m_routingSettings);
   m_route = route;
   m_speedCameraManager.Reset();
-  m_speedCameraManager.SetRoute(m_route.get());
+  m_speedCameraManager.SetRoute(m_route);
 }
 
 void RoutingSession::SetRouter(unique_ptr<IRouter> && router,

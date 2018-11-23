@@ -1,10 +1,8 @@
-#include <utility>
-
 #pragma once
-
 
 #include "routing/route.hpp"
 #include "routing/routing_callbacks.hpp"
+#include "routing/routing_helpers.hpp"
 #include "routing/speed_camera.hpp"
 #include "routing/turns_notification_manager.hpp"
 
@@ -21,22 +19,22 @@
 
 namespace routing
 {
+// Do not touch the order, it uses in platforms.
+enum class SpeedCameraManagerMode
+{
+  Auto,
+  Always,
+  Never
+};
 
 class SpeedCameraManager
 {
 public:
   static std::string const kSpeedCamModeKey;
 
-  enum class Mode
-  {
-    Auto,
-    Always,
-    Never
-  };
-
   explicit SpeedCameraManager(turns::sound::NotificationManager & notificationManager);
 
-  void SetRoute(Route * route) { m_route = route; }
+  void SetRoute(std::weak_ptr<Route> route) { m_route = std::move(route); }
 
   void SetSpeedCamShowCallback(SpeedCameraShowCallback && callback)
   {
@@ -48,67 +46,121 @@ public:
     m_speedCamClearCallback = std::move(callback);
   }
 
-  bool Enable() const { return m_mode != Mode::Never; }
+  bool Enable() const { return m_mode != SpeedCameraManagerMode::Never; }
 
   void OnLocationPositionChanged(location::GpsInfo const & info);
 
   void GenerateNotifications(std::vector<std::string> & notifications);
+  bool MakeBeepSignal();
 
   void Reset();
 
-  void SetMode(Mode mode)
+  void SetMode(SpeedCameraManagerMode mode)
   {
     m_mode = mode;
     settings::Set(kSpeedCamModeKey, static_cast<int>(mode));
   }
 
-  Mode GetMode() const { return m_mode; }
+  SpeedCameraManagerMode GetMode() const { return m_mode; }
 
 private:
+  enum class Interval
+  {
+    // Influence zone of camera, set by |kInfluenceZoneMeters| const
+      ImpactZone,
+    // The zone, starting in the 3 seconds before ImpactZone and ending at the
+    // beginning of ImpactZone
+      BeepSignalZone,
+    // The zone where we could use notifications. It doesn't have the beginning
+    // and end at the beginning of BeepSignalZone
+      VoiceNotificationZone
+  };
+
+  // According to https://en.wikibooks.org/wiki/Physics_Study_Guide/Frictional_coefficients
+  // average friction of rubber on asphalt is 0.68
+  //
+  // According to: https://en.wikipedia.org/wiki/Braking_distance
+  // a =- \mu * g, where \mu - average friction of rubber on asphalt.
+  static double constexpr kAverageFrictionOfRubberOnAspalt = 0.68;
+  static double constexpr kGravitationalAcceleration = 9.80655;
+
+  // Used for calculating distance needed to slow down before a speed camera.
+  static double constexpr kAverageAccelerationOfBraking =
+    -kAverageFrictionOfRubberOnAspalt * kGravitationalAcceleration; // Meters per second squared.
+
+  static_assert(kAverageAccelerationOfBraking != 0, "");
+  static_assert(kAverageAccelerationOfBraking < 0, "AverageAccelerationOfBraking must be negative");
+
+  // We highlight camera in UI if the closest camera is placed in |kShowCameraDistanceM|
+  // from us.
+  static double constexpr kShowCameraDistanceM = 1000.0;
+
+  // TODO (@gmoryes) надо крутить коэффициенты, иначе получается, что расстояние за которое
+  // TODO (@gmoryes) успеет затормозить водитель это всегда |BeepSignalZone|.
+
+  // Additional time for user about make a decision about slow down.
+  // Get from: https://en.wikipedia.org/wiki/Braking_distance
+  static double constexpr kTimeForDecision = 2.0;
+
+  // Distance that we use for look ahead to search camera on the route.
+  static double constexpr kLookAheadDistanceMeters = 2000.0;
+
+  static double constexpr kDistanceEpsilonMeters = 10.0;
+  static double constexpr kDistToReduceSpeedBeforeUnknownCameraM = 50.0;
+  static double constexpr kInfluenceZoneMeters = 450.0;  // Influence zone of speed camera.
+  // With this constant we calculate the distance for beep signal.
+  // If beep signal happend, it must be before |kBeepSignalTime| seconds
+  // of entering to the camera influence zone - |kInfluenceZoneMeters|.
+  static double constexpr kBeepSignalTime = 3.0;
+
+  // Number of notifications for different types.
+  static uint32_t constexpr kVoiceNotificationNumber = 1;
+  static uint32_t constexpr kBeepSignalNumber = 1;
+
+  static Interval GetIntervalByDistToCam(double distanceToCameraMeters, double speedMpS);
+
   void FindCamerasOnRouteAndCache(double passedDistanceMeters);
-
-  void ProcessCameraWarning()
-  {
-    PassCameraToWarned();
-    m_makeNotificationAboutSpeedCam = true;  // Sound about camera appearing.
-  }
-
-  void PassCameraToWarned()
-  {
-    CHECK(!m_cachedSpeedCameras.empty(), ());
-    m_warnedSpeedCameras.push(m_cachedSpeedCameras.front());
-    m_cachedSpeedCameras.pop();
-  }
 
   void PassCameraToUI(SpeedCameraOnRoute const & camera)
   {
     // Clear previous speed cam in UI.
     m_speedCamClearCallback();
 
-    m_currentHighlightedSpeedCamera = camera;
+    m_currentHighlightedCamera = camera;
     m_speedCamShowCallback(camera.m_position);
   }
 
+  bool SetNotificationFlags(double passedDistanceMeters, double speedMpS, SpeedCameraOnRoute const & camera);
+  bool IsSpeedHigh(double distanceToCameraMeters, double speedMpS, SpeedCameraOnRoute const & camera) const;
+  bool NeedUpdateClosestCamera(double distanceToCameraMeters, double speedMpS, SpeedCameraOnRoute const & camera);
+  bool NeedChangeHighlightedCamera(double distToCameraMeters, bool needUpdateClosestCamera) const;
+  bool IsHighlightedCameraExpired(double distToCameraMeters) const;
+
 private:
-  // Queue of speedCams, warnings about which has been pronounced.
-  std::queue<SpeedCameraOnRoute> m_warnedSpeedCameras;
+  SpeedCameraOnRoute m_closestCamera;
+  uint32_t m_beepSignalCounter = 0;
+  uint32_t m_voiceSignalCounter = 0;
+
+  // Flag of doing sound notification about camera on a way.
+  bool m_makeBeepSignal = false;
+  bool m_makeVoiceSignal = false;
 
   // Queue of speedCams, that we have found, but they are too far, to make warning about them.
   std::queue<SpeedCameraOnRoute> m_cachedSpeedCameras;
 
   // Info about camera, that is highlighted now.
-  SpeedCameraOnRoute m_currentHighlightedSpeedCamera;
+  SpeedCameraOnRoute m_currentHighlightedCamera;
 
-  // Flag of doing sound notification about camera on a way.
-  bool m_makeNotificationAboutSpeedCam = false;
+
+
 
   size_t m_firstNotCheckedSpeedCameraIndex = 1;
-  Route * m_route = nullptr;
+  std::weak_ptr<Route> m_route;
   turns::sound::NotificationManager & m_notificationManager;
 
-  SpeedCameraShowCallback m_speedCamShowCallback = [](m2::PointD const & point) {};
+  SpeedCameraShowCallback m_speedCamShowCallback = [](m2::PointD const & /* point */) {};
   SpeedCameraClearCallback m_speedCamClearCallback = []() {};
 
-  SpeedCameraManager::Mode m_mode = SpeedCameraManager::Mode::Auto;
+  SpeedCameraManagerMode m_mode = SpeedCameraManagerMode::Auto;
 };
 }  // namespace routing

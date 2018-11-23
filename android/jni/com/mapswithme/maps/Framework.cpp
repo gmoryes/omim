@@ -29,6 +29,8 @@
 
 #include "indexer/feature_altitude.hpp"
 
+#include "routing/speed_camera_manager.hpp"
+
 #include "platform/country_file.hpp"
 #include "platform/local_country_file.hpp"
 #include "platform/local_country_file_utils.hpp"
@@ -38,8 +40,6 @@
 #include "platform/platform.hpp"
 #include "platform/preferred_languages.hpp"
 #include "platform/settings.hpp"
-
-#include "routing/speed_camera_manager.hpp"
 
 #include "base/logging.hpp"
 #include "base/math.hpp"
@@ -1112,13 +1112,13 @@ Java_com_mapswithme_maps_Framework_nativeSetSpeedCamManagerMode(JNIEnv * env, jc
 JNIEXPORT jint JNICALL
 Java_com_mapswithme_maps_Framework_nativeGetSpeedCamManagerMode(JNIEnv * env, jclass)
 {
-  return static_cast<int>(frm()->GetRoutingManager().GetSpeedCamManager().GetMode());
+  return static_cast<jint>(frm()->GetRoutingManager().GetSpeedCamManager().GetMode());
 }
 
 JNIEXPORT jboolean JNICALL
 Java_com_mapswithme_maps_Framework_nativeIsSpeedLimitExceeded(JNIEnv * env, jclass)
 {
-  ::Framework * fr = frm();
+  auto fr = frm();
   if (!fr->GetRoutingManager().IsRoutingActive())
     return false;
 
