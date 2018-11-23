@@ -12,10 +12,15 @@ SpeedCameraManager::SpeedCameraManager(turns::sound::NotificationManager & notif
   : m_notificationManager(notificationManager)
 {
   int mode;
-  if (settings::Get(kSpeedCamModeKey, mode))
+  if (settings::Get(kSpeedCamModeKey, mode) &&
+      0 <= mode && mode < static_cast<int>(SpeedCameraManagerMode::MaxValue))
+  {
     m_mode = static_cast<SpeedCameraManagerMode>(mode);
+  }
   else
+  {
     m_mode = SpeedCameraManagerMode::Auto;
+  }
 }
 
 //static
@@ -153,7 +158,7 @@ void SpeedCameraManager::FindCamerasOnRouteAndCache(double passedDistanceMeters)
   while (firstNotChecked < segments.size() &&
          distFromCurPosToLatestCheckedSegmentM < kLookAheadDistanceMeters)
   {
-    ASSERT_GREATER(firstNotChecked, 0, ());
+    CHECK_GREATER(firstNotChecked, 0, ());
 
     auto const & lastSegment = segments[firstNotChecked];
     auto const & prevSegment = segments[firstNotChecked - 1];

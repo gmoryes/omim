@@ -24,7 +24,9 @@ enum class SpeedCameraManagerMode
 {
   Auto,
   Always,
-  Never
+  Never,
+
+  MaxValue
 };
 
 class SpeedCameraManager

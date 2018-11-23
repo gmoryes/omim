@@ -25,6 +25,6 @@ struct SpeedCameraOnRoute
 
   double m_distFromBeginMeters = 0.0;    // Distance from beginning of route to current camera.
   uint8_t m_maxSpeedKmH = kNoSpeedInfo;  // Maximum speed allowed by the camera.
-  m2::PointD m_position = m2::PointD::Zero();
+  m2::PointD m_position;                 // Equals m2::PointD::Zero() by default.
 };
 }  // namespace routing

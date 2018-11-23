@@ -279,7 +279,6 @@ RoutingManager::RoutingManager(Callbacks && callbacks, Delegate & delegate)
       auto mark = editSession.CreateUserMark<SpeedCameraMark>(point);
       // TODO (@gmoryes) change speed
       mark->SetTitle("80");
-      //mark->SetFeatureId(featureID);
       mark->SetIndex(0);
     });
   });
