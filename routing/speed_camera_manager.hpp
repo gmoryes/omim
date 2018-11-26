@@ -39,13 +39,13 @@ public:
   enum class Interval
   {
     // Influence zone of camera, set by |kInfluenceZoneMeters| const.
-      ImpactZone,
+    ImpactZone,
     // The zone, starting in the |kBeepSignalTime| seconds before ImpactZone and ending at the
     // beginning of ImpactZone.
-      BeepSignalZone,
+    BeepSignalZone,
     // The zone where we could use voice notifications. It doesn't have the beginning
     // and end at the beginning of BeepSignalZone.
-      VoiceNotificationZone
+    VoiceNotificationZone
   };
 
   static Interval GetIntervalByDistToCam(double distanceToCameraMeters, double speedMpS);
