@@ -436,12 +436,6 @@ void RoutingSession::PassCheckpoints()
   }
 }
 
-bool RoutingSession::MakeBeepSignalForSpeedCam()
-{
-  CHECK_THREAD_CHECKER(m_threadChecker, ());
-  return m_speedCameraManager.MakeBeepSignal();
-}
-
 void RoutingSession::GenerateNotifications(vector<string> & notifications)
 {
   CHECK_THREAD_CHECKER(m_threadChecker, ());

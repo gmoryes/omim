@@ -13,9 +13,9 @@ SpeedCameraManager::SpeedCameraManager(turns::sound::NotificationManager & notif
 {
   Reset();
 
-  int mode;
+  uint32_t mode = 0;
   if (settings::Get(kSpeedCamModeKey, mode) &&
-      0 <= mode && mode < static_cast<int>(SpeedCameraManagerMode::MaxValue))
+      mode < static_cast<int>(SpeedCameraManagerMode::MaxValue))
   {
     m_mode = static_cast<SpeedCameraManagerMode>(mode);
   }
@@ -31,7 +31,9 @@ SpeedCameraManager::GetIntervalByDistToCam(double distanceToCameraMeters, double
 {
   Interval interval;
   if (distanceToCameraMeters < kInfluenceZoneMeters)
+  {
     interval = Interval::ImpactZone;
+  }
   else
   {
     double beepDist = kBeepSignalTime * speedMpS;
@@ -46,6 +48,8 @@ SpeedCameraManager::GetIntervalByDistToCam(double distanceToCameraMeters, double
 
 void SpeedCameraManager::OnLocationPositionChanged(location::GpsInfo const & info)
 {
+  CHECK_THREAD_CHECKER(m_threadChecker, ());
+
   if (!Enable())
     return;
 
@@ -106,6 +110,8 @@ void SpeedCameraManager::OnLocationPositionChanged(location::GpsInfo const & inf
 
 void SpeedCameraManager::GenerateNotifications(std::vector<std::string> & notifications)
 {
+  CHECK_THREAD_CHECKER(m_threadChecker, ());
+
   if (!Enable())
     return;
 
@@ -117,8 +123,10 @@ void SpeedCameraManager::GenerateNotifications(std::vector<std::string> & notifi
   }
 }
 
-bool SpeedCameraManager::MakeBeepSignal()
+bool SpeedCameraManager::ShouldPlayWarningSignal()
 {
+  CHECK_THREAD_CHECKER(m_threadChecker, ());
+
   if (!Enable())
     return false;
 
@@ -142,6 +150,8 @@ void SpeedCameraManager::ResetNotifications()
 
 void SpeedCameraManager::Reset()
 {
+  CHECK_THREAD_CHECKER(m_threadChecker, ());
+
   m_closestCamera.Invalidate();
   m_firstNotCheckedSpeedCameraIndex = 1;
   ResetNotifications();

@@ -1106,13 +1106,13 @@ JNIEXPORT void JNICALL
 Java_com_mapswithme_maps_Framework_nativeSetSpeedCamManagerMode(JNIEnv * env, jclass, jint mode)
 {
   frm()->GetRoutingManager().GetSpeedCamManager().SetMode(
-    static_cast<routing::SpeedCameraManager::Mode>(mode));
+    static_cast<routing::SpeedCameraManagerMode>(mode));
 }
 
 JNIEXPORT jboolean JNICALL
-Java_com_mapswithme_maps_Framework_nativeMakeBeepSignal(JNIEnv * env, jclass)
+Java_com_mapswithme_maps_Framework_nativeShouldPlayWarningSignal(JNIEnv * env, jclass)
 {
-  return frm()->GetRoutingManager().GetSpeedCamManager().MakeBeepSignal();
+  return frm()->GetRoutingManager().GetSpeedCamManager().ShouldPlayWarningSignal();
 }
 
 JNIEXPORT jint JNICALL

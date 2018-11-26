@@ -9,6 +9,7 @@
 #include "platform/location.hpp"
 
 #include "base/assert.hpp"
+#include "base/thread_checker.hpp"
 
 #include <cstdint>
 #include <memory>
@@ -39,7 +40,7 @@ public:
 
   enum class Interval
   {
-    // Influence zone of camera, set by |kInfluenceZoneMeters| const.
+    // Influence zone of camera, set by |kInfluenceZoneMeters|.
     ImpactZone,
     // The zone, starting in the |kBeepSignalTime| seconds before ImpactZone and ending at the
     // beginning of ImpactZone.
@@ -68,7 +69,7 @@ public:
   void OnLocationPositionChanged(location::GpsInfo const & info);
 
   void GenerateNotifications(std::vector<std::string> & notifications);
-  bool MakeBeepSignal();
+  bool ShouldPlayWarningSignal();
 
   void ResetNotifications();
   void Reset();
@@ -102,9 +103,6 @@ private:
   // We highlight camera in UI if the closest camera is placed in |kShowCameraDistanceM|
   // from us.
   static double constexpr kShowCameraDistanceM = 1000.0;
-
-  // TODO (@gmoryes) надо крутить коэффициенты, иначе получается, что расстояние за которое
-  // TODO (@gmoryes) успеет затормозить водитель это всегда |BeepSignalZone|.
 
   // Additional time for user about make a decision about slow down.
   // Get from: https://en.wikipedia.org/wiki/Braking_distance
@@ -165,5 +163,7 @@ private:
   SpeedCameraClearCallback m_speedCamClearCallback = []() {};
 
   SpeedCameraManagerMode m_mode = SpeedCameraManagerMode::Auto;
+
+  DECLARE_THREAD_CHECKER(m_threadChecker);
 };
 }  // namespace routing

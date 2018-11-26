@@ -85,7 +85,7 @@ bool CheckVoiceNotification(RoutingSession & routingSession)
 
 bool CheckBeepSignal(RoutingSession & routingSession)
 {
-  return routingSession.MakeBeepSignalForSpeedCam();
+  return routingSession.GetSpeedCamManager().ShouldPlayWarningSignal();
 }
 
 bool CheckZone(RoutingSession & routingSession, double speedKmPH, SpeedCameraManager::Interval interval)
