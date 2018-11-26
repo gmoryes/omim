@@ -36,6 +36,20 @@ public:
 
   explicit SpeedCameraManager(turns::sound::NotificationManager & notificationManager);
 
+  enum class Interval
+  {
+    // Influence zone of camera, set by |kInfluenceZoneMeters| const.
+      ImpactZone,
+    // The zone, starting in the |kBeepSignalTime| seconds before ImpactZone and ending at the
+    // beginning of ImpactZone.
+      BeepSignalZone,
+    // The zone where we could use voice notifications. It doesn't have the beginning
+    // and end at the beginning of BeepSignalZone.
+      VoiceNotificationZone
+  };
+
+  static Interval GetIntervalByDistToCam(double distanceToCameraMeters, double speedMpS);
+
   void SetRoute(std::weak_ptr<Route> route) { m_route = std::move(route); }
 
   void SetSpeedCamShowCallback(SpeedCameraShowCallback && callback)
@@ -55,6 +69,7 @@ public:
   void GenerateNotifications(std::vector<std::string> & notifications);
   bool MakeBeepSignal();
 
+  void ResetNotifications();
   void Reset();
 
   void SetMode(SpeedCameraManagerMode mode)
@@ -65,19 +80,9 @@ public:
 
   SpeedCameraManagerMode GetMode() const { return m_mode; }
 
-private:
-  enum class Interval
-  {
-    // Influence zone of camera, set by |kInfluenceZoneMeters| const
-      ImpactZone,
-    // The zone, starting in the 3 seconds before ImpactZone and ending at the
-    // beginning of ImpactZone
-      BeepSignalZone,
-    // The zone where we could use notifications. It doesn't have the beginning
-    // and end at the beginning of BeepSignalZone
-      VoiceNotificationZone
-  };
+  SpeedCameraOnRoute const & GetClosestCamForTests() const { return m_closestCamera; }
 
+private:
   // According to https://en.wikibooks.org/wiki/Physics_Study_Guide/Frictional_coefficients
   // average friction of rubber on asphalt is 0.68
   //
@@ -113,13 +118,11 @@ private:
   // With this constant we calculate the distance for beep signal.
   // If beep signal happend, it must be before |kBeepSignalTime| seconds
   // of entering to the camera influence zone - |kInfluenceZoneMeters|.
-  static double constexpr kBeepSignalTime = 3.0;
+  static double constexpr kBeepSignalTime = 1.0;
 
   // Number of notifications for different types.
   static uint32_t constexpr kVoiceNotificationNumber = 1;
   static uint32_t constexpr kBeepSignalNumber = 1;
-
-  static Interval GetIntervalByDistToCam(double distanceToCameraMeters, double speedMpS);
 
   void FindCamerasOnRouteAndCache(double passedDistanceMeters);
 
@@ -152,9 +155,6 @@ private:
 
   // Info about camera, that is highlighted now.
   SpeedCameraOnRoute m_currentHighlightedCamera;
-
-
-
 
   size_t m_firstNotCheckedSpeedCameraIndex = 1;
   std::weak_ptr<Route> m_route;

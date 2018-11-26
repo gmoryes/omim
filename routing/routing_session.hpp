@@ -187,6 +187,8 @@ public:
   SpeedCameraManager & GetSpeedCamManager() { return m_speedCameraManager; }
   SpeedCameraManager const & GetSpeedCamManager() const { return m_speedCameraManager; }
 
+  std::shared_ptr<Route> GetRouteForTests() { return m_route; }
+
 private:
   struct DoReadyCallback
   {

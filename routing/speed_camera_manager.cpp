@@ -24,8 +24,8 @@ SpeedCameraManager::SpeedCameraManager(turns::sound::NotificationManager & notif
 }
 
 //static
-SpeedCameraManager::Interval SpeedCameraManager::GetIntervalByDistToCam(
-  double distanceToCameraMeters, double speedMpS)
+SpeedCameraManager::Interval
+SpeedCameraManager::GetIntervalByDistToCam(double distanceToCameraMeters, double speedMpS)
 {
   Interval interval;
   if (distanceToCameraMeters < kInfluenceZoneMeters)
@@ -76,10 +76,7 @@ void SpeedCameraManager::OnLocationPositionChanged(location::GpsInfo const & inf
       if (needUpdateClosestCamera)
       {
         m_closestCamera = closestSpeedCam;
-        m_makeVoiceSignal = false;
-        m_makeBeepSignal = false;
-        m_voiceSignalCounter = 0;
-        m_beepSignalCounter = 0;
+        ResetNotifications();
         m_cachedSpeedCameras.pop();
       }
     }
@@ -133,10 +130,18 @@ bool SpeedCameraManager::MakeBeepSignal()
   return false;
 }
 
+void SpeedCameraManager::ResetNotifications()
+{
+  m_makeVoiceSignal = false;
+  m_makeBeepSignal = false;
+  m_beepSignalCounter = 0;
+  m_voiceSignalCounter = 0;
+}
+
 void SpeedCameraManager::Reset()
 {
   m_firstNotCheckedSpeedCameraIndex = 1;
-  m_makeVoiceSignal = false;
+  ResetNotifications();
   m_cachedSpeedCameras = std::queue<SpeedCameraOnRoute>();
 }
 
@@ -224,6 +229,13 @@ bool SpeedCameraManager::SetNotificationFlags(double passedDistanceMeters, doubl
     case Interval::ImpactZone:
     {
       if (IsSpeedHigh(distToCameraMeters, speedMpS, camera))
+      {
+        m_makeBeepSignal = true;
+        return true;
+      }
+
+      // If we did voice notification, and didn't beep signal in |BeepSignalZone|, let's do it now.
+      if (m_voiceSignalCounter > 0 && m_beepSignalCounter == 0)
       {
         m_makeBeepSignal = true;
         return true;
