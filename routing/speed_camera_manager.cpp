@@ -11,6 +11,8 @@ std::string const SpeedCameraManager::kSpeedCamModeKey = "speed_cam_mode";
 SpeedCameraManager::SpeedCameraManager(turns::sound::NotificationManager & notificationManager)
   : m_notificationManager(notificationManager)
 {
+  Reset();
+
   int mode;
   if (settings::Get(kSpeedCamModeKey, mode) &&
       0 <= mode && mode < static_cast<int>(SpeedCameraManagerMode::MaxValue))
@@ -140,6 +142,7 @@ void SpeedCameraManager::ResetNotifications()
 
 void SpeedCameraManager::Reset()
 {
+  m_closestCamera.Invalidate();
   m_firstNotCheckedSpeedCameraIndex = 1;
   ResetNotifications();
   m_cachedSpeedCameras = std::queue<SpeedCameraOnRoute>();

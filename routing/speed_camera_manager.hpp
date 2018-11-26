@@ -34,6 +34,7 @@ class SpeedCameraManager
 public:
   static std::string const kSpeedCamModeKey;
 
+  SpeedCameraManager() = delete;
   explicit SpeedCameraManager(turns::sound::NotificationManager & notificationManager);
 
   enum class Interval
@@ -143,12 +144,12 @@ private:
 
 private:
   SpeedCameraOnRoute m_closestCamera;
-  uint32_t m_beepSignalCounter = 0;
-  uint32_t m_voiceSignalCounter = 0;
+  uint32_t m_beepSignalCounter;
+  uint32_t m_voiceSignalCounter;
 
   // Flag of doing sound notification about camera on a way.
-  bool m_makeBeepSignal = false;
-  bool m_makeVoiceSignal = false;
+  bool m_makeBeepSignal;
+  bool m_makeVoiceSignal;
 
   // Queue of speedCams, that we have found, but they are too far, to make warning about them.
   std::queue<SpeedCameraOnRoute> m_cachedSpeedCameras;
@@ -156,7 +157,7 @@ private:
   // Info about camera, that is highlighted now.
   SpeedCameraOnRoute m_currentHighlightedCamera;
 
-  size_t m_firstNotCheckedSpeedCameraIndex = 1;
+  size_t m_firstNotCheckedSpeedCameraIndex;
   std::weak_ptr<Route> m_route;
   turns::sound::NotificationManager & m_notificationManager;
 
