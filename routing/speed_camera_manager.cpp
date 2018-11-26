@@ -23,6 +23,10 @@ SpeedCameraManager::SpeedCameraManager(turns::sound::NotificationManager & notif
   {
     m_mode = SpeedCameraManagerMode::Auto;
   }
+
+  //tmp code
+  m_mode = SpeedCameraManagerMode::Auto;
+  //end tmp code
 }
 
 //static
@@ -155,6 +159,7 @@ void SpeedCameraManager::Reset()
   m_closestCamera.Invalidate();
   m_firstNotCheckedSpeedCameraIndex = 1;
   ResetNotifications();
+  m_speedCamClearCallback();
   m_cachedSpeedCameras = std::queue<SpeedCameraOnRoute>();
 }
 
@@ -312,7 +317,7 @@ bool SpeedCameraManager::NeedUpdateClosestCamera(double distanceToCameraMeters, 
 
 bool SpeedCameraManager::IsHighlightedCameraExpired(double distToCameraMeters) const
 {
-  return !m_currentHighlightedCamera.IsValid() && distToCameraMeters < -kInfluenceZoneMeters;
+  return distToCameraMeters < -kInfluenceZoneMeters;
 }
 
 bool SpeedCameraManager::NeedChangeHighlightedCamera(double distToCameraMeters,

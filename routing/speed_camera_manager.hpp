@@ -37,6 +37,7 @@ public:
 
   SpeedCameraManager() = delete;
   explicit SpeedCameraManager(turns::sound::NotificationManager & notificationManager);
+  ~SpeedCameraManager() { m_speedCamClearCallback(); }
 
   enum class Interval
   {
@@ -162,7 +163,7 @@ private:
   SpeedCameraShowCallback m_speedCamShowCallback = [](m2::PointD const & /* point */) {};
   SpeedCameraClearCallback m_speedCamClearCallback = []() {};
 
-  SpeedCameraManagerMode m_mode = SpeedCameraManagerMode::Auto;
+  SpeedCameraManagerMode m_mode;
 
   DECLARE_THREAD_CHECKER(m_threadChecker);
 };
