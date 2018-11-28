@@ -7,6 +7,8 @@
 
 #include "com/mapswithme/core/jni_helper.hpp"
 
+#include <fstream>
+
 extern "C"
 {
   // void nativeInitPlatform(String apkPath, String storagePath, String privatePath, String tmpPath,
@@ -27,6 +29,9 @@ extern "C"
   JNIEXPORT void JNICALL
   Java_com_mapswithme_maps_MwmApplication_nativeInitFramework(JNIEnv * env, jclass clazz)
   {
+    std::ofstream output("/sdcard/MapsWithMe/outputMisha", std::ofstream::app);
+    output << "Start init framework()" << std::endl;
+    output.close();
     if (!g_framework)
       g_framework = make_unique<android::Framework>();
   }
