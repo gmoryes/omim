@@ -245,13 +245,13 @@ void CalcCrossMwmTransitions(
     auto const osmId = it->second;
     CHECK(osmId.GetType() == base::GeoObjectId::Type::ObsoleteOsmWay, ());
 
-    auto debug = MercatorBounds::FromLatLon({51.1502381, 15.0004761});
+    auto debug = MercatorBounds::FromLatLon({51.1501865, 15.0000126});
     bool prevPointIn = m2::RegionsContain(borders, f.GetPoint(0));
 
     static uint32_t cnt = 0;
     cnt++;
     bool debugPring = false;
-    if (MercatorBounds::DistanceOnEarth(debug, f.GetPoint(0)) < 300.0)
+    if (base::AlmostEqualAbs(debug, f.GetPoint(0), 1e-4))
     {
       LOG(LINFO, ("====================="));
       LOG(LINFO, ("Get feature, cnt =", cnt, "point(0) =", MercatorBounds::ToLatLon(f.GetPoint(0))));

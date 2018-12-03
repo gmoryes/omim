@@ -155,22 +155,22 @@ public:
           if (first && base::AlmostEqualAbs(debug, pt, 1e-4))
           {
             print = true;
-            LOG(LINFO, ("===============[FIRST]=============="));
+            //LOG(LINFO, ("===============[FIRST]=============="));
             first = false;
-            LOG(LINFO, ("=======[MATCHED]======"));
+            //LOG(LINFO, ("=======[MATCHED]======"));
             for (auto const & pt1 : points)
             {
-              LOG(LINFO, (MercatorBounds::ToLatLon(pt1)));
+              //LOG(LINFO, (MercatorBounds::ToLatLon(pt1)));
             }
-            LOG(LINFO, ("=====[END MATCHED]===="));
+            //LOG(LINFO, ("=====[END MATCHED]===="));
           }
-          LOG(LINFO, ("Start check:", MercatorBounds::ToLatLon(pt)));
+          //LOG(LINFO, ("Start check:", MercatorBounds::ToLatLon(pt)));
           if (!toDo(pt))
           {
-            LOG(LINFO, ("In country:", MercatorBounds::ToLatLon(pt)));
+           // LOG(LINFO, ("In country:", MercatorBounds::ToLatLon(pt)));
             return;
           }
-          LOG(LINFO, ("Not in country:", MercatorBounds::ToLatLon(pt)));
+         // LOG(LINFO, ("Not in country:", MercatorBounds::ToLatLon(pt)));
         }
         toDo.EndRegion();
       }
