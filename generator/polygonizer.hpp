@@ -201,7 +201,10 @@ namespace feature
           m_fb.ForEachGeometryPoint(doCheck);
 
           if (doCheck.m_belongs)
+          {
+            LOG(LINFO, ("Add to country:", m_Countries[i]->m_name));
             m_pPolygonizer->EmitFeature(m_Countries[i], m_fb);
+          }
         }
       }
 
