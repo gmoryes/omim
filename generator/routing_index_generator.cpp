@@ -245,16 +245,16 @@ void CalcCrossMwmTransitions(
     auto const osmId = it->second;
     CHECK(osmId.GetType() == base::GeoObjectId::Type::ObsoleteOsmWay, ());
 
-    auto debug = MercatorBounds::FromLatLon({51.150273, 15.0007972});
+    auto debug = MercatorBounds::FromLatLon({51.1502381, 15.0004761});
     bool prevPointIn = m2::RegionsContain(borders, f.GetPoint(0));
 
     static uint32_t cnt = 0;
     cnt++;
     bool debugPring = false;
-    if (base::AlmostEqualAbs(debug, f.GetPoint(0), 1e-4))
+    if (MercatorBounds::DistanceOnEarth(debug, f.GetPoint(0)) < 300.0)
     {
       LOG(LINFO, ("====================="));
-      LOG(LINFO, ("Get feature, cnt =", cnt));
+      LOG(LINFO, ("Get feature, cnt =", cnt, "point(0) =", MercatorBounds::ToLatLon(f.GetPoint(0))));
       LOG(LINFO, ("====================="));
       debugPring = true;
     }
@@ -275,6 +275,10 @@ void CalcCrossMwmTransitions(
       auto const segmentIdx = base::asserted_cast<uint32_t>(i - 1);
       VehicleMask const oneWayMask = maskMaker.CalcOneWayMask(f);
 
+      if (debugPring)
+      {
+        LOG(LINFO, ("Add transition(", osmId, featureId, segmentIdx, roadMask, oneWayMask, currPointIn, f.GetPoint(i - 1), f.GetPoint(i)));
+      }
       transitions.emplace_back(osmId, featureId, segmentIdx, roadMask, oneWayMask, currPointIn,
                                f.GetPoint(i - 1), f.GetPoint(i));
 
