@@ -157,7 +157,10 @@ public:
               LOG(LINFO, ("===============[FIRST]=============="));
             first = false;
             LOG(LINFO, ("=======[MATCHED]======"));
-            LOG(LINFO, (MercatorBounds::ToLatLon(pt)));
+            for (auto const & pt1 : points)
+            {
+              LOG(LINFO, (MercatorBounds::ToLatLon(pt1)));
+            }
             LOG(LINFO, ("=====[END MATCHED]===="));
           }
           if (!toDo(pt))
