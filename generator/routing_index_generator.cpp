@@ -245,7 +245,7 @@ void CalcCrossMwmTransitions(
     auto const osmId = it->second;
     CHECK(osmId.GetType() == base::GeoObjectId::Type::ObsoleteOsmWay, ());
 
-    auto debug = MercatorBounds::FromLatLon({51.1501821, 15.0000138});
+    auto debug = MercatorBounds::FromLatLon({51.150273, 15.0007972});
     bool prevPointIn = m2::RegionsContain(borders, f.GetPoint(0));
 
     static uint32_t cnt = 0;
