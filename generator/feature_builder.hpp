@@ -169,11 +169,11 @@ public:
           if (!toDo(pt))
           {
             if (print)
-              LOG(LINFO, ("Check BAD:", MercatorBounds::ToLatLon(pt)));
+              LOG(LINFO, ("In country:", MercatorBounds::ToLatLon(pt)));
             return;
           }
           if (print)
-            LOG(LINFO, ("Check ok:", MercatorBounds::ToLatLon(pt)));
+            LOG(LINFO, ("Not in country:", MercatorBounds::ToLatLon(pt)));
         }
         toDo.EndRegion();
       }
