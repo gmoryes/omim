@@ -2,8 +2,11 @@
 
 #include "indexer/feature_data.hpp"
 
+#include "geometry/mercator.hpp"
+
 #include "coding/file_reader.hpp"
 #include "coding/read_write_utils.hpp"
+
 
 #include "base/geo_object_id.hpp"
 #include "base/stl_helpers.hpp"
@@ -145,8 +148,17 @@ public:
       for (PointSeq const & points : m_polygons)
       {
         for (auto const & pt : points)
+        {
+          auto debug = MercatorBounds::FromLatLon({51.1502686, 15.0008045});
+          if (base::AlmostEqualAbs(debug, pt, 1e-4))
+          {
+            LOG(LINFO, ("=======[MATCHED]======"));
+            LOG(LINFO, (MercatorBounds::ToLatLon(m_center)));
+            LOG(LINFO, ("=====[END MATCHED]===="));
+          }
           if (!toDo(pt))
             return;
+        }
         toDo.EndRegion();
       }
     }
