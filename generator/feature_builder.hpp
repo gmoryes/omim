@@ -151,8 +151,10 @@ public:
         for (auto const & pt : points)
         {
           auto debug = MercatorBounds::FromLatLon({51.1502686, 15.0008045});
+          bool print = false;
           if (base::AlmostEqualAbs(debug, pt, 1e-4))
           {
+            print = true;
             if (first)
               LOG(LINFO, ("===============[FIRST]=============="));
             first = false;
@@ -163,8 +165,16 @@ public:
             }
             LOG(LINFO, ("=====[END MATCHED]===="));
           }
+          if (print)
+            LOG(LINFO, ("Start check:", MercatorBounds::ToLatLon(pt)));
           if (!toDo(pt))
+          {
+            if (print)
+              LOG(LINFO, ("Check BAD:", MercatorBounds::ToLatLon(pt)));
             return;
+          }
+          if (print)
+            LOG(LINFO, ("Check ok:", MercatorBounds::ToLatLon(pt)));
         }
         toDo.EndRegion();
       }
