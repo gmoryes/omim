@@ -164,16 +164,13 @@ public:
             }
             LOG(LINFO, ("=====[END MATCHED]===="));
           }
-          if (print)
-            LOG(LINFO, ("Start check:", MercatorBounds::ToLatLon(pt)));
+          LOG(LINFO, ("Start check:", MercatorBounds::ToLatLon(pt)));
           if (!toDo(pt))
           {
-            if (print)
-              LOG(LINFO, ("In country:", MercatorBounds::ToLatLon(pt)));
+            LOG(LINFO, ("In country:", MercatorBounds::ToLatLon(pt)));
             return;
           }
-          if (print)
-            LOG(LINFO, ("Not in country:", MercatorBounds::ToLatLon(pt)));
+          LOG(LINFO, ("Not in country:", MercatorBounds::ToLatLon(pt)));
         }
         toDo.EndRegion();
       }
