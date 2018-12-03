@@ -145,6 +145,7 @@ public:
       toDo(m_center);
     else
     {
+      bool first = true;
       for (PointSeq const & points : m_polygons)
       {
         for (auto const & pt : points)
@@ -152,8 +153,11 @@ public:
           auto debug = MercatorBounds::FromLatLon({51.1502686, 15.0008045});
           if (base::AlmostEqualAbs(debug, pt, 1e-4))
           {
+            if (first)
+              LOG(LINFO, ("===============[FIRST]=============="));
+            first = false;
             LOG(LINFO, ("=======[MATCHED]======"));
-            LOG(LINFO, (MercatorBounds::ToLatLon(m_center)));
+            LOG(LINFO, (MercatorBounds::ToLatLon(pt)));
             LOG(LINFO, ("=====[END MATCHED]===="));
           }
           if (!toDo(pt))
