@@ -148,15 +148,14 @@ public:
       bool first = true;
       for (PointSeq const & points : m_polygons)
       {
+        bool print = false;
         for (auto const & pt : points)
         {
           auto debug = MercatorBounds::FromLatLon({51.1502686, 15.0008045});
-          bool print = false;
-          if (base::AlmostEqualAbs(debug, pt, 1e-4))
+          if (first && base::AlmostEqualAbs(debug, pt, 1e-4))
           {
             print = true;
-            if (first)
-              LOG(LINFO, ("===============[FIRST]=============="));
+            LOG(LINFO, ("===============[FIRST]=============="));
             first = false;
             LOG(LINFO, ("=======[MATCHED]======"));
             for (auto const & pt1 : points)
@@ -165,6 +164,8 @@ public:
             }
             LOG(LINFO, ("=====[END MATCHED]===="));
           }
+          if (print)
+            LOG(LINFO, ("Current point:", pt));
           if (print)
             LOG(LINFO, ("Start check:", MercatorBounds::ToLatLon(pt)));
           if (!toDo(pt))
