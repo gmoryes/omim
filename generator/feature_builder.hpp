@@ -165,8 +165,6 @@ public:
             LOG(LINFO, ("=====[END MATCHED]===="));
           }
           if (print)
-            LOG(LINFO, ("Current point:", pt));
-          if (print)
             LOG(LINFO, ("Start check:", MercatorBounds::ToLatLon(pt)));
           if (!toDo(pt))
           {

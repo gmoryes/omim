@@ -196,6 +196,7 @@ namespace feature
       {
         for (size_t i = 0; i < m_Countries.size(); ++i)
         {
+          LOG(LINFO, ("[=========COUNTRY =", m_Countries[i]->m_name, "=========]"));
           PointChecker doCheck(m_Countries[i]->m_regions);
           m_fb.ForEachGeometryPoint(doCheck);
 
