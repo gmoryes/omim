@@ -245,11 +245,30 @@ void CalcCrossMwmTransitions(
     auto const osmId = it->second;
     CHECK(osmId.GetType() == base::GeoObjectId::Type::ObsoleteOsmWay, ());
 
+    auto debug = MercatorBounds::FromLatLon({51.1501821, 15.0000138});
     bool prevPointIn = m2::RegionsContain(borders, f.GetPoint(0));
+
+    static uint32_t cnt = 0;
+    cnt++;
+    bool debugPring = false;
+    if (base::AlmostEqualAbs(debug, f.GetPoint(0), 1e-4))
+    {
+      LOG(LINFO, ("====================="));
+      LOG(LINFO, ("Get feature, cnt =", cnt));
+      LOG(LINFO, ("====================="));
+      debugPring = true;
+    }
 
     for (size_t i = 1; i < pointsCount; ++i)
     {
       bool const currPointIn = m2::RegionsContain(borders, f.GetPoint(i));
+      if (debugPring)
+      {
+        LOG(LINFO, ("====================="));
+        LOG(LINFO, ("Get point:", i, "lat lon =", MercatorBounds::ToLatLon(f.GetPoint(i))));
+        LOG(LINFO, ("prevPointIn =", prevPointIn, ", currPointIn =", currPointIn));
+        LOG(LINFO, ("====================="));
+      }
       if (currPointIn == prevPointIn)
         continue;
 
