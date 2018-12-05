@@ -4,6 +4,7 @@
 
 #include "routing/bicycle_directions.hpp"
 #include "routing/routing_exceptions.hpp"
+#include "routing/date.hpp"
 #include "routing/fake_ending.hpp"
 #include "routing/index_graph.hpp"
 #include "routing/index_graph_loader.hpp"
@@ -33,6 +34,7 @@
 #include "geometry/parametrized_segment.hpp"
 #include "geometry/point2d.hpp"
 
+#include "platform/platform.hpp"
 #include "platform/country_file.hpp"
 #include "platform/mwm_traits.hpp"
 
@@ -40,6 +42,7 @@
 #include "base/stl_helpers.hpp"
 
 #include <algorithm>
+#include <fstream>
 #include <map>
 #include <utility>
 
@@ -322,6 +325,7 @@ bool IndexRouter::FindBestSegment(m2::PointD const & point, m2::PointD const & d
                          dummy /* best segment is almost codirectional */);
 }
 
+using namespace std::chrono;
 RouterResultCode IndexRouter::CalculateRoute(Checkpoints const & checkpoints,
                                              m2::PointD const & startDirection,
                                              bool adjustToPrevRoute,
@@ -360,7 +364,74 @@ RouterResultCode IndexRouter::CalculateRoute(Checkpoints const & checkpoints,
           MercatorBounds::ToLatLon(finalPoint)));
       }
     }
-    return DoCalculateRoute(checkpoints, startDirection, delegate, route);
+    auto result = DoCalculateRoute(checkpoints, startDirection, delegate, route);
+    {
+      double speedKmPH = 100;
+
+      uint32_t cnt = 0;
+      uint32_t maxFiles = 1000;
+      double popravochka = 2;
+      double speedMpS = routing::KMPH2MPS(speedKmPH);
+      for (; cnt < maxFiles; ++cnt)
+      {
+        std::stringstream ss;
+        ss << "/tmp/path" << cnt << ".gpx";
+        if (!Platform::IsFileExistsByFullPath(ss.str()))
+          break;
+      }
+      std::stringstream ss;
+      ss << "/tmp/path" << cnt << ".gpx";
+      std::ofstream output(ss.str());
+      output << std::setprecision(20);
+      output << "<gpx>\n"
+                "<metadata>\n"
+                "<desc>A:0964b9d8-52f8-4d04-9093-7e1064b88bf1</desc>\n"
+                "<desc><![CDATA[speed=118.0,accuracyBase=5.0,accuracyDelta=3.0,playCounter=0]]></desc>\n"
+                "</metadata>\n";
+
+      m2::PointD prev = m2::PointD::Zero();
+      std::chrono::milliseconds prevTime =
+        std::chrono::duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+
+      for (auto const & routeSegment : route.GetRouteSegments())
+      {
+        auto const point = routeSegment.GetJunction().GetPoint();
+        if (prev == m2::PointD::Zero())
+        {
+          auto p = MercatorBounds::ToLatLon(point);
+          output << "<wpt lat=\"" << p.lat << "\" lon=\"" << p.lon << "\">";
+          system_clock::time_point tp(prevTime);
+          output << "<time>" << date::format("%Y-%m-%dT%XZ\n", date::floor<milliseconds>(tp)) << "</time>"
+                 << "</wpt>\n";
+
+          prev = point;
+          continue;
+        }
+
+        auto dir = point - prev;
+        dir = dir / popravochka;
+        double dist = MercatorBounds::DistanceOnEarth(point, prev);
+        double segmentTimePart = (dist / speedMpS) / popravochka;
+        for (uint32_t i = 0; i < static_cast<uint32_t>(popravochka); ++i)
+        {
+          auto p = MercatorBounds::ToLatLon(prev);
+          output << "<wpt lat=\"" << p.lat << "\" lon=\"" << p.lon << "\">";
+
+          // time 2010-01-01T00:00:00Z
+
+          /*system_clock::time_point tp(prevTime);
+          output << "<time>" << date::format("%Y-%m-%dT%XZ\n", date::floor<milliseconds>(tp)) << "</time>"
+                 << "</wpt>\n";*/
+          prev += dir;
+          //prevTime = prevTime + std::chrono::milliseconds(static_cast<int>(segmentTimePart * 1000.0));
+          prevTime = prevTime + std::chrono::seconds(1);
+        }
+
+        prev = point;
+      }
+      output << "</gpx>";
+    }
+    return result;
   }
   catch (RootException const & e)
   {
