@@ -139,8 +139,16 @@ private:
     AStarAlgorithm<Graph> algorithm;
     if (params.m_graph.GetMode() == WorldGraph::Mode::LeapsOnly)
     {
-      return ConvertTransitResult(mwmIds,
-                                  ConvertResult<Graph>(algorithm.FindPath(params, routingResult)));
+      if (std::getenv("FAST_LEAPS") && !std::string(std::getenv("FAST_LEAPS")).empty())
+      {
+        return ConvertTransitResult(mwmIds,
+                                    ConvertResult<Graph>(algorithm.FindPathBidirectional(params, routingResult)));
+      }
+      else
+      {
+        return ConvertTransitResult(mwmIds,
+                                    ConvertResult<Graph>(algorithm.FindPath(params, routingResult)));
+      }
     }
     return ConvertTransitResult(
         mwmIds, ConvertResult<Graph>(algorithm.FindPathBidirectional(params, routingResult)));
