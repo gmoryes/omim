@@ -329,19 +329,6 @@ void AStarAlgorithm<Graph>::PropagateWave(Graph & graph, Vertex const & startVer
     if (!visitVertex(stateV.vertex))
       return;
 
-    auto p = MercatorBounds::FromLatLon({55.4903624, 36.8742321});
-    if (base::AlmostEqualAbs(graph.GetPoint(stateV.vertex, stateV.vertex.IsForward()), p, 1e-4))
-    {
-      int asd = 5;
-      (void)asd;
-    }
-
-    if (stateV.vertex.GetFeatureId() == 64880)
-    {
-      int asd = 5;
-      (void)asd;
-    }
-
     graph.GetOutgoingEdgesList(stateV.vertex, adj);
     for (auto const & edge : adj)
     {
@@ -548,32 +535,20 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
     State const stateV = cur->queue.top();
     cur->queue.pop();
 
-    auto p = MercatorBounds::FromLatLon({55.6762275, 37.4219626});
-    if (base::AlmostEqualAbs(graph.GetPoint(stateV.vertex, stateV.vertex.IsForward()), p, 1e-4))
-    {
-      int asd = 5;
-      (void)asd;
-    }
-
-    if (stateV.vertex.GetFeatureId() == 64880)
-    {
-      int asd = 5;
-      (void)asd;
-    }
-
     if (stateV.distance > cur->bestDistance[stateV.vertex])
       continue;
 
     params.m_onVisitedVertexCallback(stateV.vertex,
                                      cur->forward ? cur->finalVertex : cur->startVertex);
-/*
+
+    if (false)
     {
       std::ofstream output("/tmp/points_astar", std::ofstream::app);
       output << std::setprecision(20);
       auto latlon = MercatorBounds::ToLatLon(graph.GetPoint(stateV.vertex, stateV.vertex.IsForward()));
       output << latlon.lat << ' ' << latlon.lon << std::endl;
     }
-*/
+
     cur->GetAdjacencyList(stateV.vertex, adj);
     for (auto const & edge : adj)
     {

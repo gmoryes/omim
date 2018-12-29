@@ -57,7 +57,16 @@ public:
   /// \brief Reconstructs JointSegment by segment after building the route.
   std::vector<Segment> ReconstructJoint(JointSegment const & joint);
 
+  bool IsRealSegment(Segment const & segment)
+  {
+    return segment.GetFeatureId() != std::numeric_limits<uint32_t>::max();
+  }
+
+  Segment GetEndOfFakeJoint(JointSegment const & joint);
+
 private:
+  static auto constexpr kInvisibleId = std::numeric_limits<uint32_t>::max() - 2;
+
   struct FakeJointSegment
   {
     FakeJointSegment() = default;
@@ -91,17 +100,6 @@ private:
   JointSegment CreateInvisibleJoint(Segment const & segment, bool start);
 
   bool IsInvisible(JointSegment const & jointSegment) const;
-
-  static auto constexpr kInvisibleId = std::numeric_limits<uint32_t>::max() - 2;
-
-  JointSegment CreateInvisibleJoint(Segment const & segment, bool start);
-
-  bool IsInvisible(JointSegment const & jointSegment) const
-  {
-    return jointSegment.GetStartSegmentId() == jointSegment.GetEndSegmentId() &&
-           jointSegment.GetStartSegmentId() >= kInvisibleId &&
-           jointSegment.GetStartSegmentId() != std::numeric_limits<uint32_t>::max();
-  }
 
   // For GetEdgeList from segments.
   Graph & m_graph;

@@ -233,9 +233,10 @@ RoutingManager::RoutingManager(Callbacks && callbacks, Delegate & delegate)
       return MercatorBounds::DistanceOnEarth(p, pt) < 5000;
     };
 
-    bool draw = true;
-    bool drawAstar = false;
+    bool draw = false;
+    bool drawAstar = true;
 
+    int eachN = 100;
     if (drawAstar) {
       std::ifstream input("/tmp/points_astar");
       double lat, lon;
@@ -254,6 +255,9 @@ RoutingManager::RoutingManager(Callbacks && callbacks, Delegate & delegate)
       {
         cnt++;
 
+        if (cnt % eachN != 0)
+          continue;
+
         if (cnt % 10000 == 0)
           LOG(LINFO, ("cnt_points =", cnt));
 
@@ -267,7 +271,7 @@ RoutingManager::RoutingManager(Callbacks && callbacks, Delegate & delegate)
       }
     }
 
-    int eachN = 10;
+    eachN = 10;
     if (draw)
     {
       std::ifstream input("/tmp/joints");

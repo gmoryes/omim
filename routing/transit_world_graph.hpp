@@ -38,6 +38,8 @@ public:
                    std::vector<SegmentEdge> & edges) override;
   bool CheckLength(RouteWeight const & weight, double startToFinishDistanceM) const override
   {
+    LOG(LINFO, (weight.GetWeight() - weight.GetTransitTime(), MaxPedestrianTimeSec(startToFinishDistanceM),
+                weight.GetWeight() - weight.GetTransitTime() <= MaxPedestrianTimeSec(startToFinishDistanceM)));
     return weight.GetWeight() - weight.GetTransitTime() <=
            MaxPedestrianTimeSec(startToFinishDistanceM);
   }
@@ -78,9 +80,10 @@ private:
 
   static double MaxPedestrianTimeSec(double startToFinishDistanceM)
   {
+    return 1e100;
     // @todo(bykoianko) test and adjust constants.
     // 50 min + 3 additional minutes per 1 km for now.
-    return 50 * 60 + (startToFinishDistanceM / 1000) * 3 * 60;
+    return 50 * 60 + (startToFinishDistanceM / 1000) / 5 * 3600;
   }
 
   RoadGeometry const & GetRealRoadGeometry(NumMwmId mwmId, uint32_t featureId);
