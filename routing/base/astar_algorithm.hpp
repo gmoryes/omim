@@ -7,15 +7,11 @@
 #include "base/cancellable.hpp"
 
 #include <algorithm>
-#include <fstream>
 #include <functional>
 #include <iostream>
 #include <map>
 #include <queue>
 #include <vector>
-
-#include "geometry/mercator.hpp"
-#include "base/math.hpp"
 
 namespace routing
 {
@@ -182,7 +178,7 @@ public:
 
 private:
   // Periodicity of switching a wave of bidirectional algorithm.
-  static uint32_t constexpr kQueueSwitchPeriod = 32;
+  static uint32_t constexpr kQueueSwitchPeriod = 128;
 
   // Precision of comparison weights.
   static Weight constexpr kEpsilon = GetAStarWeightEpsilon<Weight>();
@@ -540,14 +536,6 @@ typename AStarAlgorithm<Graph>::Result AStarAlgorithm<Graph>::FindPathBidirectio
 
     params.m_onVisitedVertexCallback(stateV.vertex,
                                      cur->forward ? cur->finalVertex : cur->startVertex);
-
-    if (false)
-    {
-      std::ofstream output("/tmp/points_astar", std::ofstream::app);
-      output << std::setprecision(20);
-      auto latlon = MercatorBounds::ToLatLon(graph.GetPoint(stateV.vertex, stateV.vertex.IsForward()));
-      output << latlon.lat << ' ' << latlon.lon << std::endl;
-    }
 
     cur->GetAdjacencyList(stateV.vertex, adj);
     for (auto const & edge : adj)

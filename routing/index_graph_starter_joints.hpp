@@ -57,12 +57,14 @@ public:
   /// \brief Reconstructs JointSegment by segment after building the route.
   std::vector<Segment> ReconstructJoint(JointSegment const & joint);
 
+  // Не можем проверять с помощью segment.IsRealSegment(), потому что при генерации карты,
+  // m_numMwmId всегда фейковый.
   bool IsRealSegment(Segment const & segment)
   {
     return segment.GetFeatureId() != std::numeric_limits<uint32_t>::max();
   }
 
-  Segment GetEndOfFakeJoint(JointSegment const & joint);
+  Segment const & GetEndOfFakeJoint(JointSegment const & joint);
 
 private:
   static auto constexpr kInvisibleId = std::numeric_limits<uint32_t>::max() - 2;
@@ -73,7 +75,7 @@ private:
     FakeJointSegment(Segment const & start, Segment const & end)
       : m_start(start), m_end(end) {}
 
-    Segment GetSegment(bool start) const
+    Segment const & GetSegment(bool start) const
     {
       return start ? m_start : m_end;
     }
@@ -267,7 +269,7 @@ void IndexGraphStarterJoints<Graph>::AddFakeJoints(Segment const & segment, bool
 }
 
 template <typename Graph>
-Segment IndexGraphStarterJoints<Graph>::GetEndOfFakeJoint(JointSegment const & joint)
+Segment const & IndexGraphStarterJoints<Graph>::GetEndOfFakeJoint(JointSegment const & joint)
 {
   auto const it = m_fakeJointSegments.find(joint);
   CHECK(it != m_fakeJointSegments.cend(), ("No such fake joint:", joint, "in JointStarter."));

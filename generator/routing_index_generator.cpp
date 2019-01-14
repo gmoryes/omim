@@ -154,51 +154,18 @@ private:
   unordered_map<uint32_t, VehicleMask> m_masks;
 };
 
-class DijkstraWrapper final
-{
-public:
-  // AStarAlgorithm types aliases:
-  using Vertex = Segment;
-  using Edge = SegmentEdge;
-  using Weight = RouteWeight;
-
-  explicit DijkstraWrapper(IndexGraph & graph) : m_graph(graph) {}
-
-  void GetOutgoingEdgesList(Vertex const & vertex, vector<Edge> & edges)
-  {
-    edges.clear();
-    m_graph.GetEdgeList(vertex, true /* isOutgoing */, edges);
-  }
-
-  void GetIngoingEdgesList(Vertex const & vertex, vector<Edge> & edges)
-  {
-    edges.clear();
-    m_graph.GetEdgeList(vertex, false /* isOutgoing */, edges);
-  }
-
-  Weight HeuristicCostEstimate(Vertex const & /* from */, Vertex const & /* to */)
-  {
-    return GetAStarWeightZero<Weight>();
-  }
-
-  m2::PointD const & GetPoint(Vertex const & vertex, bool forward)
-  {
-    return m_graph.GetPoint(vertex, forward);
-  }
-
-private:
-  IndexGraph & m_graph;
-};
-
 class IndexGraphWrapper final
 {
 public:
   IndexGraphWrapper(IndexGraph & graph, Segment const & start)
     : m_start(start), m_graph(graph) {}
 
+  // Just for compatibility with IndexGraphStarterJoints
+  // @{
   Segment GetStartSegment() const { return m_start; }
   Segment GetFinishSegment() const { return {}; }
   bool ConvertToReal(Segment const & /* segment */) { return false; }
+  // @}
 
   m2::PointD const & GetPoint(Segment const & s, bool forward) { return m_graph.GetPoint(s, forward); }
 
@@ -254,7 +221,6 @@ public:
 private:
 
   Segment m_start;
-  Segment m_end;
   IndexGraphStarterJoints<IndexGraphWrapper> m_graph;
 };
 
@@ -458,45 +424,12 @@ void CalcCrossMwmConnectors(
   }
 }
 
-void LogPathToFile(AStarAlgorithm<DijkstraWrapperJoints>::Context & context,
-                    DijkstraWrapperJoints & wrapper,
-                    JointSegment const & end)
-{
-  std::vector<JointSegment> path;
-  context.ReconstructPath(end, path);
-  std::ofstream output("/tmp/points_joints");
-  output << std::setprecision(20);
-  for (auto const & joint : path)
-  {
-    auto latlon = MercatorBounds::ToLatLon(wrapper.GetGraph().GetPoint(joint, joint.IsForward()));
-    output << latlon.lat << ' ' << latlon.lon << std::endl;
-  }
-}
-
-void LogPathToFile(AStarAlgorithm<DijkstraWrapper>::Context & context,
-                   IndexGraph & graph,
-                   Segment const & end)
-{
-  std::vector<Segment> path;
-  context.ReconstructPath(end, path);
-  std::ofstream output("/tmp/points_noleaps");
-  output << std::setprecision(20);
-  for (auto const & segment : path)
-  {
-    auto latlon = MercatorBounds::ToLatLon(graph.GetPoint(segment, segment.IsForward()));
-    output << latlon.lat << ' ' << latlon.lon << std::endl;
-  }
-}
-
 template <typename CrossMwmId>
 void FillWeights(string const & path, string const & mwmFile, string const & country,
                  CountryParentNameGetterFn const & countryParentNameGetterFn,
                  bool disableCrossMwmProgress, CrossMwmConnector<CrossMwmId> & connector)
 {
   base::Timer timer;
-  bool useJoints = std::getenv("JOINTS_GENERATOR") && !std::string(std::getenv("JOINTS_GENERATOR")).empty();
-  bool enableLog = std::getenv("JOINTS_GENERATOR_LOG") && !std::string(std::getenv("JOINTS_GENERATOR_LOG")).empty();
-  LOG(LINFO, ("=====USE_JOINTS =", useJoints));
 
   shared_ptr<VehicleModelInterface> vehicleModel =
       CarModelFactory(countryParentNameGetterFn).GetVehicleModelForCountry(country);
@@ -511,148 +444,73 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
   auto const numEnters = connector.GetEnters().size();
   size_t foundCount = 0;
   size_t notFoundCount = 0;
-  base::HighResTimer highResTimer;
   for (size_t i = 0; i < numEnters; ++i)
   {
-    base::HighResTimer eachTimer;
-
     if (!disableCrossMwmProgress && (i % 10 == 0) && (i != 0))
       LOG(LINFO, ("Building leaps:", i, "/", numEnters, "waves passed"));
 
     Segment const & enter = connector.GetEnter(i);
 
-    if (useJoints)
-    {
-      AStarAlgorithm<DijkstraWrapperJoints> astar;
-      IndexGraphWrapper indexGraphWrapper(graph, enter);
-      DijkstraWrapperJoints wrapper(indexGraphWrapper, enter);
-      AStarAlgorithm<DijkstraWrapperJoints>::Context context;
-      std::unordered_map<uint32_t, std::vector<JointSegment>> used;
-      astar.PropagateWave(wrapper, wrapper.GetGraph().GetStartJoint(),
-                          [&](JointSegment const & vertex)
-                          {
-                            used[vertex.GetFeatureId()].emplace_back(vertex);
-                            if (enableLog)
-                            {
-                              std::ofstream output("/tmp/joints", std::ofstream::app);
-                              output << std::setprecision(20);
-                              auto p = MercatorBounds::ToLatLon(wrapper.GetPoint(vertex, vertex.IsForward()));
-                              output << p.lat << ' ' << p.lon << std::endl;
-                            }
-                            return true;
-                          } /* visitVertex */,
-                          context);
+    AStarAlgorithm<DijkstraWrapperJoints> astar;
+    IndexGraphWrapper indexGraphWrapper(graph, enter);
+    DijkstraWrapperJoints wrapper(indexGraphWrapper, enter);
+    AStarAlgorithm<DijkstraWrapperJoints>::Context context;
+    std::unordered_map<uint32_t, std::vector<JointSegment>> used;
+    astar.PropagateWave(wrapper, wrapper.GetGraph().GetStartJoint(),
+                        [&](JointSegment const & vertex)
+                        {
+                          used[vertex.GetFeatureId()].emplace_back(vertex);
+                          return true;
+                        } /* visitVertex */,
+                        context);
 
-      for (Segment const & exit : connector.GetExits())
+    for (Segment const & exit : connector.GetExits())
+    {
+      auto it = used.find(exit.GetFeatureId());
+      if (it == used.end())
       {
-        auto it = used.find(exit.GetFeatureId());
-        if (it == used.end())
-        {
-          ++notFoundCount;
-          if (enableLog)
-            LOG(LINFO, ("NOT_FOUND from", enter, "to", exit));
+        ++notFoundCount;
+        continue;
+      }
+
+      bool found = false;
+      uint32_t id = exit.GetSegmentIdx();
+      bool forward = exit.IsForward();
+      for (auto const & jointSegment : it->second)
+      {
+        if (jointSegment.IsForward() != forward)
           continue;
-        }
 
-        bool found = false;
-        uint32_t id = exit.GetSegmentIdx();
-        bool forward = exit.IsForward();
-        for (auto const & jointSegment : it->second)
+        if ((jointSegment.GetStartSegmentId() <= id && id <= jointSegment.GetEndSegmentId()) ||
+            (jointSegment.GetEndSegmentId() <= id && id <= jointSegment.GetStartSegmentId()))
         {
-          if (jointSegment.IsForward() != forward)
-            continue;
 
-          if ((jointSegment.GetStartSegmentId() <= id && id <= jointSegment.GetEndSegmentId()) ||
-              (jointSegment.GetEndSegmentId() <= id && id <= jointSegment.GetStartSegmentId()))
-          {
+          Segment parentSegment;
+          JointSegment const & parent = context.GetParent(jointSegment);
+          if (parent.IsFake())
+            parentSegment = wrapper.GetGraph().GetEndOfFakeJoint(parent);
+          else
+            parentSegment = parent.GetSegment(false /* start */);
 
-            Segment parentSegment;
-            JointSegment const & parent = context.GetParent(jointSegment);
-            if (parent.IsFake())
-              parentSegment = wrapper.GetGraph().GetEndOfFakeJoint(parent);
-            else
-              parentSegment = parent.GetSegment(false /* start */);
+          RouteWeight weight = context.GetDistance(parent);
 
-            RouteWeight weight = context.GetDistance(parent);
+          Segment const & firstChild = jointSegment.GetSegment(true /* start */);
+          uint32_t const lastPoint = exit.GetPointId(true /* front */);
+          if (parentSegment.GetFeatureId() == std::numeric_limits<uint32_t>::max())
+            parentSegment = enter;
 
+          weight += graph.GetJointEdgeByLastPoint(parentSegment, firstChild,
+                                                  true /* isOutgoing */, lastPoint).GetWeight();
 
-            Segment const & firstChild = jointSegment.GetSegment(true /* start */);
-            uint32_t const lastPoint = exit.GetPointId(true /* front */);
-            if (parentSegment.GetFeatureId() == std::numeric_limits<uint32_t>::max())
-              parentSegment = enter;
-
-            weight += graph.GetJointEdgeByLastPoint(parentSegment, firstChild,
-                                                    true /* isOutgoing */, lastPoint).GetWeight();
-
-            weights[enter][exit] = weight;
-            ++foundCount;
-            if (enableLog)
-            {
-              LOG(LINFO, ("FOUND",
-                "from", enter,
-                "(", MercatorBounds::ToLatLon(graph.GetPoint(enter, enter.IsForward())), ") ;",
-                "to", exit,
-                "(", MercatorBounds::ToLatLon(graph.GetPoint(exit, exit.IsForward())), "), weight =",
-                weights[enter][exit].GetWeight()));
-            }
-
-            found = true;
-            break;
-          }
-        }
-
-        if (!found && enableLog)
-          LOG(LINFO, ("NOT_FOUND from", enter, "to", exit));
-      }
-    }
-    else
-    {
-      AStarAlgorithm<DijkstraWrapper> astar;
-      DijkstraWrapper wrapper(graph);
-      AStarAlgorithm<DijkstraWrapper>::Context context;
-      astar.PropagateWave(wrapper, enter,
-                          [&](Segment const & vertex)
-                          {
-                            if (enableLog)
-                            {
-                              std::ofstream output("/tmp/noleaps", std::ofstream::app);
-                              output << std::setprecision(20);
-                              auto p = MercatorBounds::ToLatLon(wrapper.GetPoint(vertex, vertex.IsForward()));
-                              output << p.lat << ' ' << p.lon << std::endl;
-                            }
-                            return true;
-                          } /* visitVertex */,
-                          context);
-
-      for (Segment const & exit : connector.GetExits())
-      {
-        if (context.HasDistance(exit))
-        {
-          weights[enter][exit] = context.GetDistance(exit);
-          if (enableLog)
-          {
-            LOG(LINFO, ("FOUND",
-              "from", enter,
-              "(", MercatorBounds::ToLatLon(graph.GetPoint(enter, enter.IsForward())), ") ;",
-              "to", exit,
-              "(", MercatorBounds::ToLatLon(graph.GetPoint(exit, exit.IsForward())), "), weight =",
-              weights[enter][exit].GetWeight()));
-          }
+          weights[enter][exit] = weight;
           ++foundCount;
-        } else
-        {
-          if (enableLog)
-            LOG(LINFO, ("NOT_FOUND from", enter, "to", exit));
-          ++notFoundCount;
+
+          found = true;
+          break;
         }
       }
     }
-
-    if (enableLog)
-      LOG(LINFO, ("for_timer:", eachTimer.ElapsedNano() / 1e6));
   }
-
-  LOG(LINFO, ("leaps_generator =", highResTimer.ElapsedNano() / 1e6, "ms"));
 
   connector.FillWeights([&](Segment const & enter, Segment const & exit) {
     auto it0 = weights.find(enter);

@@ -568,7 +568,6 @@ int GeneratorToolMain(int argc, char ** argv)
       routing::BuildMaxspeedsSection(datFile, osmToFeatureFilename, maxspeedsFilename);
     }
 
-    LOG(LINFO, ("===START=====", FLAGS_make_cross_mwm, "========"));
     if (FLAGS_make_cross_mwm || FLAGS_make_transit_cross_mwm)
     {
       if (!countryParentGetter)
@@ -581,7 +580,6 @@ int GeneratorToolMain(int argc, char ** argv)
 
       if (FLAGS_make_cross_mwm)
       {
-        LOG(LINFO, ("===STEP=====", "BUILD", "========"));
         routing::BuildRoutingCrossMwmSection(path, datFile, country, *countryParentGetter,
                                              osmToFeatureFilename, FLAGS_disable_cross_mwm_progress);
       }
