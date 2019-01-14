@@ -601,7 +601,7 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
 }
 
 vector<Segment> ProcessJoints(vector<JointSegment> const & jointsPath,
-                              IndexGraphStarterJoints & jointStarter)
+                              IndexGraphStarterJoints<IndexGraphStarter> & jointStarter)
 {
   CHECK(!jointsPath.empty(), ());
 
@@ -627,7 +627,7 @@ vector<Segment> ProcessJoints(vector<JointSegment> const & jointsPath,
 }
 
 void IndexRouter::ProcessJointsBidirectional(vector<JointSegment> const & jointsPath,
-                                             IndexGraphStarterJoints & jointsStarter,
+                                             IndexGraphStarterJoints<IndexGraphStarter> & jointsStarter,
                                              vector<Segment> & output)
 {
   output = ProcessJoints(jointsPath, jointsStarter);

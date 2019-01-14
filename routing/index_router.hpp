@@ -115,8 +115,8 @@ private:
                                 RouterDelegate const & delegate, IndexGraphStarter & starter,
                                 Route & route) const;
 
-  void ProcessJointsBidirectional(std::vector<JointSegment> const & jointsPath,
-                                  IndexGraphStarterJoints & jointsStarter,
+  void ProcessJointsBidirectional(std::vector<JointSegment> & jointsPath,
+                                  IndexGraphStarterJoints<IndexGraphStarter> & jointsStarter,
                                   std::vector<Segment> & output);
 
   bool AreMwmsNear(std::set<NumMwmId> const & mwmIds) const;
