@@ -351,6 +351,7 @@ void IndexGraphStarterJoints<Graph>::GetEdgeList(JointSegment const & vertex, bo
       parentSegment = vertex.GetSegment(opposite /* start */);
     }
 
+    // TODO (@gmoryes) Remove GetGraph() method, after https://github.com/mapsme/omim/pull/9857
     std::vector<JointEdge> jointEdges;
     m_graph.GetGraph().GetEdgeList(parentSegment, isOutgoing, jointEdges, parentWeights);
     edges.insert(edges.end(), jointEdges.begin(), jointEdges.end());
