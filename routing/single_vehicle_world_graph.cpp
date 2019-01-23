@@ -93,7 +93,7 @@ void SingleVehicleWorldGraph::GetEdgeList(Segment const & segment, bool isOutgoi
 Junction const & SingleVehicleWorldGraph::GetJunction(Segment const & segment, bool front)
 {
   return GetRoadGeometry(segment.GetMwmId(), segment.GetFeatureId())
-      .GetJunction(segment.GetPointId(front));
+         .GetJunction(segment.GetPointId(front));
 }
 
 m2::PointD const & SingleVehicleWorldGraph::GetPoint(Segment const & segment, bool front)

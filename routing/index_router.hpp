@@ -115,7 +115,7 @@ private:
                                 RouterDelegate const & delegate, IndexGraphStarter & starter,
                                 Route & route) const;
 
-  void ProcessJointsBidirectional(std::vector<JointSegment> & jointsPath,
+  void ProcessJointsBidirectional(std::vector<JointSegment> const & jointsPath,
                                   IndexGraphStarterJoints<IndexGraphStarter> & jointsStarter,
                                   std::vector<Segment> & output);
 

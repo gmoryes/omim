@@ -101,7 +101,12 @@ private:
 
   JointSegment CreateInvisibleJoint(Segment const & segment, bool start);
 
-  bool IsInvisible(JointSegment const & jointSegment) const;
+  bool IsInvisible(JointSegment const & jointSegment) const
+  {
+    return jointSegment.GetStartSegmentId() == jointSegment.GetEndSegmentId() &&
+           jointSegment.GetStartSegmentId() >= kInvisibleId &&
+           jointSegment.GetStartSegmentId() != std::numeric_limits<uint32_t>::max();
+  }
 
   // For GetEdgeList from segments.
   Graph & m_graph;
@@ -213,13 +218,12 @@ m2::PointD const & IndexGraphStarterJoints<Graph>::GetPoint(JointSegment const &
 template <typename Graph>
 std::vector<Segment> IndexGraphStarterJoints<Graph>::ReconstructJoint(JointSegment const & joint)
 {
-  // Есть невидимые joint, которые стоят перед стартовыми сегментами, в случае
-  // если они не фейковые, такие мы пропускаем, потому что это просто абстракция
-  // для общности алгоритма.
+  // We have invisible JointSegments, which are come from start to start or end to end.
+  // They need just for generic algorithm working. So we skip such objects.
   if (IsInvisible(joint))
     return {};
 
-  // В случае фейковой вершины, мы возращаем ее предпостроенный путь.
+  // In case of a fake vertex we return its prebuild path.
   if (joint.IsFake())
   {
     auto it = m_reconstructedFakeJoints.find(joint);
@@ -228,18 +232,19 @@ std::vector<Segment> IndexGraphStarterJoints<Graph>::ReconstructJoint(JointSegme
     return it->second;
   }
 
-  // Иначе просто восстанавливаем подряд сегменты.
+  // Otherwise just reconstruct segment consequently.
   std::vector<Segment> subpath;
 
   Segment currentSegment = joint.GetSegment(true /* start */);
   Segment lastSegment = joint.GetSegment(false /* start */);
-  bool forward = currentSegment.GetSegmentIdx() < lastSegment.GetSegmentIdx();
 
+  bool forward = currentSegment.GetSegmentIdx() < lastSegment.GetSegmentIdx();
   while (currentSegment != lastSegment)
   {
     subpath.emplace_back(currentSegment);
     currentSegment.Next(forward);
   }
+
   subpath.emplace_back(lastSegment);
 
   return subpath;
@@ -247,7 +252,7 @@ std::vector<Segment> IndexGraphStarterJoints<Graph>::ReconstructJoint(JointSegme
 
 template <typename Graph>
 void IndexGraphStarterJoints<Graph>::AddFakeJoints(Segment const & segment, bool isOutgoing,
-                                            std::vector<JointEdge> & edges)
+                                                   std::vector<JointEdge> & edges)
 {
   // If |isOutgoing| is true, we need real segments, that are real parts
   // of fake joints, entered to finish and vice versa.
@@ -256,9 +261,9 @@ void IndexGraphStarterJoints<Graph>::AddFakeJoints(Segment const & segment, bool
   bool opposite = !isOutgoing;
   for (auto const & edge : endings)
   {
-    // Фейковые сегменты устроены таким образом, что один конец у них это начало/конец, а
-    // второй конец указывает на какой-то сегмент ведущий к другим joint'ам.
-    // Поэтому мы берем конец каждого ребра и проверяем - не ведет ли он к финишу/старту.
+    // The one end of FakeJointSegment is start/finish and the opposite end is real segment.
+    // So we check, whether |segment| is equal to the real segment of FakeJointSegment.
+    // If yes, that means, that we can go from |segment| to start/finish.
     Segment firstSegment = m_fakeJointSegments[edge.GetTarget()].GetSegment(!opposite /* start */);
     if (firstSegment == segment)
     {
@@ -286,9 +291,12 @@ void IndexGraphStarterJoints<Graph>::GetEdgeList(JointSegment const & vertex, bo
   edges.clear();
 
   Segment parentSegment;
-  // В этот вектор мы сохраняем вес родительского ребра относительно всех детей.
-  // Пояснение: когда мы идем от родителя к ребенку в обратном поиске, то
-  // вычисляем вес "ребенок" -> "родитель" и для каждого ребенка этот вес будет разный.
+
+  // This vector needs for backward A* search. Assume, we have parent and child_1, child_2.
+  // In this case we will save next weights:
+  // 1) from child_1 to parent.
+  // 2) from child_2 to parent.
+  // That needs for correct edges weights calculation.
   std::vector<Weight> parentWeights;
   size_t firstFakeId = 0;
 
@@ -304,7 +312,7 @@ void IndexGraphStarterJoints<Graph>::GetEdgeList(JointSegment const & vertex, bo
   else if (vertex == GetFinishJoint())
   {
     edges.insert(edges.end(), m_endOutEdges.begin(), m_endOutEdges.end());
-    // Вес родительского сегмента будет ноль, так как первая вершина это петля веса 0.
+    // If vertex is FinishJoint, parentWeight is equal to zero, because the first vertex is zero-weight loop.
     parentWeights.insert(parentWeights.end(), edges.size(), Weight(0.0));
   }
   else
@@ -321,10 +329,10 @@ void IndexGraphStarterJoints<Graph>::GetEdgeList(JointSegment const & vertex, bo
       auto const & endSegment = isOutgoing ? m_endSegment : m_startSegment;
       auto const & endJoint = isOutgoing ? GetFinishJoint() : GetStartJoint();
 
-      // В vertex уже записан путь до конечной вершины, мы почти дошли.
-      // Но чтобы A* понял, что мы дошли надо добавить конечную вершину в ребра к текущей.
-      // Тогда он увидит, что среди ребер есть вершина в которой противоположенный поиск уже был
-      // и закончит свою работу.
+      // This is case when we can build route from start to finish without real segment, only fake.
+      // It happens when start and finish are close to each other.
+      // If we want A* stop, we should add |endJoint| to its queue, then A* will see the vertex: |endJoint|
+      // where it has already been and stop working.
       if (fakeJointSegment.GetSegment(opposite /* start */) == endSegment)
       {
         if (isOutgoing)
@@ -361,9 +369,10 @@ void IndexGraphStarterJoints<Graph>::GetEdgeList(JointSegment const & vertex, bo
     {
       size_t prevSize = edges.size();
       AddFakeJoints(jointEdges[i].GetTarget().GetSegment(!opposite /* start */), isOutgoing, edges);
-      // Если мы добавили фейковое ребро, то надо сохранить вес "ребенок[i]" -> "родитель"
-      // Так как у фекового ребра стартовый сегмент это i-ый ребенок, то мы и сохраняем
-      // тот же самый вес |parentWeight[i]|.
+      // If we add fake edge, we should add new parentWeight as "child[i] -> parent".
+      // Because fake edge and current edge (jointEdges[i]) have the same first
+      // segments (differ only the ends), so we add to |parentWeights| the same
+      // value: parentWeights[i].
       if (edges.size() != prevSize)
       {
         CHECK_LESS(i, parentWeights.size(), ());
@@ -374,30 +383,31 @@ void IndexGraphStarterJoints<Graph>::GetEdgeList(JointSegment const & vertex, bo
 
   if (!isOutgoing)
   {
-    // |parentSegment| - это вершина-родитель от которой мы ищем детей
-    // Надо взять вес joint'a, который оканчивается в |parentSegment|
+    // |parentSegment| is parent-vertex from which we search children.
+    // For correct weight calculation we should get weight of JointSegment, that
+    // ends in |parentSegment| and add |parentWeight[i]| to the saved value.
     auto it = m_savedWeight.find(vertex);
     CHECK(it != m_savedWeight.end(), ("Can not find weight for:", vertex));
 
     Weight const & weight = it->second;
     for (size_t i = 0; i < edges.size(); ++i)
     {
-      // Сохраняем вес детей-joint'ов для последующих потомков.
-      //m_savedWeight[edges[i].GetTarget().GetSegment(false /* start */)] = edges[i].GetWeight();
+      // Saving weight of current edges for returning in the next iterations.
       m_savedWeight[edges[i].GetTarget()] = edges[i].GetWeight();
-      // Для родетельского joint'a мы знаем его вес без последнего сегмента, так
-      // как для всех детей он будет разным, но(!) мы этот вес сохранили при вычислении ребер
-      // и для каждого ребенка вес родительсого сегмента лежит в |parentWeights[i]|
+      // For parent JointSegment we know its weight without last segment, because for each child
+      // it will differ (child_1 => parent != child_2 => parent), but (!) we save this weight in
+      // |parentWeights[]|. So the weight of an ith edge is a cached "weight of parent JointSegment" +
+      // "parentWeight[i]".
       CHECK_LESS(i, parentWeights.size(), ());
       edges[i].GetWeight() = weight + parentWeights[i];
     }
 
-    // Вес родительского joint'a нам больше не нужен, поэтому удаляем его из std::map.
+    // Delete useless weight of parent JointSegment.
     m_savedWeight.erase(it);
   }
   else
   {
-    // Этот цикл для прямого поиска нужен для правильного веса фейковых joint'ов.
+    // This needs for correct weights calculation of FakeJointSegments during forward A* search.
     for (size_t i = firstFakeId; i < edges.size(); ++i)
       edges[i].GetWeight() += parentWeights[i];
   }
@@ -430,8 +440,9 @@ std::vector<JointEdge> IndexGraphStarterJoints<Graph>::FindFirstJoints(Segment c
 
   auto const reconstructPath = [&parent, &startSegment, &endSegment](Segment current, bool forward) {
     std::vector<Segment> path;
-    // В случае если мы можем дойти от старта до финиша без joint, то не добавляем последний сегмент в маршрут
-    // для корректного восстановления маршрута (иначе последний сегмент повторится два раза).
+    // In case we can go from start to finish without joint (e.g. start and finish at
+    // the same long feature), we don't add the last segment to path for correctness
+    // reconstruction of the route. Otherwise last segment will repeat twice.
     if (current != endSegment)
       path.emplace_back(current);
 
@@ -481,7 +492,8 @@ std::vector<JointEdge> IndexGraphStarterJoints<Graph>::FindFirstJoints(Segment c
     Segment segment = queue.front();
     queue.pop();
     Segment beforeConvert = segment;
-    // Либо сегмент фейковый и из него получается реальный, который joint, либо он настоящий и joint.
+    // Either the segment is fake and it can be converted to real one with |Joint| end (RoadPoint),
+    // or it's the real one and its end (RoadPoint) is |Joint|.
     if (((!IsRealSegment(segment) && m_graph.ConvertToReal(segment) &&
           isEndOfSegment(beforeConvert, segment)) || IsRealSegment(beforeConvert)) &&
         IsJoint(segment, fromStart))
