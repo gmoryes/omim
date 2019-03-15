@@ -543,6 +543,9 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
       break;
   }
 
+  if (starter.GetGraph().GetMode() == WorldGraph::Mode::Joints)
+    return RouterResultCode::RouteNotFound;
+
   LOG(LINFO, ("Routing in mode:", starter.GetGraph().GetMode()));
 
   auto const progressRange = CalcProgressRange(checkpoints, subrouteIdx);
