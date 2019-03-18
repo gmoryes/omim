@@ -24,6 +24,8 @@
 
 namespace routing
 {
+enum class WorldGraphMode;
+
 class IndexGraph final
 {
 public:
@@ -100,16 +102,21 @@ private:
   bool IsRestricted(Parent const & parentJoint,
                     Segment const & current, uint32_t parentFeatureId, bool isOutgoing,
                     std::map<Parent, Parent> & parents) const;
+
+  WorldGraphMode GetMode() const;
+  m2::PointD const & GetPoint(Segment const & segment, bool front)
+  {
+    return GetGeometry().GetRoad(segment.GetFeatureId()).GetPoint(segment.GetPointId(front));
+  }
+
   RouteWeight CalcSegmentWeight(Segment const & segment);
+
+private:
   void GetNeighboringEdges(Segment const & from, RoadPoint const & rp, bool isOutgoing,
                            vector<SegmentEdge> & edges);
   void GetNeighboringEdge(Segment const & from, Segment const & to, bool isOutgoing,
                           vector<SegmentEdge> & edges);
   RouteWeight GetPenalties(Segment const & u, Segment const & v);
-  m2::PointD const & GetPoint(Segment const & segment, bool front)
-  {
-    return GetGeometry().GetRoad(segment.GetFeatureId()).GetPoint(segment.GetPointId(front));
-  }
 
   void GetSegmentCandidateForJoint(Segment const & parent, bool isOutgoing, std::vector<Segment> & children);
   void ReconstructJointSegment(JointSegment const & parentJoint,

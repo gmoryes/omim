@@ -10,6 +10,8 @@
 #include "base/exception.hpp"
 #include "base/timer.hpp"
 
+#include "routing/world_graph.hpp"
+
 #include <algorithm>
 #include <cstdlib>
 #include <limits>
@@ -422,4 +424,6 @@ RouteWeight IndexGraph::GetPenalties(Segment const & u, Segment const & v)
 
   return RouteWeight(uTurnPenalty /* weight */, passThroughPenalty, accessPenalty, 0.0 /* transitTime */);
 }
+
+WorldGraphMode IndexGraph::GetMode() const { return WorldGraphMode::Undefined; }
 }  // namespace routing
