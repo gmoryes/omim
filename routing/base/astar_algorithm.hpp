@@ -223,6 +223,7 @@ private:
     {
       bestVertex = forward ? startVertex : finalVertex;
       pS = ConsistentHeuristic(bestVertex);
+      graph.SetAStarParents(parent);
     }
 
     Weight TopDistance() const

@@ -64,7 +64,8 @@ public:
   std::unique_ptr<TransitInfo> GetTransitInfo(Segment const & segment) override;
   std::vector<RouteSegment::SpeedCamera> GetSpeedCamInfo(Segment const & segment) override;
 
-  void GetEdgeList(Segment const & segment, bool isOutgoing,
+  void GetEdgeList(JointSegment const & parentJoint,
+                   Segment const & segment, bool isOutgoing,
                    std::vector<JointEdge> & edges,
                    std::vector<RouteWeight> & parentWeights) override;
 

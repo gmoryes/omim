@@ -214,7 +214,7 @@ void IndexGraphStarterJoints::GetEdgeList(JointSegment const & vertex, bool isOu
     }
 
     std::vector<JointEdge> jointEdges;
-    m_starter.GetGraph().GetEdgeList(parentSegment, isOutgoing, jointEdges, parentWeights);
+    m_starter.GetGraph().GetEdgeList(vertex, parentSegment, isOutgoing, jointEdges, parentWeights);
     edges.insert(edges.end(), jointEdges.begin(), jointEdges.end());
 
     firstFakeId = edges.size();
