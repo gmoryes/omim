@@ -137,11 +137,12 @@ IRoutingAlgorithm::Result AStarBidirectionalRoutingAlgorithm::CalculateRoute(
     IRoadGraph const & graph, Junction const & startPos, Junction const & finalPos,
     RoutingResult<IRoadGraph::Vertex, IRoadGraph::Weight> & path)
 {
-  RoadGraph roadGraph(graph);
-  base::Cancellable const cancellable;
-  TAlgorithmImpl::Params params(roadGraph, startPos, finalPos, {} /* prevRoute */,
-                                cancellable, {} /* onVisitJunctionFn */, {} /* checkLength */);
-  TAlgorithmImpl::Result const res = TAlgorithmImpl().FindPathBidirectional(params, path);
-  return Convert(res);
+//  RoadGraph roadGraph(graph);
+//  base::Cancellable const cancellable;
+//  TAlgorithmImpl::Params params(roadGraph, startPos, finalPos, {} /* prevRoute */,
+//                                cancellable, {} /* onVisitJunctionFn */, {} /* checkLength */);
+//  TAlgorithmImpl::Result const res = TAlgorithmImpl().FindPathBidirectional(params, path);
+//  return Convert(res);
+  return IRoutingAlgorithm::Result::OK;
 }
 }  // namespace routing

@@ -178,30 +178,19 @@ public:
     m_graph.GetEdgeList(from, isOutgoing, edges);
   }
 
-  void GetEdgeList(Segment const & segment, bool isOutgoing,
+  void GetEdgeList(JointSegment const & parentJoint, Segment const & parent, bool isOutgoing,
                    std::vector<JointEdge> & edges, std::vector<RouteWeight> & parentWeights) const
   {
-    return m_graph.GetEdgeList(segment, isOutgoing, edges, parentWeights);
+    return m_graph.GetEdgeList(parentJoint, parent, isOutgoing, edges, parentWeights);
   }
 
   bool IsJoint(Segment const & segment, bool fromStart) const
   {
-    bool log = false;
-    if (segment.GetFeatureId() == 122271)
-      log = true;
-
-    if (log)
-      LOG(LINFO, ("segment =", segment, "isJoint:", m_graph.IsJoint(segment.GetRoadPoint(fromStart))));
-
     if (m_graph.IsJoint(segment.GetRoadPoint(fromStart)))
       return true;
 
     uint32_t const pointId = segment.GetPointId(fromStart);
     uint32_t const pointsNumber = m_graph.GetGeometry().GetRoad(segment.GetFeatureId()).GetPointsCount();
-    if (log)
-    {
-      LOG(LINFO, ("segment =", segment, "pointId =", pointId, "pointsNumber =", pointsNumber));
-    }
     return pointId == 0 || pointId + 1 == pointsNumber;
   }
 

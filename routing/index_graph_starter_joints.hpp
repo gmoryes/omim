@@ -69,6 +69,8 @@ public:
 
   Segment const & GetSegmentOfFakeJoint(JointSegment const & joint, bool start);
 
+  void SetAStarParents(bool forward, std::map<JointSegment, JointSegment> parents) {}
+
 private:
   static auto constexpr kInvisibleStartId = std::numeric_limits<uint32_t>::max() - 2;
   static auto constexpr kInvisibleEndId = std::numeric_limits<uint32_t>::max() - 1;
@@ -206,18 +208,20 @@ void IndexGraphStarterJoints<Graph>::Init(Segment const & startSegment, Segment 
 }
 
 template <typename Graph>
-RouteWeight
-IndexGraphStarterJoints<Graph>::HeuristicCostEstimate(JointSegment const & from, JointSegment const & to)
+RouteWeight IndexGraphStarterJoints<Graph>::HeuristicCostEstimate(JointSegment const & from, JointSegment const & to)
 {
-  Segment toSegment =
-    to.IsFake() || IsInvisible(to) ? m_fakeJointSegments[to].GetSegment(false /* start */)
-                                   : to.GetSegment(false /* start */);
-
-  Segment fromSegment =
+  Segment const & fromSegment =
     from.IsFake() || IsInvisible(from) ? m_fakeJointSegments[from].GetSegment(false /* start */)
                                        : from.GetSegment(false /* start */);
 
-  return m_graph.HeuristicCostEstimate(fromSegment, toSegment);
+  Segment const & toSegment =
+    to.IsFake() || IsInvisible(to) ? m_fakeJointSegments[to].GetSegment(false /* start */)
+                                   : to.GetSegment(false /* start */);
+
+  ASSERT(toSegment == m_startSegment || toSegment == m_endSegment, ("Invariant violated."));
+
+  return toSegment == m_startSegment ? m_graph.HeuristicCostEstimate(fromSegment, m_startPoint)
+                                     : m_graph.HeuristicCostEstimate(fromSegment, m_endPoint);
 }
 
 template <typename Graph>

@@ -46,6 +46,8 @@ bool WorldGraph::IsRoutingOptionsGood(Segment const & /* segment */)
   return true;
 }
 
+void WorldGraph::SetAStarParents(bool forward, std::map<Segment, Segment> & parents) {}
+
 void WorldGraph::SetRoutingOptions(RoutingOptions /* routingOption */) {}
 
 std::string DebugPrint(WorldGraphMode mode)

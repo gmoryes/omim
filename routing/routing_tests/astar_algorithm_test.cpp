@@ -36,6 +36,8 @@ public:
     m_adjs[v].push_back(Edge(u, w));
   }
 
+  void SetAStarParents(bool forward, std::map<Vertex, Vertex> & parent) {}
+
   void GetAdjacencyList(unsigned v, vector<Edge> & adj) const
   {
     adj.clear();
