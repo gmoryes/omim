@@ -10,6 +10,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <map>
 #include <vector>
 
 namespace routing
@@ -97,6 +98,8 @@ public:
     return TimeBetweenSec(v, w, m_maxSpeedMPS);
   }
 
+  void SetAStarParents(bool /* forward */, std::map<Vertex, Vertex> & /* parents */) {}
+
 private:
   IRoadGraph const & m_roadGraph;
   double const m_maxSpeedMPS;
@@ -137,12 +140,11 @@ IRoutingAlgorithm::Result AStarBidirectionalRoutingAlgorithm::CalculateRoute(
     IRoadGraph const & graph, Junction const & startPos, Junction const & finalPos,
     RoutingResult<IRoadGraph::Vertex, IRoadGraph::Weight> & path)
 {
-//  RoadGraph roadGraph(graph);
-//  base::Cancellable const cancellable;
-//  TAlgorithmImpl::Params params(roadGraph, startPos, finalPos, {} /* prevRoute */,
-//                                cancellable, {} /* onVisitJunctionFn */, {} /* checkLength */);
-//  TAlgorithmImpl::Result const res = TAlgorithmImpl().FindPathBidirectional(params, path);
-//  return Convert(res);
-  return IRoutingAlgorithm::Result::OK;
+  RoadGraph roadGraph(graph);
+  base::Cancellable const cancellable;
+  TAlgorithmImpl::Params params(roadGraph, startPos, finalPos, {} /* prevRoute */,
+                                cancellable, {} /* onVisitJunctionFn */, {} /* checkLength */);
+  TAlgorithmImpl::Result const res = TAlgorithmImpl().FindPathBidirectional(params, path);
+  return Convert(res);
 }
 }  // namespace routing

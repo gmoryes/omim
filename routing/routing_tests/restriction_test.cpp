@@ -791,12 +791,11 @@ UNIT_CLASS_TEST(RestrictionTest, LineGraph_RestrictionF1F1No)
   };
   vector<m2::PointD> const expectedGeom = {
       {0 /* x */, 0 /* y */}, {1, 0}, {2, 0}, {3, 0}, {4, 0}, {5, 0}};
-// TODO (@gmoryes) make true u_turn restriction
-  return;
-//  TestRestrictions(
-//      expectedGeom, AStarAlgorithm<IndexGraphStarter>::Result::OK,
-//      MakeFakeEnding(0 /* featureId */, 0 /* segmentIdx */, m2::PointD(0, 0), *m_graph),
-//      MakeFakeEnding(2, 0, m2::PointD(5, 0), *m_graph), move(restrictionsNo), *this);
+
+  TestRestrictions(
+      expectedGeom, AStarAlgorithm<IndexGraphStarter>::Result::OK,
+      MakeFakeEnding(0 /* featureId */, 0 /* segmentIdx */, m2::PointD(0, 0), *m_graph),
+      MakeFakeEnding(2, 0, m2::PointD(5, 0), *m_graph), move(restrictionsNo), *this);
 }
 
 // 2 *---F2-->*
