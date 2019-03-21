@@ -178,10 +178,16 @@ public:
     m_graph.GetEdgeList(from, isOutgoing, edges);
   }
 
+  void SetAStarParents(bool forward, std::map<JointSegment, JointSegment> & parents)
+  {
+    m_AStarParents = &parents;
+  }
+
   void GetEdgeList(JointSegment const & parentJoint, Segment const & parent, bool isOutgoing,
                    std::vector<JointEdge> & edges, std::vector<RouteWeight> & parentWeights) const
   {
-    return m_graph.GetEdgeList(parentJoint, parent, isOutgoing, edges, parentWeights);
+    CHECK(m_AStarParents, ());
+    return m_graph.GetEdgeList(parentJoint, parent, isOutgoing, edges, parentWeights, *m_AStarParents);
   }
 
   bool IsJoint(Segment const & segment, bool fromStart) const
@@ -195,6 +201,7 @@ public:
   }
 
 private:
+  std::map<JointSegment, JointSegment> * m_AStarParents = nullptr;
   IndexGraph & m_graph;
   Segment m_start;
 };
@@ -530,6 +537,7 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
           Segment const & firstChild = jointSegment.GetSegment(true /* start */);
           uint32_t const lastPoint = exit.GetPointId(true /* front */);
 
+          static std::map<JointSegment, JointSegment> kEmptyParents;
           auto optionalEdge =  graph.GetJointEdgeByLastPoint(parentSegment, firstChild,
                                                              true /* isOutgoing */, lastPoint);
 

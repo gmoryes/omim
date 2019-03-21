@@ -69,7 +69,11 @@ public:
 
   Segment const & GetSegmentOfFakeJoint(JointSegment const & joint, bool start);
 
-  void SetAStarParents(bool forward, std::map<JointSegment, JointSegment> parents) {}
+  template <typename SegmentType>
+  void SetAStarParents(bool forward, std::map<SegmentType, SegmentType> & parents)
+  {
+    m_graph.SetAStarParents(forward, parents);
+  }
 
 private:
   static auto constexpr kInvisibleStartId = std::numeric_limits<uint32_t>::max() - 2;
