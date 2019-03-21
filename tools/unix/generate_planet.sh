@@ -195,7 +195,7 @@ BRANDS_TRANSLATIONS_DATA="${BRANDS_TRANSLATIONS_DATA:-$INTDIR/translations_food.
 BRANDS_DATA="${BRANDS_DATA:-$INTDIR/ids_food.json}"
 TESTING_SCRIPT="$SCRIPTS_PATH/test_planet.sh"
 PYTHON="$(which python2.7)"
-PYTHON36="$(which python36)" || PYTHON36="$(which python3.6)"
+#PYTHON36="$(which python36)" || PYTHON36="$(which python3.6)"
 MWM_VERSION_FORMAT="%s"
 COUNTRIES_VERSION_FORMAT="%y%m%d"
 LOG_PATH="${LOG_PATH:-$TARGET/logs}"
@@ -496,7 +496,7 @@ if [ "$MODE" == "mwm" ]; then
       "$GENERATOR_TOOL" $PARAMS --output=World 2>> "$LOG_PATH/World.log"
       "$GENERATOR_TOOL" --data_path="$TARGET" \
                         --user_resource_path="$DATA_PATH/" \
-                        --generate_search_index \
+                        #--generate_search_index \
                         --generate_cities_boundaries \
                         --cities_boundaries_data="$CITIES_BOUNDARIES_DATA" \
                         --output=World 2>> "$LOG_PATH/World.log"
@@ -505,7 +505,7 @@ if [ "$MODE" == "mwm" ]; then
   fi
 
   if [ -z "$NO_REGIONS" ]; then
-    PARAMS_WITH_SEARCH="$PARAMS --generate_search_index --cities_boundaries_data=$CITIES_BOUNDARIES_DATA --make_city_roads --generate_maxspeed"
+    PARAMS_WITH_SEARCH="$PARAMS --cities_boundaries_data=$CITIES_BOUNDARIES_DATA --make_city_roads --generate_maxspeed" #--generate_search_index" 
     [ -n "${SRTM_PATH-}" -a -d "${SRTM_PATH-}" ] && PARAMS_WITH_SEARCH="$PARAMS_WITH_SEARCH --srtm_path=$SRTM_PATH"
     [ -f "$UGC_FILE" ] && PARAMS_WITH_SEARCH="$PARAMS_WITH_SEARCH --ugc_data=$UGC_FILE"
     [ -f "$POPULAR_PLACES_FILE" ] && PARAMS_WITH_SEARCH="$PARAMS_WITH_SEARCH --popular_places_data=$POPULAR_PLACES_FILE --generate_popular_places"
