@@ -173,12 +173,7 @@ public:
     return m_graph.GetPoint(s, forward);
   }
 
-  void GetEdgesList(Segment const & from, bool isOutgoing, std::vector<SegmentEdge> & edges)
-  {
-    m_graph.GetEdgeList(from, isOutgoing, edges);
-  }
-
-  void SetAStarParents(bool forward, std::map<JointSegment, JointSegment> & parents)
+  void SetAStarParents(std::map<JointSegment, JointSegment> & parents)
   {
     m_AStarParents = &parents;
   }
@@ -475,30 +470,34 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
     IndexGraphWrapper indexGraphWrapper(graph, enter);
     DijkstraWrapperJoints wrapper(indexGraphWrapper, enter);
     AStarAlgorithm<DijkstraWrapperJoints>::Context context;
+    indexGraphWrapper.SetAStarParents(context.GetParents());
     std::unordered_map<uint32_t, std::vector<JointSegment>> visitedVertexes;
-    astar.PropagateWave(wrapper, wrapper.GetGraph().GetStartJoint(),
-                        [&](JointSegment const & vertex)
-                        {
-                          if (vertex.IsFake())
-                          {
-                            Segment start = wrapper.GetGraph().GetSegmentOfFakeJoint(vertex, true /* start */);
-                            Segment end = wrapper.GetGraph().GetSegmentOfFakeJoint(vertex, false /* start */);
-                            if (start.IsForward() != end.IsForward())
-                            {
-                              LOG(LINFO, ("bad forward:", vertex));
-                              LOG(LINFO, ("start =", start, "end =", end, "enter =", enter));
-                              return true;
-                            }
-                            visitedVertexes[end.GetFeatureId()].emplace_back(start, end);
-                          }
-                          else
-                          {
-                            visitedVertexes[vertex.GetFeatureId()].emplace_back(vertex);
-                          }
 
-                          return true;
-                        } /* visitVertex */,
-                        context);
+    //if (false)
+    {
+      astar.PropagateWave(wrapper, wrapper.GetGraph().GetStartJoint(),
+                          [&](JointSegment const & vertex)
+                          {
+                            if (vertex.IsFake())
+                            {
+                              Segment start = wrapper.GetGraph().GetSegmentOfFakeJoint(vertex, true /* start */);
+                              Segment end = wrapper.GetGraph().GetSegmentOfFakeJoint(vertex, false /* start */);
+                              if (start.IsForward() != end.IsForward())
+                              {
+                                LOG(LINFO, ("bad forward:", vertex));
+                                LOG(LINFO, ("start =", start, "end =", end, "enter =", enter));
+                                return true;
+                              }
+                              visitedVertexes[end.GetFeatureId()].emplace_back(start, end);
+                            } else
+                            {
+                              visitedVertexes[vertex.GetFeatureId()].emplace_back(vertex);
+                            }
+
+                            return true;
+                          } /* visitVertex */,
+                          context);
+    }
 
     for (Segment const & exit : connector.GetExits())
     {
