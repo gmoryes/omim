@@ -5,6 +5,8 @@
 #include "generator/routing_helpers.hpp"
 
 #include "routing/base/astar_algorithm.hpp"
+#include "routing/base/astar_graph.hpp"
+
 #include "routing/cross_mwm_connector.hpp"
 #include "routing/cross_mwm_connector_serialization.hpp"
 #include "routing/cross_mwm_ids.hpp"
@@ -151,13 +153,13 @@ private:
   unordered_map<uint32_t, VehicleMask> m_masks;
 };
 
-class DijkstraWrapper final
+class DijkstraWrapper : public AStarGraph<Segment, SegmentEdge, RouteWeight>
 {
 public:
   // AStarAlgorithm types aliases:
-  using Vertex = Segment;
-  using Edge = SegmentEdge;
-  using Weight = RouteWeight;
+  using Vertex = AStarGraph::Vertex;
+  using Edge = AStarGraph::Edge;
+  using Weight = AStarGraph::Weight;
 
   explicit DijkstraWrapper(IndexGraph & graph) : m_graph(graph) {}
 
@@ -409,9 +411,11 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
 
     Segment const & enter = connector.GetEnter(i);
 
-    AStarAlgorithm<DijkstraWrapper> astar;
+    using Algorithm = AStarAlgorithm<Segment, SegmentEdge, RouteWeight>;
+
+    Algorithm astar;
     DijkstraWrapper wrapper(graph);
-    AStarAlgorithm<DijkstraWrapper>::Context context;
+    Algorithm::Context context;
     astar.PropagateWave(wrapper, enter,
                         [](Segment const & /* vertex */) { return true; } /* visitVertex */,
                         context);

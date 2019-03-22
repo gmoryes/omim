@@ -1,5 +1,7 @@
 #pragma once
 
+#include "routing/base/astar_graph.hpp"
+
 #include "routing/index_graph_starter.hpp"
 #include "routing/joint_segment.hpp"
 #include "routing/segment.hpp"
@@ -13,12 +15,12 @@
 
 namespace routing
 {
-class IndexGraphStarterJoints
+class IndexGraphStarterJoints : public AStarGraph<JointSegment, JointEdge, RouteWeight>
 {
 public:
-  using Vertex = JointSegment;
-  using Edge = JointEdge;
-  using Weight = RouteWeight;
+  using Vertex = AStarGraph::Vertex;
+  using Edge = AStarGraph::Edge;
+  using Weight = AStarGraph::Weight;
 
   explicit IndexGraphStarterJoints(IndexGraphStarter & starter) : m_starter(starter) {}
   IndexGraphStarterJoints(IndexGraphStarter & starter,
@@ -29,24 +31,24 @@ public:
 
   JointSegment const & GetStartJoint() const { return m_startJoint; }
   JointSegment const & GetFinishJoint() const { return m_endJoint; }
-
-  // These functions are A* interface.
-  RouteWeight HeuristicCostEstimate(JointSegment const & from, JointSegment const & to);
-
   m2::PointD const & GetPoint(JointSegment const & jointSegment, bool start);
 
-  void GetOutgoingEdgesList(JointSegment const & vertex, std::vector<JointEdge> & edges)
+  // AStarGraph overridings
+  // @{
+  RouteWeight HeuristicCostEstimate(JointSegment const & from, JointSegment const & to) override;
+
+  void GetOutgoingEdgesList(JointSegment const & vertex, std::vector<JointEdge> & edges) override
   {
     GetEdgeList(vertex, true /* isOutgoing */, edges);
   }
 
-  void GetIngoingEdgesList(JointSegment const & vertex, std::vector<JointEdge> & edges)
+  void GetIngoingEdgesList(JointSegment const & vertex, std::vector<JointEdge> & edges) override
   {
     GetEdgeList(vertex, false /* isOutgoing */, edges);
   }
+  // @}
 
   WorldGraph::Mode GetMode() const { return m_starter.GetMode(); }
-  // End of A* interface.
 
   IndexGraphStarter & GetStarter() { return m_starter; }
 
@@ -54,6 +56,8 @@ public:
   std::vector<Segment> ReconstructJoint(JointSegment const & joint);
 
   void Reset();
+
+  ~IndexGraphStarterJoints() override = default;
 
 private:
   static auto constexpr kInvisibleId = std::numeric_limits<uint32_t>::max() - 2;
