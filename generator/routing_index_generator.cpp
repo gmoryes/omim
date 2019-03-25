@@ -180,7 +180,7 @@ public:
     m_AStarParents = &parents;
   }
 
-  void GetEdgesList(Segment const & from, bool isOutgoing, std::vector<SegmentEdge> & edges)
+  void GetEdgesList(Segment const & from, bool isOutgoing, vector<SegmentEdge> & edges)
   {
     m_graph.GetEdgeList(from, isOutgoing, edges);
   }
@@ -197,6 +197,8 @@ public:
     if (m_graph.IsJoint(segment.GetRoadPoint(fromStart)))
       return true;
 
+    // For features, that ends out of mwm. In this case |m_graph.IsJoint| returns false, but we should
+    // think, that it's Joint anyway.
     uint32_t const pointId = segment.GetPointId(fromStart);
     uint32_t const pointsNumber = m_graph.GetGeometry().GetRoad(segment.GetFeatureId()).GetPointsCount();
     return pointId == 0 || pointId + 1 == pointsNumber;
@@ -490,33 +492,29 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
     IndexGraphWrapper indexGraphWrapper(graph, enter);
     DijkstraWrapperJoints wrapper(indexGraphWrapper, enter);
     AStarAlgorithm<JointSegment, JointEdge, RouteWeight>::Context context;
-    indexGraphWrapper.SetAStarParents(true /* forward */, context.GetParents());
-    std::unordered_map<uint32_t, std::vector<JointSegment>> visitedVertexes;
-
+    unordered_map<uint32_t, vector<JointSegment>> visitedVertexes;
     if (false)
     {
-      astar.PropagateWave(wrapper, wrapper.GetGraph().GetStartJoint(),
-                          [&](JointSegment const & vertex)
+    astar.PropagateWave(wrapper, wrapper.GetGraph().GetStartJoint(),
+                        [&](JointSegment const & vertex)
+                        {
+                          if (vertex.IsFake())
                           {
-                            if (vertex.IsFake())
-                            {
-                              Segment start = wrapper.GetGraph().GetSegmentOfFakeJoint(vertex, true /* start */);
-                              Segment end = wrapper.GetGraph().GetSegmentOfFakeJoint(vertex, false /* start */);
-                              if (start.IsForward() != end.IsForward())
-                              {
-                                LOG(LINFO, ("bad forward:", vertex));
-                                LOG(LINFO, ("start =", start, "end =", end, "enter =", enter));
-                                return true;
-                              }
-                              visitedVertexes[end.GetFeatureId()].emplace_back(start, end);
-                            } else
-                            {
-                              visitedVertexes[vertex.GetFeatureId()].emplace_back(vertex);
-                            }
+                            Segment start = wrapper.GetGraph().GetSegmentOfFakeJoint(vertex, true /* start */);
+                            Segment end = wrapper.GetGraph().GetSegmentOfFakeJoint(vertex, false /* start */);
+                            if (start.IsForward() != end.IsForward())
+                              return true;
 
-                            return true;
-                          } /* visitVertex */,
-                          context);
+                            visitedVertexes[end.GetFeatureId()].emplace_back(start, end);
+                          }
+                          else
+                          {
+                            visitedVertexes[vertex.GetFeatureId()].emplace_back(vertex);
+                          }
+
+                          return true;
+                        } /* visitVertex */,
+                        context);
     }
 
     for (Segment const & exit : connector.GetExits())
@@ -556,7 +554,6 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
           Segment const & firstChild = jointSegment.GetSegment(true /* start */);
           uint32_t const lastPoint = exit.GetPointId(true /* front */);
 
-          static std::map<JointSegment, JointSegment> kEmptyParents;
           auto optionalEdge =  graph.GetJointEdgeByLastPoint(parentSegment, firstChild,
                                                              true /* isOutgoing */, lastPoint);
 

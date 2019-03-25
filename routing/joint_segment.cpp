@@ -1,5 +1,7 @@
 #include "routing/joint_segment.hpp"
 
+#include "routing/fake_feature_ids.hpp"
+
 #include "base/assert.hpp"
 
 #include <sstream>

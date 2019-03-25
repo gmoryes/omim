@@ -9,6 +9,9 @@
 
 #include "geometry/point2d.hpp"
 
+#include "base/assert.hpp"
+
+#include <algorithm>
 #include <limits>
 #include <map>
 #include <queue>
@@ -80,9 +83,9 @@ public:
   ~IndexGraphStarterJoints() override = default;
 
 private:
-  static auto constexpr kInvisibleStartId = std::numeric_limits<uint32_t>::max() - 2;
-  static auto constexpr kInvisibleEndId = std::numeric_limits<uint32_t>::max() - 1;
-  static auto constexpr kInvalidId = std::numeric_limits<uint32_t>::max();
+  static auto constexpr kInvalidId = JointSegment::kInvalidId;
+  static auto constexpr kInvisibleEndId = kInvalidId - 1;
+  static auto constexpr kInvisibleStartId = kInvalidId - 2;
 
   struct FakeJointSegment
   {
@@ -253,7 +256,7 @@ std::vector<Segment> IndexGraphStarterJoints<Graph>::ReconstructJoint(JointSegme
   if (IsInvisible(joint))
     return {};
 
-  // In case of a fake vertex we return its prebuild path.
+  // In case of a fake vertex we return its prebuilt path.
   if (joint.IsFake())
   {
     auto const it = m_reconstructedFakeJoints.find(joint);
@@ -484,10 +487,10 @@ template <typename Graph>
 std::vector<JointEdge> IndexGraphStarterJoints<Graph>::FindFirstJoints(Segment const & startSegment,
                                                                        bool fromStart)
 {
-  Segment endSegment = fromStart ? m_endSegment : m_startSegment;
+  Segment const & endSegment = fromStart ? m_endSegment : m_startSegment;
 
   std::queue<Segment> queue;
-  queue.push(startSegment);
+  queue.emplace(startSegment);
 
   std::map<Segment, Segment> parent;
   std::map<Segment, RouteWeight> weight;
