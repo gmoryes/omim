@@ -43,7 +43,6 @@ public:
   // The leap is the shortcut edge from mwm border enter to exit.
   // Router can't use leaps on some mwms: e.g. mwm with loaded traffic data.
   // Check wherether leap is allowed on specified mwm or not.
-  virtual bool LeapIsAllowed(NumMwmId mwmId) const = 0;
 
   static std::shared_ptr<EdgeEstimator> Create(VehicleType vehicleType, double maxWeighSpeedKMpH,
                                                double offroadSpeedKMpH,
