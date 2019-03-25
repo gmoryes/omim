@@ -19,24 +19,28 @@ MwmContext::MwmContext(MwmSet::MwmHandle handle)
   , m_vector(m_value.m_cont, m_value.GetHeader(), m_value.m_table.get())
   , m_index(m_value.m_cont.GetReader(INDEX_FILE_TAG), m_value.m_factory)
   , m_centers(m_value)
+  , m_editableSource(m_handle)
 {
 }
 
-bool MwmContext::GetFeature(uint32_t index, FeatureType & ft) const
+std::unique_ptr<FeatureType> MwmContext::GetFeature(uint32_t index) const
 {
+  std::unique_ptr<FeatureType> ft;
   switch (GetEditedStatus(index))
   {
   case FeatureStatus::Deleted:
   case FeatureStatus::Obsolete:
-    return false;
+    return ft;
   case FeatureStatus::Modified:
   case FeatureStatus::Created:
-    VERIFY(osm::Editor::Instance().GetEditedFeature(GetId(), index, ft), ());
-    return true;
+    ft = m_editableSource.GetModifiedFeature(index);
+    CHECK(ft, ());
+    return ft;
   case FeatureStatus::Untouched:
-    m_vector.GetByIndex(index, ft);
-    ft.SetID(FeatureID(GetId(), index));
-    return true;
+    auto ft = m_vector.GetByIndex(index);
+    CHECK(ft, ());
+    ft->SetID(FeatureID(GetId(), index));
+    return ft;
   }
   UNREACHABLE();
 }

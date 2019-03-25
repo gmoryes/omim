@@ -351,6 +351,7 @@ void CheckCompleteness(string const & path, m2::RectD const & viewport, DataSour
 int main(int argc, char * argv[])
 {
   ChangeMaxNumberOfOpenFiles(kMaxOpenFiles);
+  CheckLocale();
 
   ios_base::sync_with_stdio(false);
   Platform & platform = GetPlatform();
@@ -362,7 +363,7 @@ int main(int argc, char * argv[])
   if (!FLAGS_data_path.empty())
   {
     platform.SetResourceDir(FLAGS_data_path);
-    countriesFile = base::JoinFoldersToPath(FLAGS_data_path, COUNTRIES_FILE);
+    countriesFile = base::JoinPath(FLAGS_data_path, COUNTRIES_FILE);
   }
 
   if (!FLAGS_mwm_path.empty())
@@ -435,7 +436,7 @@ int main(int argc, char * argv[])
   vector<string> queries;
   string queriesPath = FLAGS_queries_path;
   if (queriesPath.empty())
-    queriesPath = base::JoinFoldersToPath(platform.WritableDir(), kDefaultQueriesPathSuffix);
+    queriesPath = base::JoinPath(platform.WritableDir(), kDefaultQueriesPathSuffix);
   ReadStringsFromFile(queriesPath, queries);
 
   vector<unique_ptr<TestSearchRequest>> requests;

@@ -169,13 +169,13 @@ public:
   // LocalityScorer::Delegate overrides:
   void GetNames(uint32_t featureId, vector<string> & names) const override
   {
-    FeatureType ft;
-    if (!m_context.GetFeature(featureId, ft))
+    auto ft = m_context.GetFeature(featureId);
+    if (!ft)
       return;
     for (auto const lang : m_params.GetLangs())
     {
       string name;
-      if (ft.GetName(lang, name))
+      if (ft->GetName(lang, name))
         names.push_back(name);
     }
   }
@@ -622,6 +622,19 @@ void Geocoder::FillLocalityCandidates(BaseContext const & ctx, CBV const & filte
   scorer.GetTopLocalities(m_context->GetId(), ctx, filter, maxNumLocalities, preLocalities);
 }
 
+void Geocoder::CacheWorldLocalities()
+{
+  vector<shared_ptr<MwmInfo>> infos;
+  m_dataSource.GetMwmsInfo(infos);
+
+  MwmSet::MwmHandle handle = FindWorld(m_dataSource, infos);
+  if (handle.IsAlive())
+  {
+    auto context = make_unique<MwmContext>(move(handle));
+    UNUSED_VALUE(m_localitiesCache.Get(*context));
+  }
+}
+
 void Geocoder::FillLocalitiesTable(BaseContext const & ctx)
 {
   vector<Locality> preLocalities;
@@ -634,22 +647,21 @@ void Geocoder::FillLocalitiesTable(BaseContext const & ctx)
   size_t numCountries = 0;
   for (auto & l : preLocalities)
   {
-    FeatureType ft;
-    if (!m_context->GetFeature(l.m_featureId, ft))
+    auto ft = m_context->GetFeature(l.m_featureId);
+    if (!ft)
       continue;
 
-    auto addRegionMaps = [&](size_t maxCount, Region::Type type, size_t & count)
-    {
-      if (count < maxCount && ft.GetFeatureType() == feature::GEOM_POINT)
+    auto addRegionMaps = [&](size_t maxCount, Region::Type type, size_t & count) {
+      if (count < maxCount && ft->GetFeatureType() == feature::GEOM_POINT)
       {
         string affiliation;
-        if (!GetAffiliationName(ft, affiliation))
+        if (!GetAffiliationName(*ft, affiliation))
           return;
 
         Region region(l, type);
-        region.m_center = ft.GetCenter();
+        region.m_center = ft->GetCenter();
 
-        ft.GetName(StringUtf8Multilang::kDefaultCode, region.m_defaultName);
+        ft->GetName(StringUtf8Multilang::kDefaultCode, region.m_defaultName);
         LOG(LDEBUG, ("Region =", region.m_defaultName));
 
         m_infoGetter.GetMatchedRegions(affiliation, region.m_ids);
@@ -664,11 +676,11 @@ void Geocoder::FillLocalitiesTable(BaseContext const & ctx)
       }
     };
 
-    switch (m_model.GetType(ft))
+    switch (m_model.GetType(*ft))
     {
     case Model::TYPE_CITY:
     {
-      if (numCities < kMaxNumCities && ft.GetFeatureType() == feature::GEOM_POINT)
+      if (numCities < kMaxNumCities && ft->GetFeatureType() == feature::GEOM_POINT)
       {
         ++numCities;
 
@@ -676,7 +688,7 @@ void Geocoder::FillLocalitiesTable(BaseContext const & ctx)
 
         CitiesBoundariesTable::Boundaries boundaries;
         bool haveBoundary = false;
-        if (m_citiesBoundaries.Get(ft.GetID(), boundaries))
+        if (m_citiesBoundaries.Get(ft->GetID(), boundaries))
         {
           city.m_rect = boundaries.GetLimitRect();
           if (city.m_rect.IsValid())
@@ -685,14 +697,14 @@ void Geocoder::FillLocalitiesTable(BaseContext const & ctx)
 
         if (!haveBoundary)
         {
-          auto const center = feature::GetCenter(ft);
-          auto const population = ftypes::GetPopulation(ft);
+          auto const center = feature::GetCenter(*ft);
+          auto const population = ftypes::GetPopulation(*ft);
           auto const radius = ftypes::GetRadiusByPopulation(population);
           city.m_rect = MercatorBounds::RectByCenterXYAndSizeInMeters(center, radius);
         }
 
 #if defined(DEBUG)
-        ft.GetName(StringUtf8Multilang::kDefaultCode, city.m_defaultName);
+        ft->GetName(StringUtf8Multilang::kDefaultCode, city.m_defaultName);
         LOG(LINFO,
             ("City =", city.m_defaultName, "rect =", city.m_rect, "rect source:", haveBoundary ? "table" : "population",
              "sizeX =",
@@ -729,24 +741,24 @@ void Geocoder::FillVillageLocalities(BaseContext const & ctx)
 
   for (auto & l : preLocalities)
   {
-    FeatureType ft;
-    if (!m_context->GetFeature(l.m_featureId, ft))
+    auto ft = m_context->GetFeature(l.m_featureId);
+    if (!ft)
       continue;
 
-    if (m_model.GetType(ft) != Model::TYPE_VILLAGE)
+    if (m_model.GetType(*ft) != Model::TYPE_VILLAGE)
       continue;
 
     // We accept lines and areas as village features.
-    auto const center = feature::GetCenter(ft);
+    auto const center = feature::GetCenter(*ft);
     ++numVillages;
     City village(l, Model::TYPE_VILLAGE);
 
-    auto const population = ftypes::GetPopulation(ft);
+    auto const population = ftypes::GetPopulation(*ft);
     auto const radius = ftypes::GetRadiusByPopulation(population);
     village.m_rect = MercatorBounds::RectByCenterXYAndSizeInMeters(center, radius);
 
 #if defined(DEBUG)
-    ft.GetName(StringUtf8Multilang::kDefaultCode, village.m_defaultName);
+    ft->GetName(StringUtf8Multilang::kDefaultCode, village.m_defaultName);
     LOG(LDEBUG, ("Village =", village.m_defaultName, "radius =", radius));
 #endif
 
@@ -1313,11 +1325,11 @@ void Geocoder::TraceResult(Tracer & tracer, BaseContext const & ctx, MwmSet::Mwm
   if (mwmId != m_context->GetId())
     return;
 
-  FeatureType ft;
-  if (!m_context->GetFeature(ftId, ft))
+  auto ft = m_context->GetFeature(ftId);
+  if (!ft)
     return;
 
-  feature::TypesHolder holder(ft);
+  feature::TypesHolder holder(*ft);
   CategoriesInfo catInfo(holder, TokenSlice(m_params, tokenRange), m_params.m_categoryLocales,
                          m_categories);
 
@@ -1463,14 +1475,12 @@ bool Geocoder::GetTypeInGeocoding(BaseContext const & ctx, uint32_t featureId, M
     return true;
   }
 
-  FeatureType feature;
-  if (m_context->GetFeature(featureId, feature))
-  {
-    type = m_model.GetType(feature);
-    return true;
-  }
+  auto feature = m_context->GetFeature(featureId);
+  if (!feature)
+    return false;
 
-  return false;
+  type = m_model.GetType(*feature);
+  return true;
 }
 }  // namespace search
 

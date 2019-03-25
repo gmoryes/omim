@@ -25,8 +25,6 @@
 
 using namespace std;
 
-// MainModel::SampleContext ------------------------------------------------------------------------
-
 // MainModel ---------------------------------------------------------------------------------------
 MainModel::MainModel(Framework & framework)
   : m_framework(framework)
@@ -122,7 +120,7 @@ void MainModel::OnSampleSelected(int index)
 
   auto & context = m_contexts[index];
   auto const & sample = context.m_sample;
-  m_view->ShowSample(index, sample, sample.m_posAvailable, sample.m_pos, context.HasChanges());
+  m_view->ShowSample(index, sample, sample.m_pos, context.HasChanges());
 
   ResetSearch();
   auto const timestamp = m_queryTimestamp;
@@ -220,8 +218,8 @@ void MainModel::OnShowPositionClicked()
   auto const & context = m_contexts[m_selectedSample];
 
   vector<m2::PointD> points;
-  if (context.m_sample.m_posAvailable)
-    points.push_back(context.m_sample.m_pos);
+  if (context.m_sample.m_pos)
+    points.push_back(*context.m_sample.m_pos);
 
   size_t resultsAdded = 0;
   for (auto const & result : context.m_foundResults)
@@ -290,9 +288,9 @@ void MainModel::AddNonFoundResult(FeatureID const & id)
   if (resurrected)
     return;
 
-  FeatureType ft;
-  CHECK(m_loader.Load(id, ft), ("Can't load feature:", id));
-  auto const result = search::Sample::Result::Build(ft, search::Sample::Result::Relevance::Vital);
+  auto ft = m_loader.Load(id);
+  CHECK(ft, ("Can't load feature:", id));
+  auto const result = search::Sample::Result::Build(*ft, search::Sample::Result::Relevance::Vital);
   context.AddNonFoundResult(result);
 }
 
@@ -429,8 +427,8 @@ void MainModel::ForAnyMatchingEntry(Context & context, FeatureID const & id, Fn 
       return fn(context.m_foundResultsEdits, i);
   }
 
-  FeatureType ft;
-  CHECK(m_loader.Load(id, ft), ("Can't load feature:", id));
+  auto ft = m_loader.Load(id);
+  CHECK(ft, ("Can't load feature:", id));
   search::Matcher matcher(m_loader);
 
   auto const & nonFoundResults = context.m_nonFoundResults;
@@ -438,7 +436,7 @@ void MainModel::ForAnyMatchingEntry(Context & context, FeatureID const & id, Fn 
   for (size_t i = 0; i < nonFoundResults.size(); ++i)
   {
     auto const & result = context.m_nonFoundResults[i];
-    if (matcher.Matches(result, ft))
+    if (matcher.Matches(result, *ft))
       return fn(context.m_nonFoundResultsEdits, i);
   }
 }

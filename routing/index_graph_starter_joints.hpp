@@ -1,5 +1,7 @@
 #pragma once
 
+#include "routing/base/astar_graph.hpp"
+
 #include "routing/index_graph_starter.hpp"
 #include "routing/joint_segment.hpp"
 #include "routing/segment.hpp"
@@ -16,13 +18,17 @@
 
 namespace routing
 {
+<<<<<<< HEAD
 template <typename Graph>
 class IndexGraphStarterJoints
+=======
+class IndexGraphStarterJoints : public AStarGraph<JointSegment, JointEdge, RouteWeight>
+>>>>>>> origin/astar_graph_interface
 {
 public:
-  using Vertex = JointSegment;
-  using Edge = JointEdge;
-  using Weight = RouteWeight;
+  using Vertex = AStarGraph::Vertex;
+  using Edge = AStarGraph::Edge;
+  using Weight = AStarGraph::Weight;
 
   explicit IndexGraphStarterJoints(Graph & graph) : m_graph(graph) {}
   IndexGraphStarterJoints(Graph & graph,
@@ -36,30 +42,39 @@ public:
 
   JointSegment const & GetStartJoint() const { return m_startJoint; }
   JointSegment const & GetFinishJoint() const { return m_endJoint; }
-
-  // These functions are A* interface.
-  RouteWeight HeuristicCostEstimate(JointSegment const & from, JointSegment const & to);
-
   m2::PointD const & GetPoint(JointSegment const & jointSegment, bool start);
 
-  void GetOutgoingEdgesList(JointSegment const & vertex, std::vector<JointEdge> & edges)
+  // AStarGraph overridings
+  // @{
+  RouteWeight HeuristicCostEstimate(JointSegment const & from, JointSegment const & to) override;
+
+  void GetOutgoingEdgesList(JointSegment const & vertex, std::vector<JointEdge> & edges) override
   {
     GetEdgeList(vertex, true /* isOutgoing */, edges);
   }
 
-  void GetIngoingEdgesList(JointSegment const & vertex, std::vector<JointEdge> & edges)
+  void GetIngoingEdgesList(JointSegment const & vertex, std::vector<JointEdge> & edges) override
   {
     GetEdgeList(vertex, false /* isOutgoing */, edges);
   }
+  // @}
 
+<<<<<<< HEAD
   WorldGraphMode GetMode() const { return m_graph.GetMode(); }
   // End of A* interface.
   
+=======
+  WorldGraph::Mode GetMode() const { return m_starter.GetMode(); }
+
+  IndexGraphStarter & GetStarter() { return m_starter; }
+
+>>>>>>> origin/astar_graph_interface
   /// \brief Reconstructs JointSegment by segment after building the route.
   std::vector<Segment> ReconstructJoint(JointSegment const & joint);
 
   void Reset();
 
+<<<<<<< HEAD
   // Can not check segment for fake or not with segment.IsRealSegment(), because all segments
   // have got fake m_numMwmId during mwm generation.
   bool IsRealSegment(Segment const & segment) const
@@ -74,6 +89,9 @@ public:
   {
     m_graph.SetAStarParents(forward, parents);
   }
+=======
+  ~IndexGraphStarterJoints() override = default;
+>>>>>>> origin/astar_graph_interface
 
 private:
   static auto constexpr kInvisibleStartId = std::numeric_limits<uint32_t>::max() - 2;

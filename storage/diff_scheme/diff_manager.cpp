@@ -72,13 +72,6 @@ void Manager::ApplyDiff(ApplyDiffParams && p, base::Cancellable const & cancella
       if (!isOnDisk)
         diffFile->SyncWithDisk();
 
-      {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        auto it = m_diffs.find(diffFile->GetCountryName());
-        CHECK(it != m_diffs.end(), ());
-        it->second.m_status = SingleDiffStatus::Downloaded;
-      }
-
       string const oldMwmPath = p.m_oldMwmFile->GetPath(MapOptions::Map);
       string const newMwmPath = diffFile->GetPath(MapOptions::Map);
       string const diffApplyingInProgressPath = newMwmPath + DIFF_APPLYING_FILE_EXTENSION;
@@ -94,7 +87,7 @@ void Manager::ApplyDiff(ApplyDiffParams && p, base::Cancellable const & cancella
       base::DeleteFileX(diffApplyingInProgressPath);
 
       if (result != DiffApplicationResult::Ok)
-        base::DeleteFileX(newMwmPath);
+        Platform::RemoveFileIfExists(newMwmPath);
     }
 
     switch (result)
@@ -102,17 +95,16 @@ void Manager::ApplyDiff(ApplyDiffParams && p, base::Cancellable const & cancella
     case DiffApplicationResult::Ok:
     {
       diffFile->DeleteFromDisk(MapOptions::Diff);
-      std::lock_guard<std::mutex> lock(m_mutex);
-      auto it = m_diffs.find(diffFile->GetCountryName());
-      CHECK(it != m_diffs.end(), ());
-      it->second.m_status = SingleDiffStatus::Applied;
       break;
     }
-    case DiffApplicationResult::Cancelled: break;
+    case DiffApplicationResult::Cancelled:
+      // The diff file will be deleted by storage.
+      // Another way would be to leave it on disk but all consequences
+      // of interacting with storage are much harder to be taken into account that way.
+      break;
     case DiffApplicationResult::Failed:
     {
       diffFile->DeleteFromDisk(MapOptions::Diff);
-
       alohalytics::Stats::Instance().LogEvent(
           "Downloader_DiffScheme_error",
           {{"type", "patching"},
@@ -120,10 +112,6 @@ void Manager::ApplyDiff(ApplyDiffParams && p, base::Cancellable const & cancella
 
       std::lock_guard<std::mutex> lock(m_mutex);
       m_status = Status::NotAvailable;
-
-      auto it = m_diffs.find(diffFile->GetCountryName());
-      CHECK(it != m_diffs.end(), ());
-      it->second.m_status = SingleDiffStatus::NotDownloaded;
       break;
     }
     }
@@ -145,9 +133,7 @@ bool Manager::SizeFor(storage::CountryId const & countryId, uint64_t & size) con
 
 bool Manager::SizeToDownloadFor(storage::CountryId const & countryId, uint64_t & size) const
 {
-  return WithDiff(countryId, [&size](DiffInfo const & info) {
-    size = (info.m_status == SingleDiffStatus::Downloaded ? 0 : info.m_size);
-  });
+  return WithDiff(countryId, [&size](DiffInfo const & info) { size = info.m_size; });
 }
 
 bool Manager::VersionFor(storage::CountryId const & countryId, uint64_t & version) const
@@ -160,25 +146,13 @@ bool Manager::HasDiffFor(storage::CountryId const & countryId) const
   return WithDiff(countryId, [](DiffInfo const &) {});
 }
 
-void Manager::RemoveAppliedDiffs()
-{
-  std::lock_guard<std::mutex> lock(m_mutex);
-  for (auto it = m_diffs.begin(); it != m_diffs.end();)
-  {
-    if (it->second.m_status == SingleDiffStatus::Applied)
-      it = m_diffs.erase(it);
-    else
-      ++it;
-  }
-
-  if (m_diffs.empty())
-    m_status = Status::NotAvailable;
-}
-
 void Manager::RemoveDiffForCountry(storage::CountryId const & countryId)
 {
   std::lock_guard<std::mutex> lock(m_mutex);
   m_diffs.erase(countryId);
+
+  if (m_diffs.empty())
+    m_status = Status::NotAvailable;
 }
 
 void Manager::AbortDiffScheme()

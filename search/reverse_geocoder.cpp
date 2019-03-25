@@ -1,9 +1,10 @@
-#include "reverse_geocoder.hpp"
+#include "search/reverse_geocoder.hpp"
 
 #include "search/mwm_context.hpp"
 
-#include "indexer/data_source.hpp"
+#include "editor/osm_editor.hpp"
 
+#include "indexer/data_source.hpp"
 #include "indexer/fake_feature_ids.hpp"
 #include "indexer/feature.hpp"
 #include "indexer/feature_algo.hpp"
@@ -240,6 +241,13 @@ bool ReverseGeocoder::GetExactAddress(FeatureType & ft, Address & addr) const
   HouseTable table(m_dataSource);
   return GetNearbyAddress(table, FromFeature(ft, 0.0 /* distMeters */), false /* ignoreEdits */,
                           addr);
+}
+
+bool ReverseGeocoder::GetExactAddress(FeatureID const & fid, Address & addr) const
+{
+  bool res;
+  m_dataSource.ReadFeature([&](FeatureType & ft) { res = GetExactAddress(ft, addr); }, fid);
+  return res;
 }
 
 bool ReverseGeocoder::GetNearbyAddress(HouseTable & table, Building const & bld, bool ignoreEdits,

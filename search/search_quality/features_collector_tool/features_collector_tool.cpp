@@ -106,6 +106,7 @@ void DisplayStats(ostream & os, vector<Sample> const & samples, vector<Stats> co
 int main(int argc, char * argv[])
 {
   ChangeMaxNumberOfOpenFiles(kMaxOpenFiles);
+  CheckLocale();
 
   google::SetUsageMessage("Features collector tool.");
   google::ParseCommandLineFlags(&argc, &argv, true);
@@ -116,7 +117,7 @@ int main(int argc, char * argv[])
   if (!FLAGS_data_path.empty())
   {
     platform.SetResourceDir(FLAGS_data_path);
-    countriesFile = base::JoinFoldersToPath(FLAGS_data_path, COUNTRIES_FILE);
+    countriesFile = base::JoinPath(FLAGS_data_path, COUNTRIES_FILE);
   }
 
   if (!FLAGS_mwm_path.empty())

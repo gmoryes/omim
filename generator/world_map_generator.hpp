@@ -300,7 +300,11 @@ public:
       // because we do not need geometry for invisible features (just search index and placepage
       // data) and want to avoid size checks applied to areas.
       if (originalFeature.GetGeomType() != feature::GEOM_POINT)
-        originalFeature.SetCenter(originalFeature.GetGeometryCenter());
+      {
+        auto const center = originalFeature.GetGeometryCenter();
+        originalFeature.ResetGeometry();
+        originalFeature.SetCenter(center);
+      }
 
       m_worldBucket.PushSure(originalFeature);
       return;
@@ -352,11 +356,11 @@ private:
     if (fb.GetName().empty())
       return false;
 
-    auto const attractionTypes =
+    auto static const attractionTypes =
         search::GetCategoryTypes("attractions", "en", GetDefaultCategories());
     ASSERT(is_sorted(attractionTypes.begin(), attractionTypes.end()), ());
     auto const & featureTypes = fb.GetTypes();
-    if (!std::any_of(featureTypes.begin(), featureTypes.end(), [&attractionTypes](uint32_t t) {
+    if (!std::any_of(featureTypes.begin(), featureTypes.end(), [](uint32_t t) {
           return binary_search(attractionTypes.begin(), attractionTypes.end(), t);
         }))
     {

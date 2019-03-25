@@ -167,6 +167,7 @@ void Storage::DeleteAllLocalMaps(CountriesVec * existedCountries /* = nullptr */
         existedCountries->push_back(localFiles.first);
       localFile->SyncWithDisk();
       DeleteFromDiskWithIndexes(*localFile, MapOptions::MapWithCarRouting);
+      DeleteFromDiskWithIndexes(*localFile, MapOptions::Diff);
     }
   }
 }
@@ -287,6 +288,7 @@ void Storage::RegisterAllLocalMaps(bool enableDiffs)
       LOG(LINFO, ("Removing obsolete", localFile));
       localFile.SyncWithDisk();
       DeleteFromDiskWithIndexes(localFile, MapOptions::MapWithCarRouting);
+      DeleteFromDiskWithIndexes(localFile, MapOptions::Diff);
       ++j;
     }
 
@@ -582,6 +584,7 @@ void Storage::DeleteCustomCountryVersion(LocalCountryFile const & localFile)
 
   CountryFile const countryFile = localFile.GetCountryFile();
   DeleteFromDiskWithIndexes(localFile, MapOptions::MapWithCarRouting);
+  DeleteFromDiskWithIndexes(localFile, MapOptions::Diff);
 
   {
     auto it = m_localFilesForFakeCountries.find(countryFile);
@@ -627,7 +630,6 @@ void Storage::DownloadNextCountryFromQueue()
 
   if (m_queue.empty())
   {
-    m_diffManager.RemoveAppliedDiffs();
     m_downloadingPolicy->ScheduleRetry(m_failedCountries, [this](CountriesSet const & needReload) {
       for (auto const & country : needReload)
       {
@@ -1296,7 +1298,10 @@ bool Storage::DeleteCountryFilesFromDownloader(CountryId const & countryId)
     return false;
 
   if (m_latestDiffRequest && m_latestDiffRequest == countryId)
+  {
     m_diffsCancellable.Cancel();
+    m_diffsBeingApplied.erase(countryId);
+  }
 
   MapOptions const opt = queuedCountry->GetInitOptions();
   if (IsCountryFirstInQueue(countryId))
@@ -1480,6 +1485,8 @@ void Storage::DownloadNode(CountryId const & countryId, bool isUpdate /* = false
 {
   CHECK_THREAD_CHECKER(m_threadChecker, ());
 
+  LOG(LINFO, ("Downloading", countryId));
+
   CountryTreeNode const * const node = m_countries.FindFirst(countryId);
 
   if (!node)
@@ -1566,6 +1573,7 @@ void Storage::ApplyDiff(CountryId const & countryId, function<void(bool isSucces
 {
   m_diffsCancellable.Reset();
   m_latestDiffRequest = countryId;
+  m_diffsBeingApplied.insert(countryId);
   NotifyStatusChangedForHierarchy(countryId);
 
   diffs::Manager::ApplyDiffParams params;
@@ -1579,6 +1587,7 @@ void Storage::ApplyDiff(CountryId const & countryId, function<void(bool isSucces
     ASSERT(false, ("Invalid attempt to get version of diff with country id:", countryId));
     fn(false);
     m_latestDiffRequest = {};
+    m_diffsBeingApplied.erase(countryId);
     return;
   }
 
@@ -1598,13 +1607,19 @@ void Storage::ApplyDiff(CountryId const & countryId, function<void(bool isSucces
         }
 
         GetPlatform().RunTask(Platform::Thread::Gui, [this, fn, diffFile, countryId, result] {
+          auto realResult = result;
+          if (m_diffsBeingApplied.count(countryId) == 0 && realResult == DiffApplicationResult::Ok)
+            realResult = DiffApplicationResult::Cancelled;
+
           m_latestDiffRequest = {};
-          switch (result)
+          m_diffsBeingApplied.erase(countryId);
+          switch (realResult)
           {
           case DiffApplicationResult::Ok:
           {
             RegisterCountryFiles(diffFile);
             Platform::DisableBackupForFile(diffFile->GetPath(MapOptions::Map));
+            m_diffManager.RemoveDiffForCountry(countryId);
             fn(true);
             break;
           }
@@ -1616,6 +1631,7 @@ void Storage::ApplyDiff(CountryId const & countryId, function<void(bool isSucces
           }
           case DiffApplicationResult::Failed:
           {
+            m_diffManager.RemoveDiffForCountry(countryId);
             fn(false);
             break;
           }
@@ -1919,6 +1935,8 @@ void Storage::UpdateNode(CountryId const & countryId)
 void Storage::CancelDownloadNode(CountryId const & countryId)
 {
   CHECK_THREAD_CHECKER(m_threadChecker, ());
+
+  LOG(LINFO, ("Cancelling the downloading of", countryId));
 
   CountriesSet setQueue;
   GetQueuedCountries(m_queue, setQueue);

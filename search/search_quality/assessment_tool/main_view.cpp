@@ -61,12 +61,12 @@ MainView::MainView(Framework & framework) : m_framework(framework)
           return;
         }
 
-        FeatureType ft;
-        if (!m_framework.GetFeatureByID(selectedFeature, ft))
+        auto mapObject = m_framework.GetMapObjectByID(selectedFeature);
+        if (!mapObject.GetID().IsValid())
           return;
 
-        auto const address = m_framework.GetAddressAtPoint(feature::GetCenter(ft));
-        FeatureInfoDialog dialog(this /* parent */, ft, address, m_sampleLocale);
+        auto const address = m_framework.GetAddressAtPoint(mapObject.GetMercator());
+        FeatureInfoDialog dialog(this /* parent */, mapObject, address, m_sampleLocale);
         dialog.exec();
       },
       [this](bool /* switchFullScreenMode */) { m_selectedFeature = FeatureID(); });
@@ -99,14 +99,14 @@ void MainView::OnSearchCompleted()
   m_sampleView->OnSearchCompleted();
 }
 
-void MainView::ShowSample(size_t sampleIndex, search::Sample const & sample, bool positionAvailable,
-                          m2::PointD const & position, bool hasEdits)
+void MainView::ShowSample(size_t sampleIndex, search::Sample const & sample,
+                          boost::optional<m2::PointD> const & position, bool hasEdits)
 {
   m_sampleLocale = sample.m_locale;
 
   MoveViewportToRect(sample.m_viewport);
 
-  m_sampleView->SetContents(sample, positionAvailable, position);
+  m_sampleView->SetContents(sample, position);
   m_sampleView->show();
 
   OnResultChanged(sampleIndex, ResultType::Found, Edits::Update::MakeAll());

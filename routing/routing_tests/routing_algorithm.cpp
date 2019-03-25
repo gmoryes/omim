@@ -1,6 +1,7 @@
 #include "routing/routing_tests/routing_algorithm.hpp"
 
 #include "routing/base/astar_algorithm.hpp"
+#include "routing/base/astar_graph.hpp"
 #include "routing/maxspeeds.hpp"
 #include "routing/routing_helpers.hpp"
 
@@ -45,19 +46,21 @@ private:
   double const weight;
 };
 
+using Algorithm = AStarAlgorithm<Junction, WeightedEdge, double>;
+
 /// A wrapper around IRoadGraph, which makes it possible to use IRoadGraph with astar algorithms.
-class RoadGraph
+class RoadGraph : public AStarGraph<Junction, WeightedEdge, double>
 {
 public:
-  using Vertex = Junction;
-  using Edge = WeightedEdge;
-  using Weight = double;
+  using Vertex = AStarGraph::Vertex;
+  using Edge = AStarGraph::Edge;
+  using Weight = AStarGraph::Weight;
 
   explicit RoadGraph(IRoadGraph const & roadGraph)
     : m_roadGraph(roadGraph), m_maxSpeedMPS(KMPH2MPS(roadGraph.GetMaxSpeedKMpH()))
   {}
 
-  void GetOutgoingEdgesList(Junction const & v, vector<WeightedEdge> & adj) const
+  void GetOutgoingEdgesList(Vertex const & v, vector<Edge> & adj) override
   {
     IRoadGraph::TEdgeVector edges;
     m_roadGraph.GetOutgoingEdges(v, edges);
@@ -75,7 +78,7 @@ public:
     }
   }
 
-  void GetIngoingEdgesList(Junction const & v, vector<WeightedEdge> & adj) const
+  void GetIngoingEdgesList(Vertex const & v, vector<Edge> & adj) override
   {
     IRoadGraph::TEdgeVector edges;
     m_roadGraph.GetIngoingEdges(v, edges);
@@ -93,7 +96,7 @@ public:
     }
   }
 
-  double HeuristicCostEstimate(Junction const & v, Junction const & w) const
+  double HeuristicCostEstimate(Vertex const & v, Vertex const & w) override
   {
     return TimeBetweenSec(v, w, m_maxSpeedMPS);
   }
@@ -105,46 +108,46 @@ private:
   double const m_maxSpeedMPS;
 };
 
-typedef AStarAlgorithm<RoadGraph> TAlgorithmImpl;
-
-IRoutingAlgorithm::Result Convert(TAlgorithmImpl::Result value)
+TestAStarBidirectionalAlgo::Result Convert(Algorithm::Result value)
 {
   switch (value)
   {
-  case TAlgorithmImpl::Result::OK: return IRoutingAlgorithm::Result::OK;
-  case TAlgorithmImpl::Result::NoPath: return IRoutingAlgorithm::Result::NoPath;
-  case TAlgorithmImpl::Result::Cancelled: return IRoutingAlgorithm::Result::Cancelled;
+  case Algorithm::Result::OK: return TestAStarBidirectionalAlgo::Result::OK;
+  case Algorithm::Result::NoPath: return TestAStarBidirectionalAlgo::Result::NoPath;
+  case Algorithm::Result::Cancelled: return TestAStarBidirectionalAlgo::Result::Cancelled;
   }
-  ASSERT(false, ("Unexpected TAlgorithmImpl::Result value:", value));
-  return IRoutingAlgorithm::Result::NoPath;
+
+  UNREACHABLE();
+  return TestAStarBidirectionalAlgo::Result::NoPath;
 }
 }  // namespace
 
-string DebugPrint(IRoutingAlgorithm::Result const & value)
+string DebugPrint(TestAStarBidirectionalAlgo::Result const & value)
 {
   switch (value)
   {
-  case IRoutingAlgorithm::Result::OK:
+  case TestAStarBidirectionalAlgo::Result::OK:
     return "OK";
-  case IRoutingAlgorithm::Result::NoPath:
+  case TestAStarBidirectionalAlgo::Result::NoPath:
     return "NoPath";
-  case IRoutingAlgorithm::Result::Cancelled:
+  case TestAStarBidirectionalAlgo::Result::Cancelled:
     return "Cancelled";
   }
-  ASSERT(false, ("Unexpected TAlgorithmImpl::Result value:", value));
+
+  UNREACHABLE();
   return string();
 }
 
 // *************************** AStar-bidirectional routing algorithm implementation ***********************
-IRoutingAlgorithm::Result AStarBidirectionalRoutingAlgorithm::CalculateRoute(
+TestAStarBidirectionalAlgo::Result TestAStarBidirectionalAlgo::CalculateRoute(
     IRoadGraph const & graph, Junction const & startPos, Junction const & finalPos,
     RoutingResult<IRoadGraph::Vertex, IRoadGraph::Weight> & path)
 {
   RoadGraph roadGraph(graph);
   base::Cancellable const cancellable;
-  TAlgorithmImpl::Params params(roadGraph, startPos, finalPos, {} /* prevRoute */,
-                                cancellable, {} /* onVisitJunctionFn */, {} /* checkLength */);
-  TAlgorithmImpl::Result const res = TAlgorithmImpl().FindPathBidirectional(params, path);
+  Algorithm::Params params(roadGraph, startPos, finalPos, {} /* prevRoute */,
+                                           cancellable, {} /* onVisitJunctionFn */, {} /* checkLength */);
+  Algorithm::Result const res = Algorithm().FindPathBidirectional(params, path);
   return Convert(res);
 }
 }  // namespace routing

@@ -3,6 +3,8 @@
 #include "search/house_to_street_table.hpp"
 #include "search/reverse_geocoder.hpp"
 
+#include "editor/osm_editor.hpp"
+
 #include "indexer/scales.hpp"
 
 #include "base/assert.hpp"
@@ -57,11 +59,11 @@ uint32_t FeaturesLayerMatcher::GetMatchingStreet(uint32_t houseId)
   if (!entry.second)
     return entry.first;
 
-  FeatureType feature;
-  if (!GetByIndex(houseId, feature))
+  auto feature = GetByIndex(houseId);
+  if (!feature)
     return kInvalidId;
 
-  return GetMatchingStreet(feature);
+  return GetMatchingStreet(*feature);
 }
 
 FeaturesLayerMatcher::Streets const & FeaturesLayerMatcher::GetNearbyStreets(FeatureType & feature)

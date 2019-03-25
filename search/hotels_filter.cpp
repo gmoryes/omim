@@ -116,11 +116,10 @@ HotelsFilter::Descriptions const & HotelsFilter::GetDescriptions(MwmContext cons
   auto & descriptions = m_descriptions[mwmId];
   hotels.ForEach([&descriptions, &context](uint64_t bit) {
     auto const id = base::asserted_cast<uint32_t>(bit);
-    FeatureType ft;
 
     Description description;
-    if (context.GetFeature(id, ft))
-      description.FromFeature(ft);
+    if (auto ft = context.GetFeature(id))
+      description.FromFeature(*ft);
     descriptions.emplace_back(id, description);
   });
   return descriptions;
