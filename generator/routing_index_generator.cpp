@@ -175,7 +175,7 @@ public:
     return m_graph.GetPoint(s, forward);
   }
 
-  void SetAStarParents(std::map<JointSegment, JointSegment> & parents)
+  void SetAStarParents(bool /* forward */, std::map<JointSegment, JointSegment> & parents)
   {
     m_AStarParents = &parents;
   }
@@ -202,6 +202,13 @@ public:
     return pointId == 0 || pointId + 1 == pointsNumber;
   }
 
+  template <typename Vertex>
+  RouteWeight HeuristicCostEstimate(Vertex const & /* from */, m2::PointD const & /* to */)
+  {
+    CHECK(false, ("This method should not use, it is just for compatibility with IndexGraphStarterJoints."));
+    return GetAStarWeightZero<RouteWeight>();
+  }
+
 private:
   std::map<JointSegment, JointSegment> * m_AStarParents = nullptr;
   IndexGraph & m_graph;
@@ -219,19 +226,24 @@ public:
   explicit DijkstraWrapperJoints(IndexGraphWrapper & graph, Segment const & start)
     : m_graph(graph, start) {}
 
-  void GetOutgoingEdgesList(Vertex const & vertex, vector<Edge> & edges)
+  void GetOutgoingEdgesList(Vertex const & vertex, vector<Edge> & edges) override
   {
     m_graph.GetOutgoingEdgesList(vertex, edges);
   }
 
-  void GetIngoingEdgesList(Vertex const & vertex, vector<Edge> & edges)
+  void GetIngoingEdgesList(Vertex const & vertex, vector<Edge> & edges) override
   {
     m_graph.GetIngoingEdgesList(vertex, edges);
   }
 
-  Weight HeuristicCostEstimate(Vertex const & /* from */, Vertex const & /* to */)
+  Weight HeuristicCostEstimate(Vertex const & /* from */, Vertex const & /* to */) override
   {
     return GetAStarWeightZero<Weight>();
+  }
+
+  void SetAStarParents(bool forward, std::map<JointSegment, JointSegment> & parents) override
+  {
+    m_graph.SetAStarParents(forward, parents);
   }
 
   m2::PointD const & GetPoint(Vertex const & vertex, bool forward)
@@ -478,7 +490,7 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
     IndexGraphWrapper indexGraphWrapper(graph, enter);
     DijkstraWrapperJoints wrapper(indexGraphWrapper, enter);
     AStarAlgorithm<JointSegment, JointEdge, RouteWeight>::Context context;
-    indexGraphWrapper.SetAStarParents(context.GetParents());
+    indexGraphWrapper.SetAStarParents(true /* forward */, context.GetParents());
     std::unordered_map<uint32_t, std::vector<JointSegment>> visitedVertexes;
 
     if (false)

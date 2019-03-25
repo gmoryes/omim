@@ -572,7 +572,7 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
   auto checkLength = [&starter](RouteWeight const & weight) { return starter.CheckLength(weight); };
 
   base::HighResTimer timer;
-  WorldGraph::Mode mode = starter.GetGraph().GetMode();
+  WorldGraphMode mode = starter.GetGraph().GetMode();
   if (mode == WorldGraphMode::Joints)
   {
     IndexGraphStarterJoints<IndexGraphStarter> jointStarter(starter, starter.GetStartSegment(), starter.GetFinishSegment());
@@ -595,9 +595,9 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
       delegate.OnPointCheck(pointFrom);
     };
 
-    using Vertex = IndexGraphStarterJoints::Vertex;
-    using Edge = IndexGraphStarterJoints::Edge;
-    using Weight = IndexGraphStarterJoints::Weight;
+    using Vertex = JointSegment;
+    using Edge = JointEdge;
+    using Weight = RouteWeight;
 
     AStarAlgorithm<Vertex, Edge, Weight>::Params params(
       jointStarter, jointStarter.GetStartJoint(), jointStarter.GetFinishJoint(), nullptr /* prevRoute */,
@@ -612,9 +612,9 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
   }
   else
   {
-    using Vertex = IndexGraphStarter::Vertex;
-    using Edge = IndexGraphStarter::Edge;
-    using Weight = IndexGraphStarter::Weight;
+    using Vertex = Segment;
+    using Edge = SegmentEdge;
+    using Weight = RouteWeight;
 
     RoutingResult<Segment, RouteWeight> routingResult;
     AStarAlgorithm<Vertex, Edge, Weight>::Params params(
@@ -916,9 +916,9 @@ RouterResultCode IndexRouter::ProcessLeapsJoints(vector<Segment> const & input,
 
     fillMwmIds(start, end, mwmIds);
 
-    using Vertex = IndexGraphStarterJoints::Vertex;
-    using Edge = IndexGraphStarterJoints::Edge;
-    using Weight = IndexGraphStarterJoints::Weight;
+    using Vertex = JointSegment;
+    using Edge = JointEdge;
+    using Weight = RouteWeight;
 
     AStarAlgorithm<Vertex, Edge, Weight>::Params params(
       jointStarter, jointStarter.GetStartJoint(), jointStarter.GetFinishJoint(),

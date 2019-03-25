@@ -122,7 +122,7 @@ public:
   RouteWeight CalcSegmentWeight(Segment const & segment) const;
   double CalcSegmentETA(Segment const & segment) const;
 
-  void SetAStarParents(bool forward, std::map<Segment, Segment> & parents)
+  void SetAStarParents(bool forward, std::map<Segment, Segment> & parents) override
   {
     m_graph.SetAStarParents(forward, parents);
   }
@@ -131,6 +131,7 @@ public:
   {
     m_graph.SetAStarParents(forward, parents);
   }
+
   ~IndexGraphStarter() override = default;
 
 private:

@@ -2,6 +2,7 @@
 
 #include "routing/base/astar_graph.hpp"
 
+#include "routing/fake_feature_ids.hpp"
 #include "routing/index_graph_starter.hpp"
 #include "routing/joint_segment.hpp"
 #include "routing/segment.hpp"
@@ -66,13 +67,12 @@ public:
   // have got fake m_numMwmId during mwm generation.
   bool IsRealSegment(Segment const & segment) const
   {
-    return segment.GetFeatureId() != std::numeric_limits<uint32_t>::max();
+    return segment.GetFeatureId() != FakeFeatureIds::kIndexGraphStarterId;
   }
 
   Segment const & GetSegmentOfFakeJoint(JointSegment const & joint, bool start);
 
-  template <typename SegmentType>
-  void SetAStarParents(bool forward, std::map<SegmentType, SegmentType> & parents)
+  void SetAStarParents(bool forward, std::map<JointSegment, JointSegment> & parents) override
   {
     m_graph.SetAStarParents(forward, parents);
   }
