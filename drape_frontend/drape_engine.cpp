@@ -853,6 +853,7 @@ drape_ptr<UserMarkRenderParams> DrapeEngine::GenerateMarkRenderInfo(UserPointMar
   renderInfo->m_minZoom = mark->GetMinZoom();
   renderInfo->m_minTitleZoom = mark->GetMinTitleZoom();
   renderInfo->m_isVisible = mark->IsVisible();
+  renderInfo->m_alwaysVisibleMinZoom = mark->GetAlwaysVisibleMinZoom();
   renderInfo->m_pivot = mark->GetPivot();
   renderInfo->m_pixelOffset = mark->GetPixelOffset();
   renderInfo->m_titleDecl = mark->GetTitleDecl();
@@ -862,7 +863,7 @@ drape_ptr<UserMarkRenderParams> DrapeEngine::GenerateMarkRenderInfo(UserPointMar
   renderInfo->m_symbolSizes = mark->GetSymbolSizes();
   renderInfo->m_symbolOffsets = mark->GetSymbolOffsets();
   renderInfo->m_color = mark->GetColorConstant();
-  renderInfo->m_hasSymbolShapes = mark->HasSymbolShapes();
+  renderInfo->m_symbolIsPOI = mark->SymbolIsPOI();
   renderInfo->m_hasTitlePriority = mark->HasTitlePriority();
   renderInfo->m_priority = mark->GetPriority();
   renderInfo->m_displacement = mark->GetDisplacement();

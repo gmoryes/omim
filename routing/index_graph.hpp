@@ -112,7 +112,6 @@ private:
                     Segment const & current, bool isOutgoing,
                     std::map<Parent, Parent> & parents) const;
 
-
   RouteWeight CalcSegmentWeight(Segment const & segment);
 
 private:

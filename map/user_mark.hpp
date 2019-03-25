@@ -9,9 +9,10 @@
 
 #include "base/macros.hpp"
 
-#include "std/string.hpp"
-#include "std/unique_ptr.hpp"
-#include "std/utility.hpp"
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
 
 class UserMark : public df::UserPointMark
 {
@@ -29,6 +30,7 @@ public:
     TransitTransfer,
     TransitKeyStop,
     SpeedCamera,
+    RoadWarning,
   };
 
   enum Type: uint32_t
@@ -39,6 +41,7 @@ public:
     STATIC,
     ROUTING,
     SPEED_CAM,
+    ROAD_WARNING,
     TRANSIT,
     LOCAL_ADS,
     DEBUG_MARK,
@@ -58,6 +61,7 @@ public:
   bool IsDirty() const override { return m_isDirty; }
   void ResetChanges() const override { m_isDirty = false; }
   bool IsVisible() const override { return true; }
+  int GetAlwaysVisibleMinZoom() const override { return std::numeric_limits<int>::max(); }
   m2::PointD const & GetPivot() const override;
   m2::PointD GetPixelOffset() const override { return {}; }
   dp::Anchor GetAnchor() const override { return dp::Center; }
@@ -72,7 +76,7 @@ public:
   uint16_t GetPriority() const override { return static_cast<uint16_t >(Priority::Default); }
   df::SpecialDisplacement GetDisplacement() const override { return df::SpecialDisplacement::UserMark; }
   uint32_t GetIndex() const override { return 0; }
-  bool HasSymbolShapes() const override { return false; }
+  bool SymbolIsPOI() const override { return false; }
   bool HasTitlePriority() const override { return false; }
   int GetMinZoom() const override { return 1; }
   int GetMinTitleZoom() const override { return GetMinZoom(); }
@@ -136,7 +140,7 @@ public:
   ColoredDebugMarkPoint(m2::PointD const & ptOrg);
 
   void SetColor(dp::Color const & color);
-  bool HasSymbolShapes() const override { return true; }
+  bool SymbolIsPOI() const override { return true; }
   drape_ptr<SymbolNameZoomInfo> GetSymbolNames() const override { return nullptr; }
   drape_ptr<ColoredSymbolZoomInfo> GetColoredSymbols() const override;
 

@@ -71,7 +71,7 @@ ColoredDebugMarkPoint::ColoredDebugMarkPoint(m2::PointD const & ptOrg)
   params.m_radiusInPixels = 7.0f * vs;
   params.m_color = dp::Color::Green();
   m_coloredSymbols.m_needOverlay = false;
-  m_coloredSymbols.m_zoomInfo.insert(make_pair(1, params));
+  m_coloredSymbols.m_zoomInfo.insert(std::make_pair(1, params));
 }
 
 void ColoredDebugMarkPoint::SetColor(dp::Color const & color)
@@ -95,6 +95,7 @@ string DebugPrint(UserMark::Type type)
   case UserMark::Type::BOOKMARK: return "BOOKMARK";
   case UserMark::Type::DEBUG_MARK: return "DEBUG_MARK";
   case UserMark::Type::ROUTING: return "ROUTING";
+  case UserMark::Type::ROAD_WARNING: return "ROAD_WARNING";
   case UserMark::Type::SPEED_CAM: return "SPEED_CAM";
   case UserMark::Type::LOCAL_ADS: return "LOCAL_ADS";
   case UserMark::Type::TRANSIT: return "TRANSIT";

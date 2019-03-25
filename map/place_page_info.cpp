@@ -13,10 +13,13 @@
 #include "indexer/feature_source.hpp"
 #include "indexer/feature_utils.hpp"
 #include "indexer/ftypes_sponsored.hpp"
+#include "indexer/road_shields_parser.hpp"
 
 #include "platform/measurement_utils.hpp"
 #include "platform/preferred_languages.hpp"
 #include "platform/settings.hpp"
+
+#include "base/assert.hpp"
 
 #include <sstream>
 
@@ -330,6 +333,50 @@ void Info::SetPartnerIndex(int index)
 {
   m_partnerIndex = index;
   m_partnerName = GetPartnerByIndex(m_partnerIndex).m_name;
+}
+
+void Info::SetRoadType(FeatureType & ft, RoadWarningMarkType type, std::string const & localizedType,
+                       std::string const & distance)
+{
+  CHECK_NOT_EQUAL(type, RoadWarningMarkType::Count, ());
+  m_roadType = type;
+
+  std::vector<std::string> subtitle;
+  if (type == RoadWarningMarkType::Toll)
+  {
+    std::vector<std::string> title;
+    auto shields = ftypes::GetRoadShields(ft);
+    for (auto const & shield : shields)
+    {
+      auto name = shield.m_name;
+      if (!shield.m_additionalText.empty())
+        name += " " + shield.m_additionalText;
+      title.push_back(shield.m_name);
+    }
+    m_uiTitle = strings::JoinStrings(title, kSubtitleSeparator);
+
+    if (m_uiTitle.empty())
+      m_uiTitle = m_primaryFeatureName;
+
+    if (m_uiTitle.empty())
+      m_uiTitle = localizedType;
+    else
+      subtitle.push_back(localizedType);
+  }
+  else if (type == RoadWarningMarkType::Dirty)
+  {
+    m_uiTitle = localizedType;
+    subtitle.push_back(distance);
+  }
+  else if (type == RoadWarningMarkType::Ferry)
+  {
+    m_uiTitle = m_primaryFeatureName;
+    subtitle.push_back(localizedType);
+    auto const operatorName = GetOperator();
+    if (!operatorName.empty())
+      subtitle.push_back(operatorName);
+  }
+  m_uiSubtitle = strings::JoinStrings(subtitle, kSubtitleSeparator);
 }
 
 namespace rating

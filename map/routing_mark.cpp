@@ -3,6 +3,8 @@
 #include "drape_frontend/color_constants.hpp"
 #include "drape_frontend/visual_params.hpp"
 
+#include "platform/localization.hpp"
+
 #include <algorithm>
 
 namespace
@@ -60,6 +62,12 @@ dp::Anchor RouteMarkPoint::GetAnchor() const
 df::DepthLayer RouteMarkPoint::GetDepthLayer() const
 {
   return df::DepthLayer::RoutingMarkLayer;
+}
+
+void RouteMarkPoint::SetIsVisible(bool isVisible)
+{
+  SetDirty();
+  m_markData.m_isVisible = isVisible;
 }
 
 void RouteMarkPoint::SetRoutePointType(RouteMarkType type)
@@ -151,6 +159,14 @@ drape_ptr<df::UserPointMark::TitlesInfo> RouteMarkPoint::GetTitleDecl() const
   auto titles = make_unique_dp<TitlesInfo>();
   titles->push_back(m_titleDecl);
   return titles;
+}
+
+
+drape_ptr<df::UserPointMark::ColoredSymbolZoomInfo> RouteMarkPoint::GetColoredSymbols() const
+{
+  auto coloredSymbol = make_unique_dp<ColoredSymbolZoomInfo>();
+  coloredSymbol->m_isSymbolStub = true;
+  return coloredSymbol;
 }
 
 void RouteMarkPoint::SetFollowingMode(bool enabled)
@@ -599,4 +615,85 @@ int SpeedCameraMark::GetMinTitleZoom() const
 dp::Anchor SpeedCameraMark::GetAnchor() const
 {
   return dp::Center;
+}
+
+RoadWarningMark::RoadWarningMark(m2::PointD const & ptOrg)
+  : UserMark(ptOrg, Type::ROAD_WARNING)
+{}
+
+void RoadWarningMark::SetIndex(uint32_t index)
+{
+  SetDirty();
+  m_index = index;
+}
+
+void RoadWarningMark::SetIsVisible(bool isVisible)
+{
+  SetDirty();
+  m_isVisible = isVisible;
+}
+
+void RoadWarningMark::SetRoadWarningType(RoadWarningMarkType type)
+{
+  SetDirty();
+  m_type = type;
+}
+
+void RoadWarningMark::SetFeatureId(FeatureID const & featureId)
+{
+  SetDirty();
+  m_featureId = featureId;
+}
+
+void RoadWarningMark::SetDistance(std::string const & distance)
+{
+  SetDirty();
+  m_distance = distance;
+}
+
+drape_ptr<df::UserPointMark::SymbolNameZoomInfo> RoadWarningMark::GetSymbolNames() const
+{
+  std::string symbolName;
+  switch (m_type)
+  {
+  case RoadWarningMarkType::Toll: symbolName = "paid_road"; break;
+  case RoadWarningMarkType::Ferry: symbolName = "ferry"; break;
+  case RoadWarningMarkType::Dirty: symbolName = "unpaved_road"; break;
+  case RoadWarningMarkType::Count: CHECK(false, ()); break;
+  }
+  auto symbol = make_unique_dp<SymbolNameZoomInfo>();
+  symbol->insert(std::make_pair(1 /* zoomLevel */, symbolName));
+  return symbol;
+}
+
+drape_ptr<df::UserPointMark::ColoredSymbolZoomInfo> RoadWarningMark::GetColoredSymbols() const
+{
+  auto coloredSymbol = make_unique_dp<ColoredSymbolZoomInfo>();
+  coloredSymbol->m_isSymbolStub = true;
+  return coloredSymbol;
+}
+
+// static
+std::string RoadWarningMark::GetLocalizedRoadWarningType(RoadWarningMarkType type)
+{
+  switch (type)
+  {
+  case RoadWarningMarkType::Toll: return platform::GetLocalizedString("toll_road");
+  case RoadWarningMarkType::Ferry: return platform::GetLocalizedString("ferry_crossing");
+  case RoadWarningMarkType::Dirty: return platform::GetLocalizedString("unpaved_road");
+  case RoadWarningMarkType::Count: CHECK(false, ("Invalid road warning mark type", type)); break;
+  }
+  return {};
+}
+
+std::string DebugPrint(RoadWarningMarkType type)
+{
+  switch (type)
+  {
+  case RoadWarningMarkType::Toll: return "Toll";
+  case RoadWarningMarkType::Ferry: return "Ferry";
+  case RoadWarningMarkType::Dirty: return "Dirty";
+  case RoadWarningMarkType::Count: return "Count";
+  }
+  UNREACHABLE();
 }
