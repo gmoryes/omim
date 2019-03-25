@@ -18,12 +18,8 @@
 
 namespace routing
 {
-<<<<<<< HEAD
 template <typename Graph>
-class IndexGraphStarterJoints
-=======
 class IndexGraphStarterJoints : public AStarGraph<JointSegment, JointEdge, RouteWeight>
->>>>>>> origin/astar_graph_interface
 {
 public:
   using Vertex = AStarGraph::Vertex;
@@ -59,22 +55,13 @@ public:
   }
   // @}
 
-<<<<<<< HEAD
   WorldGraphMode GetMode() const { return m_graph.GetMode(); }
-  // End of A* interface.
-  
-=======
-  WorldGraph::Mode GetMode() const { return m_starter.GetMode(); }
 
-  IndexGraphStarter & GetStarter() { return m_starter; }
-
->>>>>>> origin/astar_graph_interface
   /// \brief Reconstructs JointSegment by segment after building the route.
   std::vector<Segment> ReconstructJoint(JointSegment const & joint);
 
   void Reset();
 
-<<<<<<< HEAD
   // Can not check segment for fake or not with segment.IsRealSegment(), because all segments
   // have got fake m_numMwmId during mwm generation.
   bool IsRealSegment(Segment const & segment) const
@@ -89,9 +76,8 @@ public:
   {
     m_graph.SetAStarParents(forward, parents);
   }
-=======
+
   ~IndexGraphStarterJoints() override = default;
->>>>>>> origin/astar_graph_interface
 
 private:
   static auto constexpr kInvisibleStartId = std::numeric_limits<uint32_t>::max() - 2;
