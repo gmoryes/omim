@@ -40,9 +40,6 @@ public:
   virtual double CalcSegmentWeight(Segment const & segment, RoadGeometry const & road) const = 0;
   virtual double CalcSegmentETA(Segment const & segment, RoadGeometry const & road) const = 0;
   virtual double GetUTurnPenalty() const = 0;
-  // The leap is the shortcut edge from mwm border enter to exit.
-  // Router can't use leaps on some mwms: e.g. mwm with loaded traffic data.
-  // Check wherether leap is allowed on specified mwm or not.
 
   static std::shared_ptr<EdgeEstimator> Create(VehicleType vehicleType, double maxWeighSpeedKMpH,
                                                double offroadSpeedKMpH,
