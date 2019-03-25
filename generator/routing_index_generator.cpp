@@ -208,7 +208,7 @@ private:
   Segment m_start;
 };
 
-class DijkstraWrapper : public AStarGraph<JointSegment, JointEdge, RouteWeight>
+class DijkstraWrapperJoints : public AStarGraph<JointSegment, JointEdge, RouteWeight>
 {
 public:
   // AStarAlgorithm types aliases:
