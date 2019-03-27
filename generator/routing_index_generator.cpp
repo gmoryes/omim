@@ -170,7 +170,8 @@ public:
   bool ConvertToReal(Segment const & /* segment */) const { return false; }
   bool IsWavesConnectible(map<JointSegment, JointSegment> & /* forwardParents */,
                           JointSegment const & /* commonVertex */,
-                          map<JointSegment, JointSegment> & /* backwardParents */)
+                          map<JointSegment, JointSegment> & /* backwardParents */,
+                          function<uint32_t(JointSegment const &)> && /* fakeFeatureConverter */)
   {
     return true;
   }
