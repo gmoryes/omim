@@ -168,6 +168,12 @@ public:
   Segment GetStartSegment() const { return m_start; }
   Segment GetFinishSegment() const { return {}; }
   bool ConvertToReal(Segment const & /* segment */) const { return false; }
+  bool IsWavesConnectible(map<JointSegment, JointSegment> & /* forwardParents */,
+                          JointSegment const & /* commonVertex */,
+                          map<JointSegment, JointSegment> & /* backwardParents */)
+  {
+    return true;
+  }
   // @}
 
   m2::PointD const & GetPoint(Segment const & s, bool forward)

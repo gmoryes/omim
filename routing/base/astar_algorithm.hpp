@@ -160,18 +160,6 @@ public:
 
     std::map<Vertex, Vertex> & GetParents() { return m_parents; }
 
-    bool HasParent(Vertex const & child) const
-    {
-      return m_parents.count(child) != 0;
-    }
-
-    Vertex const & GetParent(Vertex const & child) const
-    {
-      auto const it = m_parents.find(child);
-      CHECK(it != m_parents.cend(), ("Can not find parent of child:", child));
-      return it->second;
-    }
-
     void ReconstructPath(Vertex const & v, std::vector<Vertex> & path) const;
 
   private:
@@ -632,16 +620,20 @@ AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
       if (itCur != cur->bestDistance.end() && newReducedDist >= itCur->second - kEpsilon)
         continue;
 
+      stateW.distance = newReducedDist;
+      cur->bestDistance[stateW.vertex] = newReducedDist;
+      cur->parent[stateW.vertex] = stateV.vertex;
+
       auto const itNxt = nxt->bestDistance.find(stateW.vertex);
-      if (itNxt != nxt->bestDistance.end() &&
-          graph.IsWavesConnectible(forwardParents, stateW.vertex, backwardParents))
+      if (itNxt != nxt->bestDistance.end())
       {
         auto const distW = itNxt->second;
         // Reduced length that the path we've just found has in the original graph:
         // find the reduced length of the path's parts in the reduced forward and backward graphs.
         auto const curPathReducedLength = newReducedDist + distW;
         // No epsilon here: it is ok to overshoot slightly.
-        if (!foundAnyPath || bestPathReducedLength > curPathReducedLength)
+        if ((!foundAnyPath || bestPathReducedLength > curPathReducedLength) &&
+            graph.IsWavesConnectible(forwardParents, stateW.vertex, backwardParents))
         {
           bestPathReducedLength = curPathReducedLength;
 
@@ -655,10 +647,8 @@ AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
         }
       }
 
-      stateW.distance = newReducedDist;
-      cur->bestDistance[stateW.vertex] = newReducedDist;
-      cur->parent[stateW.vertex] = stateV.vertex;
-      cur->queue.push(stateW);
+      if (stateW.vertex != (cur->forward ? cur->finalVertex : cur->startVertex))
+        cur->queue.push(stateW);
     }
   }
 
