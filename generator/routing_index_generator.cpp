@@ -500,7 +500,7 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
     DijkstraWrapperJoints wrapper(indexGraphWrapper, enter);
     AStarAlgorithm<JointSegment, JointEdge, RouteWeight>::Context context;
     unordered_map<uint32_t, vector<JointSegment>> visitedVertexes;
-    if (false)
+    //if (false)
     {
     astar.PropagateWave(wrapper, wrapper.GetGraph().GetStartJoint(),
                         [&](JointSegment const & vertex)
