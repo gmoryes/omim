@@ -536,7 +536,7 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
       break;
     case VehicleType::Car:
       starter.GetGraph().SetMode(AreMwmsNear(starter.GetMwms()) ? WorldGraphMode::Joints
-                                                                : WorldGraphMode::LeapsOnly);
+                                                                : WorldGraphMode::Joints);
       break;
     case VehicleType::Count:
       CHECK(false, ("Unknown vehicle type:", m_vehicleType));
