@@ -499,6 +499,7 @@ void FillWeights(string const & path, string const & mwmFile, string const & cou
     IndexGraphWrapper indexGraphWrapper(graph, enter);
     DijkstraWrapperJoints wrapper(indexGraphWrapper, enter);
     AStarAlgorithm<JointSegment, JointEdge, RouteWeight>::Context context;
+    indexGraphWrapper.SetAStarParents(true /* forward */, context.GetParents());
     unordered_map<uint32_t, vector<JointSegment>> visitedVertexes;
     //if (false)
     {
