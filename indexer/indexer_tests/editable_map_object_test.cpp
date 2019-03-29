@@ -3,6 +3,7 @@
 #include "indexer/classificator.hpp"
 #include "indexer/classificator_loader.hpp"
 #include "indexer/editable_map_object.hpp"
+#include "indexer/feature.hpp"
 
 namespace
 {
@@ -262,8 +263,8 @@ UNIT_TEST(EditableMapObject_GetNamesDataSource)
 
   vector<int8_t> nativeMwmLanguages = {GetLangCode("de"), GetLangCode("fr")};
 
-  auto const namesDataSource =
-      EditableMapObject::GetNamesDataSource(emo.GetName(), nativeMwmLanguages, GetLangCode("ko"));
+  auto const namesDataSource = EditableMapObject::GetNamesDataSource(
+      emo.GetNameMultilang(), nativeMwmLanguages, GetLangCode("ko"));
 
   TEST_EQUAL(namesDataSource.names.size(), 9, ("All names except the default should be pushed into "
                                            "data source plus empty mandatory names"));
@@ -281,8 +282,8 @@ UNIT_TEST(EditableMapObject_GetNamesDataSource)
   {
     vector<int8_t> nativeMwmLanguages = {GetLangCode("de"), GetLangCode("fr")};
 
-    auto const namesDataSource =
-        EditableMapObject::GetNamesDataSource(emo.GetName(), nativeMwmLanguages, GetLangCode("fr"));
+    auto const namesDataSource = EditableMapObject::GetNamesDataSource(
+        emo.GetNameMultilang(), nativeMwmLanguages, GetLangCode("fr"));
     TEST_EQUAL(namesDataSource.names.size(), 9,
                ("All names + empty mandatory names should be pushed into "
                 "the data source, except the default one."));
@@ -293,8 +294,8 @@ UNIT_TEST(EditableMapObject_GetNamesDataSource)
   {
     vector<int8_t> nativeMwmLanguages = {GetLangCode("fr"), GetLangCode("en")};
 
-    auto const namesDataSource =
-        EditableMapObject::GetNamesDataSource(emo.GetName(), nativeMwmLanguages, GetLangCode("fr"));
+    auto const namesDataSource = EditableMapObject::GetNamesDataSource(
+        emo.GetNameMultilang(), nativeMwmLanguages, GetLangCode("fr"));
     TEST_EQUAL(namesDataSource.names.size(), 9,
                ("All names + empty mandatory names should be pushed into "
                 "the data source, except the default one."));
@@ -305,8 +306,8 @@ UNIT_TEST(EditableMapObject_GetNamesDataSource)
   {
     vector<int8_t> nativeMwmLanguages = {GetLangCode("en"), GetLangCode("en")};
 
-    auto const namesDataSource =
-        EditableMapObject::GetNamesDataSource(emo.GetName(), nativeMwmLanguages, GetLangCode("en"));
+    auto const namesDataSource = EditableMapObject::GetNamesDataSource(
+        emo.GetNameMultilang(), nativeMwmLanguages, GetLangCode("en"));
     TEST_EQUAL(namesDataSource.names.size(), 8,
                ("All names + empty mandatory names should be pushed into "
                 "the data source, except the default one."));
@@ -594,7 +595,7 @@ UNIT_TEST(EditableMapObject_RemoveBlankNames)
   emo.SetName(name);
   emo.RemoveBlankAndDuplicationsForDefault();
 
-  TEST_EQUAL(getCountOfNames(emo.GetName()), 4, ());
+  TEST_EQUAL(getCountOfNames(emo.GetNameMultilang()), 4, ());
 
   name.Clear();
 
@@ -606,7 +607,7 @@ UNIT_TEST(EditableMapObject_RemoveBlankNames)
   emo.SetName(name);
   emo.RemoveBlankAndDuplicationsForDefault();
 
-  TEST_EQUAL(getCountOfNames(emo.GetName()), 2, ());
+  TEST_EQUAL(getCountOfNames(emo.GetNameMultilang()), 2, ());
 
   name.Clear();
 
@@ -618,7 +619,7 @@ UNIT_TEST(EditableMapObject_RemoveBlankNames)
   emo.SetName(name);
   emo.RemoveBlankAndDuplicationsForDefault();
 
-  TEST_EQUAL(getCountOfNames(emo.GetName()), 1, ());
+  TEST_EQUAL(getCountOfNames(emo.GetNameMultilang()), 1, ());
 
   name.Clear();
 
@@ -630,6 +631,44 @@ UNIT_TEST(EditableMapObject_RemoveBlankNames)
   emo.SetName(name);
   emo.RemoveBlankAndDuplicationsForDefault();
 
-  TEST_EQUAL(getCountOfNames(emo.GetName()), 1, ());
+  TEST_EQUAL(getCountOfNames(emo.GetNameMultilang()), 1, ());
+}
+
+UNIT_TEST(EditableMapObject_FromFeatureType)
+{
+  classificator::Load();
+
+  EditableMapObject emo;
+  auto const wifiType = classif().GetTypeByPath({"internet_access", "wlan"});
+  auto const cafeType = classif().GetTypeByPath({"amenity", "cafe"});
+  feature::TypesHolder types;
+  types.Add(wifiType);
+  types.Add(cafeType);
+  emo.SetTypes(types);
+
+  emo.SetHouseNumber("1");
+
+  StringUtf8Multilang names;
+
+  names.AddString(GetLangCode("default"), "Default name");
+  names.AddString(GetLangCode("ru"), "Ru name");
+
+  emo.SetWebsite("https://some.thing.org");
+
+  emo.SetName(names);
+
+  emo.SetPointType();
+  emo.SetMercator(m2::PointD(1.0, 1.0));
+
+  auto ft = FeatureType::ConstructFromMapObject(emo);
+  EditableMapObject emo2;
+  emo2.SetFromFeatureType(ft);
+  TEST(emo.GetTypes().Equals(emo2.GetTypes()), ());
+  TEST_EQUAL(emo.GetNameMultilang(), emo2.GetNameMultilang(), ());
+  TEST_EQUAL(emo.GetHouseNumber(), emo2.GetHouseNumber(), ());
+  TEST_EQUAL(emo.GetMercator(), emo2.GetMercator(), ());
+  TEST_EQUAL(emo.GetWebsite(), emo2.GetWebsite(), ());
+  TEST(emo.IsPointType(), ());
+  TEST(emo2.IsPointType(), ());
 }
 }  // namespace

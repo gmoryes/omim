@@ -51,6 +51,8 @@ class GraphicsContext
 {
 public:
   virtual ~GraphicsContext() = default;
+  virtual bool BeginRendering() { return true; }
+  virtual void EndRendering() {}
   virtual void Present() = 0;
   virtual void MakeCurrent() = 0;
   virtual void DoneCurrent() {}
@@ -62,6 +64,7 @@ public:
   virtual void SetRenderingEnabled(bool /* enabled */) {}
   virtual void SetPresentAvailable(bool /* available */) {}
   virtual bool Validate() { return true; }
+  virtual void CollectMemory() {}
 
   virtual void Init(ApiVersion apiVersion) = 0;
   virtual ApiVersion GetApiVersion() const = 0;

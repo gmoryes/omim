@@ -20,6 +20,9 @@ extern drape_ptr<dp::HWTextureAllocator> CreateMetalAllocator();
 extern ref_ptr<dp::HWTextureAllocator> GetDefaultMetalAllocator();
 #endif
 
+extern drape_ptr<dp::HWTextureAllocator> CreateVulkanAllocator();
+extern ref_ptr<dp::HWTextureAllocator> GetDefaultVulkanAllocator();
+
 namespace dp
 {
 void UnpackFormat(ref_ptr<dp::GraphicsContext> context, TextureFormat format,
@@ -171,7 +174,7 @@ void OpenGLHWTexture::Create(ref_ptr<dp::GraphicsContext> context, Params const 
   Base::Create(context, params, data);
 
   m_textureID = GLFunctions::glGenTexture();
-  Bind();
+  Bind(context);
 
   UnpackFormat(context, m_params.m_format, m_unpackedLayout, m_unpackedPixelType);
 
@@ -196,8 +199,8 @@ void OpenGLHWTexture::Create(ref_ptr<dp::GraphicsContext> context, Params const 
   GLFunctions::glFlush();
 }
 
-void OpenGLHWTexture::UploadData(uint32_t x, uint32_t y, uint32_t width, uint32_t height,
-                                 ref_ptr<void> data)
+void OpenGLHWTexture::UploadData(ref_ptr<dp::GraphicsContext> context, uint32_t x, uint32_t y,
+                                 uint32_t width, uint32_t height, ref_ptr<void> data)
 {
   ASSERT(Validate(), ());
   uint32_t const mappingSize = height * width * m_pixelBufferElementSize;
@@ -215,8 +218,9 @@ void OpenGLHWTexture::UploadData(uint32_t x, uint32_t y, uint32_t width, uint32_
   }
 }
 
-void OpenGLHWTexture::Bind() const
+void OpenGLHWTexture::Bind(ref_ptr<dp::GraphicsContext> context) const
 {
+  UNUSED_VALUE(context);
   ASSERT(Validate(), ());
   if (m_textureID != 0)
     GLFunctions::glBindTexture(GetID());
@@ -263,6 +267,9 @@ drape_ptr<HWTextureAllocator> CreateAllocator(ref_ptr<dp::GraphicsContext> conte
     return nullptr;
   }
 
+  if (apiVersion == dp::ApiVersion::Vulkan)
+    return CreateVulkanAllocator();
+
   if (apiVersion == dp::ApiVersion::OpenGLES3)
     return make_unique_dp<OpenGLHWTextureAllocator>();
 
@@ -276,7 +283,8 @@ drape_ptr<HWTextureAllocator> CreateAllocator(ref_ptr<dp::GraphicsContext> conte
 ref_ptr<HWTextureAllocator> GetDefaultAllocator(ref_ptr<dp::GraphicsContext> context)
 {
   CHECK(context != nullptr, ());
-  if (context->GetApiVersion() == dp::ApiVersion::Metal)
+  auto const apiVersion = context->GetApiVersion();
+  if (apiVersion == dp::ApiVersion::Metal)
   {
 #if defined(OMIM_METAL_AVAILABLE)
     return GetDefaultMetalAllocator();
@@ -284,6 +292,9 @@ ref_ptr<HWTextureAllocator> GetDefaultAllocator(ref_ptr<dp::GraphicsContext> con
     CHECK(false, ("Metal rendering is supported now only on iOS."));
     return nullptr;
   }
+
+  if (apiVersion == dp::ApiVersion::Vulkan)
+    return GetDefaultVulkanAllocator();
 
   static OpenGLHWTextureAllocator s_allocator;
   return make_ref<HWTextureAllocator>(&s_allocator);

@@ -40,7 +40,8 @@ public:
     Rotate,
     FollowAndRotate,
     AutoPerspective,
-    VisibleViewport
+    VisibleViewport,
+    Move
   };
 
   virtual ~UserEvent() = default;
@@ -134,6 +135,27 @@ private:
   bool m_isAnim;
 };
 
+class MoveEvent : public UserEvent
+{
+public:
+  MoveEvent(double factorX, double factorY, bool isAnim)
+    : m_factorX(factorX)
+    , m_factorY(factorY)
+    , m_isAnim(isAnim)
+  {}
+
+  EventType GetType() const override { return UserEvent::EventType::Move; }
+
+  double GetFactorX() const { return m_factorX; }
+  double GetFactorY() const { return m_factorY; }
+  bool IsAnim() const { return m_isAnim; }
+
+private:
+  double m_factorX;
+  double m_factorY;
+  bool m_isAnim;
+};
+
 class SetCenterEvent : public UserEvent
 {
 public:
@@ -194,19 +216,22 @@ private:
 class SetAnyRectEvent : public UserEvent
 {
 public:
-  SetAnyRectEvent(m2::AnyRectD const & rect, bool isAnim)
+  SetAnyRectEvent(m2::AnyRectD const & rect, bool isAnim, bool fitInViewport)
     : m_rect(rect)
     , m_isAnim(isAnim)
+    , m_fitInViewport(fitInViewport)
   {}
 
   EventType GetType() const override { return UserEvent::EventType::SetAnyRect; }
 
   m2::AnyRectD const & GetRect() const { return m_rect; }
   bool IsAnim() const { return m_isAnim; }
+  bool FitInViewport() const { return m_fitInViewport; }
 
 private:
   m2::AnyRectD m_rect;  // destination mercator rect
   bool m_isAnim;
+  bool m_fitInViewport;
 };
 
 class FollowAndRotateEvent : public UserEvent
@@ -399,6 +424,7 @@ public:
 
 private:
   bool OnSetScale(ref_ptr<ScaleEvent> scaleEvent);
+  bool OnMove(ref_ptr<MoveEvent> moveEvent);
   bool OnSetAnyRect(ref_ptr<SetAnyRectEvent> anyRectEvent);
   bool OnSetRect(ref_ptr<SetRectEvent> rectEvent);
   bool OnSetCenter(ref_ptr<SetCenterEvent> centerEvent);
@@ -408,7 +434,7 @@ private:
   bool SetAngle(double azimuth, TAnimationCreator const & parallelAnimCreator = nullptr);
   bool SetRect(m2::RectD rect, int zoom, bool applyRotation, bool isAnim,
                TAnimationCreator const & parallelAnimCreator = nullptr);
-  bool SetRect(m2::AnyRectD const & rect, bool isAnim,
+  bool SetRect(m2::AnyRectD const & rect, bool isAnim, bool fitInViewport,
                TAnimationCreator const & parallelAnimCreator = nullptr);
 
   bool SetScreen(ScreenBase const & screen, bool isAnim,

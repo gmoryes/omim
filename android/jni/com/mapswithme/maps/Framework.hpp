@@ -52,7 +52,8 @@ namespace android
   class Framework : private power_management::PowerManager::Subscriber
   {
   private:
-    drape_ptr<dp::ThreadSafeFactory> m_contextFactory;
+    drape_ptr<dp::ThreadSafeFactory> m_oglContextFactory;
+    drape_ptr<dp::GraphicsContextFactory> m_vulkanContextFactory;
     ::Framework m_work;
 
     math::LowPassVector<float, 3> m_sensors[2];
@@ -60,7 +61,7 @@ namespace android
 
     std::string m_searchQuery;
 
-    bool m_isContextDestroyed;
+    bool m_isSurfaceDestroyed;
 
     std::map<gui::EWidget, gui::Position> m_guiPositions;
 
@@ -94,10 +95,10 @@ namespace android
     void UpdateCompassSensor(int ind, float * arr);
 
     bool CreateDrapeEngine(JNIEnv * env, jobject jSurface, int densityDpi, bool firstLaunch,
-                           bool launchByDeepLink);
+                           bool launchByDeepLink, int appVersionCode);
     bool IsDrapeEngineCreated();
-
-    void DetachSurface(bool destroyContext);
+    bool DestroySurfaceOnDetach();
+    void DetachSurface(bool destroySurface);
     bool AttachSurface(JNIEnv * env, jobject jSurface);
     void PauseSurfaceRendering();
     void ResumeSurfaceRendering();
@@ -116,7 +117,7 @@ namespace android
       return m_work.GetRoutingManager().GetLastUsedRouter();
     }
 
-    void Resize(int w, int h);
+    void Resize(JNIEnv * env, jobject jSurface, int w, int h);
 
     struct Finger
     {

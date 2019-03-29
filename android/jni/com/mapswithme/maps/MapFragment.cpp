@@ -61,9 +61,11 @@ JNIEXPORT jboolean JNICALL
 Java_com_mapswithme_maps_MapFragment_nativeCreateEngine(JNIEnv * env, jclass clazz,
                                                         jobject surface, jint density,
                                                         jboolean firstLaunch,
-                                                        jboolean isLaunchByDeepLink)
+                                                        jboolean isLaunchByDeepLink,
+                                                        jint appVersionCode)
 {
-  return g_framework->CreateDrapeEngine(env, surface, density, firstLaunch, isLaunchByDeepLink);
+  return g_framework->CreateDrapeEngine(env, surface, density, firstLaunch, isLaunchByDeepLink,
+                                        appVersionCode);
 }
 
 JNIEXPORT jboolean JNICALL
@@ -73,15 +75,23 @@ Java_com_mapswithme_maps_MapFragment_nativeIsEngineCreated(JNIEnv * env, jclass 
 }
 
 JNIEXPORT jboolean JNICALL
-Java_com_mapswithme_maps_MapFragment_nativeAttachSurface(JNIEnv * env, jclass clazz, jobject surface)
+Java_com_mapswithme_maps_MapFragment_nativeDestroySurfaceOnDetach(JNIEnv * env, jclass clazz)
+{
+  return g_framework->DestroySurfaceOnDetach();
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_mapswithme_maps_MapFragment_nativeAttachSurface(JNIEnv * env, jclass clazz,
+                                                         jobject surface)
 {
   return g_framework->AttachSurface(env, surface);
 }
 
 JNIEXPORT void JNICALL
-Java_com_mapswithme_maps_MapFragment_nativeDetachSurface(JNIEnv * env, jclass clazz, jboolean destroyContext)
+Java_com_mapswithme_maps_MapFragment_nativeDetachSurface(JNIEnv * env, jclass clazz,
+                                                         jboolean destroySurface)
 {
-  g_framework->DetachSurface(destroyContext);
+  g_framework->DetachSurface(destroySurface);
 }
 
 JNIEXPORT void JNICALL
@@ -97,9 +107,10 @@ Java_com_mapswithme_maps_MapFragment_nativeResumeSurfaceRendering(JNIEnv *, jcla
 }
 
 JNIEXPORT void JNICALL
-Java_com_mapswithme_maps_MapFragment_nativeSurfaceChanged(JNIEnv * env, jclass clazz, jint w, jint h)
+Java_com_mapswithme_maps_MapFragment_nativeSurfaceChanged(JNIEnv * env, jclass, jobject surface,
+                                                          jint w, jint h)
 {
-  g_framework->Resize(w, h);
+  g_framework->Resize(env, surface, w, h);
 }
 
 JNIEXPORT void JNICALL

@@ -8,7 +8,9 @@
 #include "drape/index_buffer_mutator.hpp"
 #include "drape/pointers.hpp"
 
+#include <cstdint>
 #include <map>
+#include <vector>
 
 namespace dp
 {
@@ -34,6 +36,8 @@ public:
   virtual void BindBuffers(BuffersMap const & buffers) const = 0;
   virtual void RenderRange(ref_ptr<GraphicsContext> context,
                            bool drawAsLine, IndicesRange const & range) = 0;
+
+  virtual void AddBindingInfo(dp::BindingInfo const & bindingInfo) {}
 };
 
 namespace metal
@@ -41,11 +45,17 @@ namespace metal
 class MetalVertexArrayBufferImpl;
 }  // namespace metal
 
+namespace vulkan
+{
+class VulkanVertexArrayBufferImpl;
+}  // namespace vulkan
+
 class VertexArrayBuffer
 {
   friend class metal::MetalVertexArrayBufferImpl;
+  friend class vulkan::VulkanVertexArrayBufferImpl;
 public:
-  VertexArrayBuffer(uint32_t indexBufferSize, uint32_t dataBufferSize);
+  VertexArrayBuffer(uint32_t indexBufferSize, uint32_t dataBufferSize, uint64_t batcherHash);
   ~VertexArrayBuffer();
 
   // This method must be called on a reading thread, before VAO will be transferred to the render thread.
@@ -64,8 +74,9 @@ public:
   uint32_t GetDynamicBufferOffset(BindingInfo const & bindingInfo);
   uint32_t GetIndexCount() const;
 
-  void UploadData(BindingInfo const & bindingInfo, void const * data, uint32_t count);
-  void UploadIndexes(void const * data, uint32_t count);
+  void UploadData(ref_ptr<GraphicsContext> context, BindingInfo const & bindingInfo,
+                  void const * data, uint32_t count);
+  void UploadIndices(ref_ptr<GraphicsContext> context, void const * data, uint32_t count);
 
   void ApplyMutation(ref_ptr<GraphicsContext> context,
                      ref_ptr<IndexBufferMutator> indexMutator,
@@ -73,6 +84,7 @@ public:
 
   void ResetChangingTracking() { m_isChanged = false; }
   bool IsChanged() const { return m_isChanged; }
+  bool HasBuffers() const { return !m_staticBuffers.empty() || !m_dynamicBuffers.empty(); }
 
 private:
   ref_ptr<DataBuffer> GetOrCreateStaticBuffer(BindingInfo const & bindingInfo);
@@ -91,10 +103,19 @@ private:
 
   void PreflushImpl(ref_ptr<GraphicsContext> context);
 
+  void CollectBindingInfo(dp::BindingInfo const & bindingInfo);
+
   // Definition of this method is in a .mm-file.
   drape_ptr<VertexArrayBufferImpl> CreateImplForMetal(ref_ptr<VertexArrayBuffer> buffer);
 
+  // Definition of this method is in a separate .cpp-file.
+  drape_ptr<VertexArrayBufferImpl> CreateImplForVulkan(ref_ptr<GraphicsContext> context,
+                                                       ref_ptr<VertexArrayBuffer> buffer,
+                                                       BindingInfoArray && bindingInfo,
+                                                       uint8_t bindingInfoCount);
+
   uint32_t const m_dataBufferSize;
+  uint64_t const m_batcherHash;
 
   drape_ptr<VertexArrayBufferImpl> m_impl;
   BuffersMap m_staticBuffers;
@@ -105,5 +126,7 @@ private:
   bool m_isPreflushed = false;
   bool m_moveToGpuOnBuild = false;
   bool m_isChanged = false;
+  BindingInfoArray m_bindingInfo;
+  uint8_t m_bindingInfoCount = 0;
 };
 }  // namespace dp

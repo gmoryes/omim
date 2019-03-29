@@ -9,6 +9,8 @@ include_directories(
   ${OMIM_ROOT}/3party/glm
   ${OMIM_ROOT}/3party/icu/common
   ${OMIM_ROOT}/3party/icu/i18n
+  ${OMIM_ROOT}/3party/Vulkan-Headers/include
+  ${OMIM_ROOT}/3party/vulkan_wrapper
 )
 
 set(
@@ -146,6 +148,33 @@ append(
 )
 endif()
 
-omim_add_library(${PROJECT_NAME} ${DRAPE_COMMON_SRC} ${SRC})
+append(
+  VULKAN_SRC
+  ${DRAPE_ROOT}/vulkan/vulkan_base_context.cpp
+  ${DRAPE_ROOT}/vulkan/vulkan_base_context.hpp
+  ${DRAPE_ROOT}/vulkan/vulkan_gpu_buffer_impl.cpp
+  ${DRAPE_ROOT}/vulkan/vulkan_gpu_buffer_impl.hpp
+  ${DRAPE_ROOT}/vulkan/vulkan_gpu_program.hpp
+  ${DRAPE_ROOT}/vulkan/vulkan_layers.cpp
+  ${DRAPE_ROOT}/vulkan/vulkan_layers.hpp
+  ${DRAPE_ROOT}/vulkan/vulkan_memory_manager.cpp
+  ${DRAPE_ROOT}/vulkan/vulkan_memory_manager.hpp
+  ${DRAPE_ROOT}/vulkan/vulkan_mesh_object_impl.cpp
+  ${DRAPE_ROOT}/vulkan/vulkan_object_manager.cpp
+  ${DRAPE_ROOT}/vulkan/vulkan_object_manager.hpp
+  ${DRAPE_ROOT}/vulkan/vulkan_param_descriptor.cpp
+  ${DRAPE_ROOT}/vulkan/vulkan_param_descriptor.hpp
+  ${DRAPE_ROOT}/vulkan/vulkan_pipeline.cpp
+  ${DRAPE_ROOT}/vulkan/vulkan_pipeline.hpp
+  ${DRAPE_ROOT}/vulkan/vulkan_staging_buffer.cpp
+  ${DRAPE_ROOT}/vulkan/vulkan_staging_buffer.hpp
+  ${DRAPE_ROOT}/vulkan/vulkan_texture.cpp
+  ${DRAPE_ROOT}/vulkan/vulkan_texture.hpp
+  ${DRAPE_ROOT}/vulkan/vulkan_utils.cpp
+  ${DRAPE_ROOT}/vulkan/vulkan_utils.hpp
+  ${DRAPE_ROOT}/vulkan/vulkan_vertex_array_buffer_impl.cpp
+)
+
+omim_add_library(${PROJECT_NAME} ${DRAPE_COMMON_SRC} ${SRC} ${VULKAN_SRC})
 
 omim_add_test_subdirectory(drape_tests)

@@ -53,7 +53,7 @@ public:
   void Append(FakeEdgesContainer const & container);
 
   WorldGraph & GetGraph() const { return m_graph; }
-  WorldGraph::Mode GetMode() const { return m_graph.GetMode(); }
+  WorldGraphMode GetMode() const { return m_graph.GetMode(); }
   Junction const & GetStartJunction() const;
   Junction const & GetFinishJunction() const;
   Segment GetStartSegment() const { return GetFakeSegment(m_start.m_id); }
@@ -65,6 +65,7 @@ public:
   Junction const & GetJunction(Segment const & segment, bool front) const;
   Junction const & GetRouteJunction(std::vector<Segment> const & route, size_t pointIndex) const;
   m2::PointD const & GetPoint(Segment const & segment, bool front) const;
+  bool IsRoutingOptionsGood(Segment const & segment) const;
   uint32_t GetNumFakeSegments() const
   {
     // Maximal number of fake segments in fake graph is numeric_limits<uint32_t>::max()
@@ -80,6 +81,12 @@ public:
   // Checks whether |weight| meets non-pass-through crossing restrictions according to placement of
   // start and finish in pass-through/non-pass-through area and number of non-pass-through crosses.
   bool CheckLength(RouteWeight const & weight);
+
+  void GetEdgeList(Segment const & segment, bool isOutgoing,
+                   std::vector<JointEdge> & edges, std::vector<RouteWeight> & parentWeights) const
+  {
+    return m_graph.GetEdgeList(segment, isOutgoing, edges, parentWeights);
+  }
 
   void GetEdgesList(Segment const & segment, bool isOutgoing,
                     std::vector<SegmentEdge> & edges) const;
@@ -103,6 +110,11 @@ public:
   RouteWeight HeuristicCostEstimate(Vertex const & from, m2::PointD const & to) const
   {
     return m_graph.HeuristicCostEstimate(GetPoint(from, true /* front */), to);
+  }
+
+  bool IsJoint(Segment const & segment, bool fromStart)
+  {
+    return GetGraph().GetIndexGraph(segment.GetMwmId()).IsJoint(segment.GetRoadPoint(fromStart));
   }
 
   RouteWeight CalcSegmentWeight(Segment const & segment) const;
@@ -162,5 +174,6 @@ private:
   Ending m_finish;
   double m_startToFinishDistanceM;
   FakeGraph<Segment, FakeVertex> m_fake;
+  RoutingOptions m_avoidRoutingOptions;
 };
 }  // namespace routing

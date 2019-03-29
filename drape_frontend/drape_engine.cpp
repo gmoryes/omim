@@ -134,7 +134,7 @@ DrapeEngine::~DrapeEngine()
   m_glyphGenerator.reset();
 }
 
-void DrapeEngine::Update(int w, int h)
+void DrapeEngine::RecoverSurface(int w, int h, bool recreateContextDependentResources)
 {
   if (m_choosePositionMode)
   {
@@ -142,13 +142,15 @@ void DrapeEngine::Update(int w, int h)
                                     make_unique_dp<ShowChoosePositionMarkMessage>(),
                                     MessagePriority::Normal);
   }
-  RecacheGui(false);
 
-  RecacheMapShapes();
-
-  m_threadCommutator->PostMessage(ThreadsCommutator::RenderThread,
-                                  make_unique_dp<RecoverGLResourcesMessage>(),
-                                  MessagePriority::Normal);
+  if (recreateContextDependentResources)
+  {
+    RecacheGui(false);
+    RecacheMapShapes();
+    m_threadCommutator->PostMessage(ThreadsCommutator::RenderThread,
+                                    make_unique_dp<RecoverContextDependentResourcesMessage>(),
+                                    MessagePriority::Normal);
+  }
 
   ResizeImpl(w, h);
 }
@@ -186,6 +188,11 @@ void DrapeEngine::Scale(double factor, m2::PointD const & pxPoint, bool isAnim)
   AddUserEvent(make_unique_dp<ScaleEvent>(factor, pxPoint, isAnim));
 }
 
+void DrapeEngine::Move(double factorX, double factorY, bool isAnim)
+{
+  AddUserEvent(make_unique_dp<MoveEvent>(factorX, factorY, isAnim));
+}
+
 void DrapeEngine::SetModelViewCenter(m2::PointD const & centerPt, int zoom, bool isAnim,
                                      bool trackVisibleViewport)
 {
@@ -199,7 +206,7 @@ void DrapeEngine::SetModelViewRect(m2::RectD const & rect, bool applyRotation, i
 
 void DrapeEngine::SetModelViewAnyRect(m2::AnyRectD const & rect, bool isAnim)
 {
-  PostUserEvent(make_unique_dp<SetAnyRectEvent>(rect, isAnim));
+  PostUserEvent(make_unique_dp<SetAnyRectEvent>(rect, isAnim, true /* fitInViewport */));
 }
 
 void DrapeEngine::ClearUserMarksGroup(kml::MarkGroupId groupId)
@@ -352,10 +359,10 @@ void DrapeEngine::SetRenderingEnabled(ref_ptr<dp::GraphicsContextFactory> contex
   LOG(LDEBUG, ("Rendering enabled"));
 }
 
-void DrapeEngine::SetRenderingDisabled(bool const destroyContext)
+void DrapeEngine::SetRenderingDisabled(bool const destroySurface)
 {
-  m_frontend->SetRenderingDisabled(destroyContext);
-  m_backend->SetRenderingDisabled(destroyContext);
+  m_frontend->SetRenderingDisabled(destroySurface);
+  m_backend->SetRenderingDisabled(destroySurface);
 
   LOG(LDEBUG, ("Rendering disabled"));
 }

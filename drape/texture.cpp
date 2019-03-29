@@ -29,11 +29,11 @@ void Texture::Create(ref_ptr<dp::GraphicsContext> context, Params const & params
     m_hwTexture->Create(context, params, data);
 }
 
-void Texture::UploadData(uint32_t x, uint32_t y, uint32_t width, uint32_t height,
-                         ref_ptr<void> data)
+void Texture::UploadData(ref_ptr<dp::GraphicsContext> context, uint32_t x, uint32_t y,
+                         uint32_t width, uint32_t height, ref_ptr<void> data)
 {
   ASSERT(m_hwTexture != nullptr, ());
-  m_hwTexture->UploadData(x, y, width, height, data);
+  m_hwTexture->UploadData(context, x, y, width, height, data);
 }
 
 TextureFormat Texture::GetFormat() const
@@ -72,22 +72,16 @@ uint32_t Texture::GetID() const
   return m_hwTexture->GetID();
 }
 
-void Texture::Bind() const
+void Texture::Bind(ref_ptr<dp::GraphicsContext> context) const
 {
   ASSERT(m_hwTexture != nullptr, ());
-  m_hwTexture->Bind();
+  m_hwTexture->Bind(context);
 }
 
 void Texture::SetFilter(TextureFilter filter)
 {
   ASSERT(m_hwTexture != nullptr, ());
   m_hwTexture->SetFilter(filter);
-}
-
-// static
-uint32_t Texture::GetMaxTextureSize()
-{
-  return static_cast<uint32_t>(GLFunctions::glGetInteger(gl_const::GLMaxTextureSize));
 }
 
 // static

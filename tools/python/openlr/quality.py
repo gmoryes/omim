@@ -140,13 +140,28 @@ def parse_route(route):
     return result
 
 def ignored_segments_number(tree, limit):
-    ignored_segments = 0
+    ignored_segments_num = 0
+    ignored_segments_but_matched = []
     segments = islice(tree.findall('.//Segment'), limit)
     for s in segments:
         ignored = s.find('Ignored')
         if ignored is not None and ignored.text == 'true':
-            ignored_segments += 1
-    return ignored_segments
+            ignored_segments_num += 1
+            route = s.find('Route')
+            if route is not None:
+                segment_id = int(s.find('.//ReportSegmentID').text)
+                ignored_segments_but_matched.append(str(segment_id))
+    return ignored_segments_num, ignored_segments_but_matched
+
+def print_ignored_segments_result(descr, tree, limit):
+    assessed_ignored_seg = []
+    (assessed_ignored_seg_num, assessed_ignored_seg_but_matched) = ignored_segments_number(tree, limit)
+    print()
+    print(descr)
+    print('{} matched segments from {} ignored segments.'.
+        format(len(assessed_ignored_seg_but_matched), assessed_ignored_seg_num))
+    print('Ignored segments, but matched:')
+    print('\n'.join(assessed_ignored_seg_but_matched))
 
 def parse_segments(tree, limit):
     segments = islice(tree.findall('.//Segment'), limit)
@@ -184,15 +199,26 @@ def merge(src, dst):
         int(s.find('.//ReportSegmentID').text): s.find('GoldenRoute')
         for s in src.findall('Segment')
     }
+    ignored_routes = {
+        int(s.find('.//ReportSegmentID').text): s.find('Ignored')
+        for s in src.findall('Segment')
+    }
     for s in dst.findall('Segment'):
         assert not s.find('GoldenRoute')
-        golden_route = golden_routes[int(s.find('.//ReportSegmentID').text)]
-        if not golden_route:
+        assert not s.find('Ignored')
+
+        reportSegmentID = int(s.find('.//ReportSegmentID').text)
+        golden_route = golden_routes[reportSegmentID]
+        ignored_route = ignored_routes[reportSegmentID]
+
+        if ignored_route is not None and ignored_route.text == 'true':
             elem = ET.Element('Ignored')
             elem.text = 'true'
             s.append(elem)
             continue
-        s.append(golden_route)
+
+        if golden_route:
+            s.append(golden_route)
 
 if __name__ == '__main__':
     import argparse
@@ -242,6 +268,9 @@ if __name__ == '__main__':
             'Base' if mean1 - mean2 > 0 else 'New',
             mean1 - mean2
         ))
+
+        print_ignored_segments_result('Base', assessed, args.limit)
+        print_ignored_segments_result('New', candidate, args.limit)
     else:
         print('{}\t{}'.format(
             'segment_id', 'intersection_weight')
@@ -253,4 +282,5 @@ if __name__ == '__main__':
             np.mean(list(assessed_scores.values())),
             np.std(list(assessed_scores.values()), ddof=1)
         ))
-        print('Ignored segments number: {:d}'.format(ignored_segments_number(assessed, args.limit)))
+
+        print_ignored_segments_result('', assessed, args.limit)

@@ -1,15 +1,16 @@
 #pragma once
 
-#include "base/exception.hpp"
-
 #include "editor/server_api.hpp"
 #include "editor/xml_feature.hpp"
 
 #include "geometry/point2d.hpp"
 #include "geometry/rect2d.hpp"
 
-#include "std/set.hpp"
-#include "std/vector.hpp"
+#include "base/exception.hpp"
+
+#include <map>
+#include <string>
+#include <vector>
 
 class FeatureType;
 
@@ -19,7 +20,7 @@ struct ClientToken;
 
 class ChangesetWrapper
 {
-  using TTypeCount = map<string, size_t>;
+  using TypeCount = std::map<std::string, size_t>;
 
 public:
   DECLARE_EXCEPTION(ChangesetWrapperException, RootException);
@@ -32,14 +33,14 @@ public:
   DECLARE_EXCEPTION(LinearFeaturesAreNotSupportedException, ChangesetWrapperException);
   DECLARE_EXCEPTION(EmptyFeatureException, ChangesetWrapperException);
 
-  ChangesetWrapper(TKeySecret const & keySecret,
-                   ServerApi06::TKeyValueTags const & comments) noexcept;
+  ChangesetWrapper(KeySecret const & keySecret,
+                   ServerApi06::KeyValueTags const & comments) noexcept;
   ~ChangesetWrapper();
 
   /// Throws many exceptions from above list, plus including XMLNode's parsing ones.
   /// OsmObjectWasDeletedException means that node was deleted from OSM server by someone else.
   editor::XMLFeature GetMatchingNodeFeatureFromOSM(m2::PointD const & center);
-  editor::XMLFeature GetMatchingAreaFeatureFromOSM(vector<m2::PointD> const & geomerty);
+  editor::XMLFeature GetMatchingAreaFeatureFromOSM(std::vector<m2::PointD> const & geomerty);
 
   /// Throws exceptions from above list.
   void Create(editor::XMLFeature node);
@@ -59,16 +60,16 @@ private:
   void LoadXmlFromOSM(ms::LatLon const & ll, pugi::xml_document & doc, double radiusInMeters = 1.0);
   void LoadXmlFromOSM(ms::LatLon const & min, ms::LatLon const & max, pugi::xml_document & doc);
 
-  ServerApi06::TKeyValueTags m_changesetComments;
+  ServerApi06::KeyValueTags m_changesetComments;
   ServerApi06 m_api;
   static constexpr uint64_t kInvalidChangesetId = 0;
   uint64_t m_changesetId = kInvalidChangesetId;
 
-  TTypeCount m_modified_types;
-  TTypeCount m_created_types;
-  TTypeCount m_deleted_types;
-  static string TypeCountToString(TTypeCount const & typeCount);
-  string GetDescription() const;
+  TypeCount m_modified_types;
+  TypeCount m_created_types;
+  TypeCount m_deleted_types;
+  static std::string TypeCountToString(TypeCount const & typeCount);
+  std::string GetDescription() const;
 };
 
 }  // namespace osm

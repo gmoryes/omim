@@ -1,9 +1,12 @@
 #include "drape/render_state.hpp"
+
 #include "drape/drape_global.hpp"
 #include "drape/gl_functions.hpp"
 #include "drape/gl_gpu_program.hpp"
 
-#include "base/buffer_vector.hpp"
+#include "drape/vulkan/vulkan_base_context.hpp"
+#include "drape/vulkan/vulkan_gpu_program.hpp"
+#include "drape/vulkan/vulkan_texture.hpp"
 
 namespace dp
 {
@@ -210,7 +213,7 @@ void TextureState::ApplyTextures(ref_ptr<GraphicsContext> context, RenderState c
       if (tex != nullptr && (texLoc = p->GetUniformLocation(texture.first)) >= 0)
       {
         GLFunctions::glActiveTexture(gl_const::GLTexture0 + m_usedSlots);
-        tex->Bind();
+        tex->Bind(context);
         GLFunctions::glUniformValuei(texLoc, m_usedSlots);
         tex->SetFilter(state.GetTextureFilter());
         m_usedSlots++;
@@ -222,6 +225,37 @@ void TextureState::ApplyTextures(ref_ptr<GraphicsContext> context, RenderState c
 #if defined(OMIM_METAL_AVAILABLE)
     ApplyTexturesForMetal(context, program, state);
 #endif
+  }
+  else if (apiVersion == dp::ApiVersion::Vulkan)
+  {
+    ref_ptr<dp::vulkan::VulkanBaseContext> vulkanContext = context;
+    vulkanContext->ClearParamDescriptors();
+    ref_ptr<dp::vulkan::VulkanGpuProgram> p = program;
+    auto const & bindings = p->GetTextureBindings();
+    for (auto const & texture : state.GetTextures())
+    {
+      auto const it = bindings.find(texture.first);
+      CHECK(it != bindings.end(), ("Texture bindings inconsistency."));
+
+      ref_ptr<dp::vulkan::VulkanTexture> t = texture.second->GetHardwareTexture();
+      if (t == nullptr)
+      {
+        texture.second->UpdateState(context);
+        t = texture.second->GetHardwareTexture();
+        CHECK(t != nullptr, ());
+      }
+      t->Bind(context);
+      t->SetFilter(state.GetTextureFilter());
+
+      dp::vulkan::ParamDescriptor descriptor;
+      descriptor.m_type = dp::vulkan::ParamDescriptor::Type::Texture;
+      descriptor.m_imageDescriptor.imageView = t->GetTextureView();
+      descriptor.m_imageDescriptor.sampler = vulkanContext->GetSampler(t->GetSamplerKey());
+      descriptor.m_imageDescriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      descriptor.m_textureSlot = it->second;
+      descriptor.m_id = texture.second->GetID();
+      vulkanContext->ApplyParamDescriptor(std::move(descriptor));
+    }
   }
   else
   {
@@ -248,6 +282,12 @@ void ApplyState(ref_ptr<GraphicsContext> context, ref_ptr<GpuProgram> program, R
     ApplyPipelineStateForMetal(context, program, state.GetBlending().m_isEnabled);
 #endif
   }
+  else if (apiVersion == dp::ApiVersion::Vulkan)
+  {
+    ref_ptr<dp::vulkan::VulkanBaseContext> vulkanContext = context;
+    vulkanContext->SetProgram(program);
+    vulkanContext->SetBlendingEnabled(state.GetBlending().m_isEnabled);
+  }
   else
   {
     state.GetBlending().Apply(context, program);
@@ -265,11 +305,25 @@ void ApplyState(ref_ptr<GraphicsContext> context, ref_ptr<GpuProgram> program, R
 #endif
   }
 
-  // Metal does not support line width.
-  if (apiVersion == dp::ApiVersion::OpenGLES2 || apiVersion == dp::ApiVersion::OpenGLES3)
+  if (state.GetDrawAsLine())
   {
-    ASSERT_GREATER_OR_EQUAL(state.GetLineWidth(), 0, ());
-    GLFunctions::glLineWidth(static_cast<uint32_t>(state.GetLineWidth()));
+    if (apiVersion == dp::ApiVersion::OpenGLES2 || apiVersion == dp::ApiVersion::OpenGLES3)
+    {
+      ASSERT_GREATER_OR_EQUAL(state.GetLineWidth(), 0, ());
+      GLFunctions::glLineWidth(static_cast<uint32_t>(state.GetLineWidth()));
+    }
+    else if (apiVersion == dp::ApiVersion::Metal)
+    {
+      // Do nothing. Metal does not support line width.
+    }
+    else if (apiVersion == dp::ApiVersion::Vulkan)
+    {
+      ASSERT_GREATER_OR_EQUAL(state.GetLineWidth(), 0, ());
+      ref_ptr<dp::vulkan::VulkanBaseContext> vulkanContext = context;
+      VkCommandBuffer commandBuffer = vulkanContext->GetCurrentRenderingCommandBuffer();
+      CHECK(commandBuffer != nullptr, ());
+      vkCmdSetLineWidth(commandBuffer, static_cast<float>(state.GetLineWidth()));
+    }
   }
 }
 }  // namespace dp

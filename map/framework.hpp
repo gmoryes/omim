@@ -265,7 +265,7 @@ protected:
   void InitTransliteration();
 
 public:
-  Framework(FrameworkParams const & params = {});
+  explicit Framework(FrameworkParams const & params = {});
   virtual ~Framework();
 
   /// Get access to booking api helpers
@@ -508,10 +508,10 @@ public:
   void DestroyDrapeEngine();
   /// Called when graphics engine should be temporarily paused and then resumed.
   void SetRenderingEnabled(ref_ptr<dp::GraphicsContextFactory> contextFactory = nullptr);
-  void SetRenderingDisabled(bool destroyContext);
+  void SetRenderingDisabled(bool destroySurface);
 
-  void OnRecoverGLContext(int width, int height);
-  void OnDestroyGLContext();
+  void OnRecoverSurface(int width, int height, bool recreateContextDependentResources);
+  void OnDestroySurface();
 
 private:
   /// Depends on initialized Drape engine.
@@ -655,6 +655,12 @@ public:
   void Scale(double factor, bool isAnim);
   void Scale(double factor, m2::PointD const & pxPoint, bool isAnim);
 
+  /// Moves the viewport a distance of factorX * viewportWidth and factorY * viewportHeight.
+  /// E.g. factorX == 1.0 moves the map one screen size to the right, factorX == -0.5 moves the map
+  /// half screen size to the left, factorY == -2.0 moves the map two sizes down,
+  /// factorY = 1.5 moves the map one and a half size up.
+  void Move(double factorX, double factorY, bool isAnim);
+
   void TouchEvent(df::TouchEvent const & touch);
   //@}
 
@@ -789,10 +795,8 @@ public:
   bool LoadTransitSchemeEnabled();
   void SaveTransitSchemeEnabled(bool enabled);
 
-#if defined(OMIM_METAL_AVAILABLE)
-  bool LoadMetalAllowed();
-  void SaveMetalAllowed(bool allowed);
-#endif
+  dp::ApiVersion LoadPreferredGraphicsAPI();
+  void SavePreferredGraphicsAPI(dp::ApiVersion apiVersion);
 
 public:
   template <typename ResultCallback>
@@ -848,7 +852,7 @@ public:
 
   // Reads user stats from server or gets it from cache calls |fn| on success.
   void UpdateUserStats(string const & userName, editor::UserStatsLoader::UpdatePolicy policy,
-                       editor::UserStatsLoader::TOnUpdateCallback fn)
+                       editor::UserStatsLoader::OnUpdateCallback fn)
   {
     m_userStatsLoader.Update(userName, policy, fn);
   }

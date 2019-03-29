@@ -4,12 +4,15 @@
 #include "drape/glsl_func.hpp"
 #include "drape/glsl_types.hpp"
 
-#include <boost/shared_array.hpp>
-
+#include <array>
+#include <cstdint>
 #include <string>
 
 namespace dp
 {
+size_t constexpr kMaxBindingDecl = 8;
+size_t constexpr kMaxBindingInfo = 2;
+
 struct BindingDecl
 {
   std::string m_attributeName;
@@ -18,6 +21,7 @@ struct BindingDecl
   uint8_t m_stride;
   uint8_t m_offset;
 
+  bool operator==(BindingDecl const & other) const;
   bool operator!=(BindingDecl const & other) const;
   bool operator<(BindingDecl const & other) const;
 };
@@ -36,10 +40,12 @@ public:
   uint16_t GetElementSize() const;
   bool IsDynamic() const;
 
+  bool operator==(BindingInfo const & other) const;
+  bool operator!=(BindingInfo const & other) const;
   bool operator<(BindingInfo const & other) const;
 
 protected:
-  boost::shared_array<BindingDecl> m_bindings;
+  std::array<BindingDecl, kMaxBindingDecl> m_bindings;
   uint16_t m_info;
 };
 
@@ -55,6 +61,8 @@ uint8_t FillDecl(size_t index, std::string const & attrName, dp::BindingInfo & i
 
   return sizeof(TFieldType);
 }
+
+using BindingInfoArray = std::array<dp::BindingInfo, kMaxBindingInfo>;
 
 template <typename TVertex>
 class BindingFiller

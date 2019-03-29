@@ -60,9 +60,17 @@ omim_link_libraries(
   pugixml
   stb_image
   sdf_image
+  vulkan_wrapper
   ${Qt5Widgets_LIBRARIES}
   ${Qt5Network_LIBRARIES}
   ${LIBZ}
 )
+
+if (PLATFORM_LINUX)
+  omim_link_libraries(
+    ${PROJECT_NAME}
+    dl
+  )
+endif()
 
 link_qt5_core(${PROJECT_NAME})

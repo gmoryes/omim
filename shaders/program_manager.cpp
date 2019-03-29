@@ -1,8 +1,11 @@
 #include "shaders/program_manager.hpp"
 #include "shaders/gl_program_pool.hpp"
+#include "shaders/vulkan_program_params.hpp"
+#include "shaders/vulkan_program_pool.hpp"
 
 #include "drape/gl_functions.hpp"
 #include "drape/support_manager.hpp"
+#include "drape/vulkan/vulkan_base_context.hpp"
 
 #include "base/logging.hpp"
 
@@ -26,16 +29,27 @@ void ProgramManager::Init(ref_ptr<dp::GraphicsContext> context)
     InitForMetal(context);
 #endif
   }
+  else if (apiVersion == dp::ApiVersion::Vulkan)
+  {
+    InitForVulkan(context);
+  }
   else
   {
     CHECK(false, ("Unsupported API version."));
   }
 }
+
+void ProgramManager::Destroy(ref_ptr<dp::GraphicsContext> context)
+{
+  auto const apiVersion = context->GetApiVersion();
+  if (apiVersion == dp::ApiVersion::Vulkan)
+    DestroyForVulkan(context);
+}
   
 void ProgramManager::InitForOpenGL(ref_ptr<dp::GraphicsContext> context)
 {
   std::string globalDefines;
-  
+
   // This feature is not supported on some Android devices (especially on Android 4.x version).
   // Since we can't predict on which devices it'll work fine, we have to turn off for all devices.
 #if !defined(OMIM_OS_ANDROID)
@@ -58,6 +72,21 @@ void ProgramManager::InitForOpenGL(ref_ptr<dp::GraphicsContext> context)
   pool->SetDefines(globalDefines);
   
   m_paramsSetter = make_unique_dp<GLProgramParamsSetter>();
+}
+
+void ProgramManager::InitForVulkan(ref_ptr<dp::GraphicsContext> context)
+{
+  m_pool = make_unique_dp<vulkan::VulkanProgramPool>(context);
+  m_paramsSetter = make_unique_dp<vulkan::VulkanProgramParamsSetter>(context);
+}
+
+void ProgramManager::DestroyForVulkan(ref_ptr<dp::GraphicsContext> context)
+{
+  ASSERT(dynamic_cast<vulkan::VulkanProgramParamsSetter *>(m_paramsSetter.get()) != nullptr, ());
+  static_cast<vulkan::VulkanProgramParamsSetter *>(m_paramsSetter.get())->Destroy(context);
+
+  ASSERT(dynamic_cast<vulkan::VulkanProgramPool *>(m_pool.get()) != nullptr, ());
+  static_cast<vulkan::VulkanProgramPool *>(m_pool.get())->Destroy(context);
 }
 
 ref_ptr<dp::GpuProgram> ProgramManager::GetProgram(Program program)

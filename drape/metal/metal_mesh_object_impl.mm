@@ -65,9 +65,10 @@ public:
   {
     m_geometryBuffers.clear();
   }
-  
-  void UpdateBuffer(uint32_t bufferInd) override
+
+  void UpdateBuffer(ref_ptr<dp::GraphicsContext> context, uint32_t bufferInd) override
   {
+    UNUSED_VALUE(context);
     CHECK_LESS(bufferInd, static_cast<uint32_t>(m_geometryBuffers.size()), ());
     
     auto & buffer = m_mesh->m_buffers[bufferInd];

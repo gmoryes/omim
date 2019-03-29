@@ -39,6 +39,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include <boost/optional.hpp>
+
 namespace dp
 {
 class Framebuffer;
@@ -224,7 +226,7 @@ private:
   };
 
   void ReleaseResources();
-  void UpdateGLResources();
+  void UpdateContextDependentResources();
 
   void BeginUpdateOverlayTree(ScreenBase const & modelView);
   void UpdateOverlayTree(ScreenBase const & modelView, drape_ptr<RenderGroup> & renderGroup);
@@ -253,7 +255,8 @@ private:
 
   void ProcessSelection(ref_ptr<SelectObjectMessage> msg);
 
-  void OnCacheRouteArrows(int routeIndex, std::vector<ArrowBorders> const & borders);
+  void OnPrepareRouteArrows(dp::DrapeID subrouteIndex, std::vector<ArrowBorders> && borders);
+  void OnCacheRouteArrows(dp::DrapeID subrouteIndex, std::vector<ArrowBorders> const & borders);
 
   void CollectShowOverlaysEvents();
 
@@ -268,7 +271,23 @@ private:
   drape_ptr<gui::LayerRenderer> m_guiRenderer;
   gui::TWidgetsLayoutInfo m_lastWidgetsLayout;
   drape_ptr<MyPositionController> m_myPositionController;
+
   drape_ptr<SelectionShape> m_selectionShape;
+  struct SelectionTrackInfo
+  {
+    SelectionTrackInfo() = default;
+
+    SelectionTrackInfo(m2::AnyRectD const & startRect, m2::PointD const & startPos)
+      : m_startRect(startRect)
+      , m_startPos(startPos)
+    {}
+
+    m2::AnyRectD m_startRect;
+    m2::PointD m_startPos;
+    m2::PointI m_snapSides = m2::PointI::Zero();
+  };
+  boost::optional<SelectionTrackInfo> m_selectionTrackInfo;
+
   drape_ptr<RouteRenderer> m_routeRenderer;
   drape_ptr<TrafficRenderer> m_trafficRenderer;
   drape_ptr<TransitSchemeRenderer> m_transitSchemeRenderer;

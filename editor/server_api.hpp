@@ -8,17 +8,17 @@
 
 #include "base/exception.hpp"
 
-#include "std/map.hpp"
-#include "std/string.hpp"
+#include <map>
+#include <string>
 
 namespace osm
 {
 struct UserPreferences
 {
   uint64_t m_id;
-  string m_displayName;
+  std::string m_displayName;
   time_t m_accountCreated;
-  string m_imageUrl;
+  std::string m_imageUrl;
   uint32_t m_changesets;
 };
 
@@ -28,7 +28,7 @@ class ServerApi06
 {
 public:
   // k= and v= tags used in OSM.
-  using TKeyValueTags = map<string, string>;
+  using KeyValueTags = std::map<std::string, std::string>;
 
   DECLARE_EXCEPTION(ServerApi06Exception, RootException);
   DECLARE_EXCEPTION(NotAuthorized, ServerApi06Exception);
@@ -49,13 +49,13 @@ public:
   /// This function can be used to check if user did not confirm email validation link after registration.
   /// Throws if there is no connection.
   /// @returns true if user have registered/signed up even if his email address was not confirmed yet.
-  bool TestOSMUser(string const & userName);
+  bool TestOSMUser(std::string const & userName);
   /// Get OSM user preferences in a convenient struct.
   /// Throws in case of any error.
   UserPreferences GetUserPreferences() const;
   /// Please use at least created_by=* and comment=* tags.
   /// @returns created changeset ID.
-  uint64_t CreateChangeSet(TKeyValueTags const & kvTags) const;
+  uint64_t CreateChangeSet(KeyValueTags const & kvTags) const;
   /// <node>, <way> or <relation> are supported.
   /// Only one element per call is supported.
   /// @returns id of created element.
@@ -71,10 +71,10 @@ public:
   /// @param element should already have all attributes set, including "id", "version", "changeset".
   /// @returns true if element was successfully deleted (or was already deleted).
   void DeleteElement(editor::XMLFeature const & element) const;
-  void UpdateChangeSet(uint64_t changesetId, TKeyValueTags const & kvTags) const;
+  void UpdateChangeSet(uint64_t changesetId, KeyValueTags const & kvTags) const;
   void CloseChangeSet(uint64_t changesetId) const;
   /// @returns id of a created note.
-  uint64_t CreateNote(ms::LatLon const & ll, string const & message) const;
+  uint64_t CreateNote(ms::LatLon const & ll, std::string const & message) const;
   void CloseNote(uint64_t const id) const;
 
   /// @returns OSM xml string with features in the bounding box or empty string on error.

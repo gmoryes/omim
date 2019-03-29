@@ -14,7 +14,8 @@ namespace dp
 class Batcher::CallbacksWrapper : public BatchCallbacks
 {
 public:
-  CallbacksWrapper(RenderState const & state, ref_ptr<OverlayHandle> overlay, ref_ptr<Batcher> batcher)
+  CallbacksWrapper(RenderState const & state, ref_ptr<OverlayHandle> overlay,
+                   ref_ptr<Batcher> batcher)
     : m_state(state)
     , m_overlay(overlay)
     , m_batcher(batcher)
@@ -31,14 +32,15 @@ public:
     m_indicesRange.m_idxStart = m_buffer->GetIndexCount();
   }
 
-  void FlushData(BindingInfo const & info, void const * data, uint32_t count) override
+  void FlushData(ref_ptr<GraphicsContext> context, BindingInfo const & info,
+                 void const * data, uint32_t count) override
   {
     if (m_overlay != nullptr && info.IsDynamic())
     {
       uint32_t offset = m_buffer->GetDynamicBufferOffset(info);
       m_overlay->AddDynamicAttribute(info, offset, count);
     }
-    m_buffer->UploadData(info, data, count);
+    m_buffer->UploadData(context, info, data, count);
   }
 
   void * GetIndexStorage(uint32_t size, uint32_t & startIndex) override
@@ -55,10 +57,10 @@ public:
     }
   }
 
-  void SubmitIndices() override
+  void SubmitIndices(ref_ptr<GraphicsContext> context) override
   {
     if (m_overlay == nullptr || !m_overlay->IndexesRequired())
-      m_buffer->UploadIndexes(m_indexStorage.GetRawConst(), m_indexStorage.Size());
+      m_buffer->UploadIndices(context, m_indexStorage.GetRawConst(), m_indexStorage.Size());
   }
 
   uint32_t GetAvailableVertexCount() const override
@@ -222,6 +224,11 @@ void Batcher::SetFeatureMinZoom(int minZoom)
     bucket.second->SetFeatureMinZoom(m_featureMinZoom);
 }
 
+void Batcher::SetBatcherHash(uint64_t batcherHash)
+{
+  m_batcherHash = batcherHash;
+}
+
 void Batcher::ChangeBuffer(ref_ptr<GraphicsContext> context, ref_ptr<CallbacksWrapper> wrapper)
 {
   RenderState const & state = wrapper->GetState();
@@ -233,11 +240,13 @@ void Batcher::ChangeBuffer(ref_ptr<GraphicsContext> context, ref_ptr<CallbacksWr
 
 ref_ptr<RenderBucket> Batcher::GetBucket(RenderState const & state)
 {
-  TBuckets::iterator it = m_buckets.find(state);
+  auto const it = m_buckets.find(state);
   if (it != m_buckets.end())
     return make_ref(it->second);
 
-  drape_ptr<VertexArrayBuffer> vao = make_unique_dp<VertexArrayBuffer>(m_indexBufferSize, m_vertexBufferSize);
+  drape_ptr<VertexArrayBuffer> vao = make_unique_dp<VertexArrayBuffer>(m_indexBufferSize,
+                                                                       m_vertexBufferSize,
+                                                                       m_batcherHash);
   drape_ptr<RenderBucket> buffer = make_unique_dp<RenderBucket>(std::move(vao));
   ref_ptr<RenderBucket> result = make_ref(buffer);
   result->SetFeatureMinZoom(m_featureMinZoom);
@@ -249,7 +258,7 @@ ref_ptr<RenderBucket> Batcher::GetBucket(RenderState const & state)
 
 void Batcher::FinalizeBucket(ref_ptr<GraphicsContext> context, RenderState const & state)
 {
-  TBuckets::iterator it = m_buckets.find(state);
+  auto const it = m_buckets.find(state);
   ASSERT(it != m_buckets.end(), ("Have no bucket for finalize with given state"));
   drape_ptr<RenderBucket> bucket = std::move(it->second);
   m_buckets.erase(state);

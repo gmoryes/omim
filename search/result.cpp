@@ -164,9 +164,11 @@ string DebugPrint(Result const & result)
 
   ostringstream os;
   os << "Result [";
-  os << "name: " << result.GetString() << ", ";
-  os << "type: " << readableType << ", ";
-  os << "info: " << DebugPrint(result.GetRankingInfo());
+  os << "name: " << result.GetString();
+  os << ", type: " << readableType;
+  os << ", info: " << DebugPrint(result.GetRankingInfo());
+  if (!result.GetProvenance().empty())
+    os << ", provenance: " << ::DebugPrint(result.GetProvenance());
   os << "]";
   return os.str();
 }

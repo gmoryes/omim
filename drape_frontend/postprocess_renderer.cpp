@@ -147,18 +147,22 @@ PostprocessRenderer::~PostprocessRenderer()
   ClearContextDependentResources();
 }
 
-void PostprocessRenderer::Init(ref_ptr<dp::GraphicsContext> context, dp::FramebufferFallback && fallback)
+void PostprocessRenderer::Init(ref_ptr<dp::GraphicsContext> context, dp::FramebufferFallback && fallback,
+                               PrerenderFrame && prerenderFrame)
 {
   m_apiVersion = context->GetApiVersion();
   m_screenQuadRenderer = make_unique_dp<ScreenQuadRenderer>(context);
   m_framebufferFallback = std::move(fallback);
   ASSERT(m_framebufferFallback != nullptr, ());
+  m_prerenderFrame = std::move(prerenderFrame);
+  ASSERT(m_prerenderFrame != nullptr, ());
 }
 
 void PostprocessRenderer::ClearContextDependentResources()
 {
   m_screenQuadRenderer.reset();
   m_framebufferFallback = nullptr;
+  m_prerenderFrame = nullptr;
   m_staticTextures.reset();
 
   m_mainFramebuffer.reset();
@@ -187,6 +191,7 @@ bool PostprocessRenderer::IsEnabled() const
   // Do not use post processing in routing following mode by energy-saving reasons.
   // For Metal rendering to the texture is more efficient,
   // since nextDrawable will be requested later.
+
   if (m_apiVersion != dp::ApiVersion::Metal && m_isRouteFollowingActive)
     return false;
 
@@ -239,17 +244,26 @@ bool PostprocessRenderer::CanRenderAntialiasing() const
   return true;
 }
 
-bool PostprocessRenderer::BeginFrame(ref_ptr<dp::GraphicsContext> context, bool activeFrame)
+bool PostprocessRenderer::BeginFrame(ref_ptr<dp::GraphicsContext> context, ScreenBase const & modelView,
+                                     bool activeFrame)
 {
   if (!IsEnabled())
   {
+    CHECK(m_prerenderFrame != nullptr, ());
+    m_prerenderFrame(modelView);
+
     CHECK(m_framebufferFallback != nullptr, ());
     return m_framebufferFallback();
   }
 
   m_frameStarted = activeFrame || !m_isMainFramebufferRendered;
   if (m_frameStarted)
+  {
+    CHECK(m_prerenderFrame != nullptr, ());
+    m_prerenderFrame(modelView);
+
     context->SetFramebuffer(make_ref(m_mainFramebuffer));
+  }
 
   if (m_frameStarted && CanRenderAntialiasing())
     context->SetStencilTestEnabled(false);
@@ -284,7 +298,7 @@ bool PostprocessRenderer::EndFrame(ref_ptr<dp::GraphicsContext> context,
     {
       context->SetFramebuffer(make_ref(m_edgesFramebuffer));
       context->Clear(dp::ClearBits::ColorBit, dp::ClearBits::ColorBit | dp::ClearBits::StencilBit /* storeBits */);
-      if (m_apiVersion == dp::ApiVersion::Metal)
+      if (m_apiVersion == dp::ApiVersion::Metal || m_apiVersion == dp::ApiVersion::Vulkan)
         context->SetStencilFunction(dp::StencilFace::FrontAndBack, dp::TestFunction::Greater);
       else
         context->SetStencilFunction(dp::StencilFace::FrontAndBack, dp::TestFunction::NotEqual);

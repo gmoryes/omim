@@ -12,7 +12,8 @@
 
 #include "base/buffer_vector.hpp"
 
-#include "std/vector.hpp"
+#include <string>
+#include <vector>
 
 namespace routing
 {
@@ -23,12 +24,12 @@ namespace routing
  */
 struct LoadedPathSegment
 {
-  vector<Junction> m_path;
-  vector<turns::SingleLaneInfo> m_lanes;
-  string m_name;
+  std::vector<Junction> m_path;
+  std::vector<turns::SingleLaneInfo> m_lanes;
+  std::string m_name;
   double m_weight = 0.0; /*!< Time in seconds to pass the segment. */
   SegmentRange m_segmentRange;
-  vector<Segment> m_segments; /*!< Traffic segments for |m_path|. */
+  std::vector<Segment> m_segments; /*!< Traffic segments for |m_path|. */
   ftypes::HighwayClass m_highwayClass = ftypes::HighwayClass::Undefined;
   bool m_onRoundabout = false;
   bool m_isLink = false;
@@ -36,5 +37,5 @@ struct LoadedPathSegment
   bool IsValid() const { return m_path.size() > 1; }
 };
 
-using TUnpackedPathSegments = vector<LoadedPathSegment>;
+using TUnpackedPathSegments = std::vector<LoadedPathSegment>;
 }  // namespace routing

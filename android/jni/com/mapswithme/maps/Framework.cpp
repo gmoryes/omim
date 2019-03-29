@@ -4,6 +4,7 @@
 #include "com/mapswithme/opengl/androidoglcontextfactory.hpp"
 #include "com/mapswithme/platform/Platform.hpp"
 #include "com/mapswithme/util/NetworkPolicy.hpp"
+#include "com/mapswithme/vulkan/android_vulkan_context_factory.hpp"
 
 #include "map/chart_generator.hpp"
 #include "map/everywhere_search_params.hpp"
@@ -84,6 +85,12 @@ namespace
 
 jobject g_mapObjectListener = nullptr;
 int const kUndefinedTip = -1;
+
+android::AndroidVulkanContextFactory * CastFactory(drape_ptr<dp::GraphicsContextFactory> const & f)
+{
+  ASSERT(dynamic_cast<android::AndroidVulkanContextFactory *>(f.get()) != nullptr, ());
+  return static_cast<android::AndroidVulkanContextFactory *>(f.get());
+}
 }  // namespace
 
 namespace android
@@ -99,7 +106,7 @@ enum MultiTouchAction
 
 Framework::Framework()
   : m_lastCompass(0.0)
-  , m_isContextDestroyed(false)
+  , m_isSurfaceDestroyed(false)
   , m_currentMode(location::PendingPosition)
   , m_isCurrentModeInitialized(false)
   , m_isChoosePositionMode(false)
@@ -156,23 +163,67 @@ void Framework::TransitSchemeStateChanged(TransitReadManager::TransitSchemeState
     m_onTransitStateChangedFn(state);
 }
 
-bool Framework::CreateDrapeEngine(JNIEnv * env, jobject jSurface, int densityDpi, bool firstLaunch,
-                                  bool launchByDeepLink)
+bool Framework::DestroySurfaceOnDetach()
 {
-  m_contextFactory = make_unique_dp<dp::ThreadSafeFactory>(new AndroidOGLContextFactory(env, jSurface));
-  AndroidOGLContextFactory const * factory = m_contextFactory->CastFactory<AndroidOGLContextFactory>();
-  if (!factory->IsValid())
-  {
-    LOG(LWARNING, ("Invalid GL context."));
+  if (m_vulkanContextFactory)
     return false;
+  return true;
+}
+
+bool Framework::CreateDrapeEngine(JNIEnv * env, jobject jSurface, int densityDpi, bool firstLaunch,
+                                  bool launchByDeepLink, int appVersionCode)
+{
+  if (m_work.LoadPreferredGraphicsAPI() == dp::ApiVersion::Vulkan)
+  {
+    m_vulkanContextFactory = make_unique_dp<AndroidVulkanContextFactory>(appVersionCode);
+    if (!CastFactory(m_vulkanContextFactory)->IsVulkanSupported())
+    {
+      LOG(LWARNING, ("Vulkan API is not supported."));
+      m_vulkanContextFactory.reset();
+    }
+
+    if (m_vulkanContextFactory)
+    {
+      auto f = CastFactory(m_vulkanContextFactory);
+      f->SetSurface(env, jSurface);
+      if (!f->IsValid())
+      {
+        LOG(LWARNING, ("Invalid Vulkan API context."));
+        m_vulkanContextFactory.reset();
+      }
+    }
+  }
+
+  AndroidOGLContextFactory * oglFactory = nullptr;
+  if (!m_vulkanContextFactory)
+  {
+    m_oglContextFactory = make_unique_dp<dp::ThreadSafeFactory>(
+      new AndroidOGLContextFactory(env, jSurface));
+    oglFactory = m_oglContextFactory->CastFactory<AndroidOGLContextFactory>();
+    if (!oglFactory->IsValid())
+    {
+      LOG(LWARNING, ("Invalid GL context."));
+      return false;
+    }
   }
 
   ::Framework::DrapeCreationParams p;
-  p.m_apiVersion = factory->IsSupportedOpenGLES3() ? dp::ApiVersion::OpenGLES3 :
-                                                     dp::ApiVersion::OpenGLES2;
-  p.m_surfaceWidth = factory->GetWidth();
-  p.m_surfaceHeight = factory->GetHeight();
-  p.m_visualScale = dp::VisualScale(densityDpi);
+  if (m_vulkanContextFactory)
+  {
+    auto f = CastFactory(m_vulkanContextFactory);
+    p.m_apiVersion = dp::ApiVersion::Vulkan;
+    p.m_surfaceWidth = f->GetWidth();
+    p.m_surfaceHeight = f->GetHeight();
+  }
+  else
+  {
+    CHECK(oglFactory != nullptr, ());
+    p.m_apiVersion = oglFactory->IsSupportedOpenGLES3() ? dp::ApiVersion::OpenGLES3 :
+                                                          dp::ApiVersion::OpenGLES2;
+    p.m_surfaceWidth = oglFactory->GetWidth();
+    p.m_surfaceHeight = oglFactory->GetHeight();
+  }
+  p.m_visualScale = static_cast<float>(dp::VisualScale(densityDpi));
   p.m_hasMyPositionState = m_isCurrentModeInitialized;
   p.m_initialMyPositionState = m_currentMode;
   p.m_isChoosePositionMode = m_isChoosePositionMode;
@@ -183,7 +234,10 @@ bool Framework::CreateDrapeEngine(JNIEnv * env, jobject jSurface, int densityDpi
 
   m_work.SetMyPositionModeListener(bind(&Framework::MyPositionModeChanged, this, _1, _2));
 
-  m_work.CreateDrapeEngine(make_ref(m_contextFactory), move(p));
+  if (m_vulkanContextFactory)
+    m_work.CreateDrapeEngine(make_ref(m_vulkanContextFactory), move(p));
+  else
+    m_work.CreateDrapeEngine(make_ref(m_oglContextFactory), move(p));
   m_work.EnterForeground();
 
   return true;
@@ -194,32 +248,70 @@ bool Framework::IsDrapeEngineCreated()
   return m_work.IsDrapeEngineCreated();
 }
 
-void Framework::Resize(int w, int h)
+void Framework::Resize(JNIEnv * env, jobject jSurface, int w, int h)
 {
-  m_contextFactory->CastFactory<AndroidOGLContextFactory>()->UpdateSurfaceSize(w, h);
+  if (m_vulkanContextFactory)
+  {
+    auto vulkanContextFactory = CastFactory(m_vulkanContextFactory);
+    if (vulkanContextFactory->GetWidth() != w || vulkanContextFactory->GetHeight() != h)
+    {
+      m_vulkanContextFactory->SetPresentAvailable(false);
+      m_work.SetRenderingDisabled(false /* destroySurface */);
+
+      vulkanContextFactory->ChangeSurface(env, jSurface, w, h);
+
+      vulkanContextFactory->SetPresentAvailable(true);
+      m_work.SetRenderingEnabled();
+    }
+  }
+  else
+  {
+    m_oglContextFactory->CastFactory<AndroidOGLContextFactory>()->UpdateSurfaceSize(w, h);
+  }
   m_work.OnSize(w, h);
 
   //TODO: remove after correct visible rect calculation.
   frm()->SetVisibleViewport(m2::RectD(0, 0, w, h));
 }
 
-void Framework::DetachSurface(bool destroyContext)
+void Framework::DetachSurface(bool destroySurface)
 {
-  LOG(LINFO, ("Detach surface started. destroyContext =", destroyContext));
-  ASSERT(m_contextFactory != nullptr, ());
-  m_contextFactory->SetPresentAvailable(false);
-
-  if (destroyContext)
+  LOG(LINFO, ("Detach surface started. destroySurface =", destroySurface));
+  if (m_vulkanContextFactory)
   {
-    LOG(LINFO, ("Destroy context."));
-    m_isContextDestroyed = true;
-    m_work.EnterBackground();
-    m_work.OnDestroyGLContext();
+    m_vulkanContextFactory->SetPresentAvailable(false);
   }
-  m_work.SetRenderingDisabled(destroyContext);
+  else
+  {
+    ASSERT(m_oglContextFactory != nullptr, ());
+    m_oglContextFactory->SetPresentAvailable(false);
+  }
 
-  AndroidOGLContextFactory * factory = m_contextFactory->CastFactory<AndroidOGLContextFactory>();
-  factory->ResetSurface();
+  if (destroySurface)
+  {
+    LOG(LINFO, ("Destroy surface."));
+    m_isSurfaceDestroyed = true;
+    m_work.EnterBackground();
+    m_work.OnDestroySurface();
+  }
+
+  if (m_vulkanContextFactory)
+  {
+    // With Vulkan we don't need to recreate all graphics resources,
+    // we have to destroy only resources bound with surface (swapchains,
+    // image views, framebuffers and command buffers). All these resources will be
+    // destroyed in ResetSurface().
+    m_work.SetRenderingDisabled(false /* destroySurface */);
+
+    // Allow pipeline dump only on enter background.
+    CastFactory(m_vulkanContextFactory)->ResetSurface(destroySurface /* allowPipelineDump */);
+  }
+  else
+  {
+    m_work.SetRenderingDisabled(destroySurface);
+    auto factory = m_oglContextFactory->CastFactory<AndroidOGLContextFactory>();
+    factory->ResetSurface();
+  }
   LOG(LINFO, ("Detach surface finished."));
 }
 
@@ -227,26 +319,52 @@ bool Framework::AttachSurface(JNIEnv * env, jobject jSurface)
 {
   LOG(LINFO, ("Attach surface started."));
 
-  ASSERT(m_contextFactory != nullptr, ());
-  AndroidOGLContextFactory * factory = m_contextFactory->CastFactory<AndroidOGLContextFactory>();
-  factory->SetSurface(env, jSurface);
-
-  if (!factory->IsValid())
+  int w = 0, h = 0;
+  if (m_vulkanContextFactory)
   {
-    LOG(LWARNING, ("Invalid GL context."));
-    return false;
+    auto factory = CastFactory(m_vulkanContextFactory);
+    factory->SetSurface(env, jSurface);
+    if (!factory->IsValid())
+    {
+      LOG(LWARNING, ("Invalid Vulkan API context."));
+      return false;
+    }
+    w = factory->GetWidth();
+    h = factory->GetHeight();
+  }
+  else
+  {
+    ASSERT(m_oglContextFactory != nullptr, ());
+    auto factory = m_oglContextFactory->CastFactory<AndroidOGLContextFactory>();
+    factory->SetSurface(env, jSurface);
+    if (!factory->IsValid())
+    {
+      LOG(LWARNING, ("Invalid GL context."));
+      return false;
+    }
+    w = factory->GetWidth();
+    h = factory->GetHeight();
   }
 
   ASSERT(!m_guiPositions.empty(), ("GUI elements must be set-up before engine is created"));
 
-  m_contextFactory->SetPresentAvailable(true);
-  m_work.SetRenderingEnabled(factory);
-
-  if (m_isContextDestroyed)
+  if (m_vulkanContextFactory)
   {
-    LOG(LINFO, ("Recover GL resources, viewport size:", factory->GetWidth(), factory->GetHeight()));
-    m_work.OnRecoverGLContext(factory->GetWidth(), factory->GetHeight());
-    m_isContextDestroyed = false;
+    m_vulkanContextFactory->SetPresentAvailable(true);
+    m_work.SetRenderingEnabled();
+  }
+  else
+  {
+    m_oglContextFactory->SetPresentAvailable(true);
+    m_work.SetRenderingEnabled(make_ref(m_oglContextFactory));
+  }
+
+  if (m_isSurfaceDestroyed)
+  {
+    LOG(LINFO, ("Recover surface, viewport size:", w, h));
+    bool const recreateContextDependentResources = (m_vulkanContextFactory == nullptr);
+    m_work.OnRecoverSurface(w, h, recreateContextDependentResources);
+    m_isSurfaceDestroyed = false;
 
     m_work.EnterForeground();
   }
@@ -258,20 +376,28 @@ bool Framework::AttachSurface(JNIEnv * env, jobject jSurface)
 
 void Framework::PauseSurfaceRendering()
 {
-  if (m_contextFactory == nullptr)
-    return;
+  if (m_vulkanContextFactory)
+    m_vulkanContextFactory->SetPresentAvailable(false);
+  if (m_oglContextFactory)
+    m_oglContextFactory->SetPresentAvailable(false);
+
   LOG(LINFO, ("Pause surface rendering."));
-  m_contextFactory->SetPresentAvailable(false);
 }
 
 void Framework::ResumeSurfaceRendering()
 {
-  if (m_contextFactory == nullptr)
-    return;
+  if (m_vulkanContextFactory)
+  {
+    if (CastFactory(m_vulkanContextFactory)->IsValid())
+      m_vulkanContextFactory->SetPresentAvailable(true);
+  }
+  if (m_oglContextFactory)
+  {
+    AndroidOGLContextFactory * factory = m_oglContextFactory->CastFactory<AndroidOGLContextFactory>();
+    if (factory->IsValid())
+      factory->SetPresentAvailable(true);
+  }
   LOG(LINFO, ("Resume surface rendering."));
-  AndroidOGLContextFactory * factory = m_contextFactory->CastFactory<AndroidOGLContextFactory>();
-  if (factory->IsValid())
-    m_contextFactory->SetPresentAvailable(true);
 }
 
 void Framework::SetMapStyle(MapStyle mapStyle)

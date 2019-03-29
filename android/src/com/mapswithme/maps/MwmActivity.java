@@ -1178,9 +1178,9 @@ public class MwmActivity extends BaseMwmFragmentActivity
   @Override
   public void recreate()
   {
-    // Explicitly destroy context before activity recreation.
+    // Explicitly destroy surface before activity recreation.
     if (mMapFragment != null)
-      mMapFragment.destroyContext();
+      mMapFragment.destroySurface();
     super.recreate();
   }
 
@@ -1264,13 +1264,12 @@ public class MwmActivity extends BaseMwmFragmentActivity
       return;
     }
 
-    if (mSearchController.hide())
+    if (mSearchController != null && mSearchController.hide())
     {
       SearchEngine.INSTANCE.cancelInteractiveSearch();
       if (mFilterController != null)
         mFilterController.resetFilter();
-      if (mSearchController != null)
-        mSearchController.clear();
+      mSearchController.clear();
       return;
     }
 

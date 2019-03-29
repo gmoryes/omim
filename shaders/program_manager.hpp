@@ -21,12 +21,15 @@ public:
   ProgramManager() = default;
 
   void Init(ref_ptr<dp::GraphicsContext> context);
+  void Destroy(ref_ptr<dp::GraphicsContext> context);
 
   ref_ptr<dp::GpuProgram> GetProgram(Program program);
   ref_ptr<ProgramParamsSetter> GetParamsSetter() const;
 
 private:
   void InitForOpenGL(ref_ptr<dp::GraphicsContext> context);
+  void InitForVulkan(ref_ptr<dp::GraphicsContext> context);
+  void DestroyForVulkan(ref_ptr<dp::GraphicsContext> context);
 
 #if defined(OMIM_METAL_AVAILABLE)
   // Definition of this method is in a .mm-file.

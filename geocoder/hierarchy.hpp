@@ -41,6 +41,12 @@ public:
     // Number of entries without the name field or with an empty one.
     uint64_t m_emptyNames = 0;
 
+    // Number of street entries without a locality name.
+    uint64_t m_noLocalityStreets = 0;
+
+    // Number of building entries without a locality name.
+    uint64_t m_noLocalityBuildings = 0;
+
     // Number of entries whose names do not match the most
     // specific parts of their addresses.
     // This is expected from POIs but not from regions or streets.
@@ -72,7 +78,7 @@ public:
     Type m_type = Type::Count;
 
     // The address fields of this entry, one per Type.
-    std::array<Tokens, static_cast<size_t>(Type::Count) + 1> m_address;
+    std::array<Tokens, static_cast<size_t>(Type::Count)> m_address;
   };
 
   explicit Hierarchy(std::vector<Entry> && entries, bool sorted);

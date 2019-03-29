@@ -117,7 +117,7 @@ public:
   DrapeEngine(Params && params);
   ~DrapeEngine();
 
-  void Update(int w, int h);
+  void RecoverSurface(int w, int h, bool recreateContextDependentResources);
 
   void Resize(int w, int h);
   void Invalidate();
@@ -126,6 +126,7 @@ public:
 
   void AddTouchEvent(TouchEvent const & event);
   void Scale(double factor, m2::PointD const & pxPoint, bool isAnim);
+  void Move(double factorX, double factorY, bool isAnim);
 
   // If zoom == -1 then current zoom will not be changed.
   void SetModelViewCenter(m2::PointD const & centerPt, int zoom, bool isAnim,
@@ -142,7 +143,7 @@ public:
   void InvalidateUserMarks();
 
   void SetRenderingEnabled(ref_ptr<dp::GraphicsContextFactory> contextFactory = nullptr);
-  void SetRenderingDisabled(bool const destroyContext);
+  void SetRenderingDisabled(bool const destroySurface);
   void InvalidateRect(m2::RectD const & rect);
   void UpdateMapStyle();
 

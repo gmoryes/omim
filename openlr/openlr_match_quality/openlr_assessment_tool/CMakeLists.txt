@@ -75,9 +75,17 @@ omim_link_libraries(
   stats_client
   stb_image
   succinct
+  vulkan_wrapper
   ${Qt5Widgets_LIBRARIES}
   ${LIBZ}
 )
+
+if (PLATFORM_LINUX)
+  omim_link_libraries(
+    ${PROJECT_NAME}
+    dl
+  )
+endif()
 
 link_opengl(${PROJECT_NAME})
 link_qt5_core(${PROJECT_NAME})

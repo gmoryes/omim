@@ -55,29 +55,32 @@ class ZipLogsTask implements Runnable
   private boolean zipFileAtPath(@NonNull String sourcePath, @NonNull String toLocation)
   {
     File sourceFile = new File(sourcePath);
-    try
+    try(FileOutputStream dest = new FileOutputStream(toLocation, false);
+        ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest)))
     {
-      BufferedInputStream origin;
-      FileOutputStream dest = new FileOutputStream(toLocation, false);
-      ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
       if (sourceFile.isDirectory())
       {
         zipSubFolder(out, sourceFile, sourceFile.getParent().length());
       }
       else
       {
-        byte data[] = new byte[BUFFER_SIZE];
-        FileInputStream fi = new FileInputStream(sourcePath);
-        origin = new BufferedInputStream(fi, BUFFER_SIZE);
-        ZipEntry entry = new ZipEntry(getLastPathComponent(sourcePath));
-        out.putNextEntry(entry);
-        int count;
-        while ((count = origin.read(data, 0, BUFFER_SIZE)) != -1)
+        try(FileInputStream fi = new FileInputStream(sourcePath);
+            BufferedInputStream origin = new BufferedInputStream(fi, BUFFER_SIZE);)
         {
-          out.write(data, 0, count);
+          ZipEntry entry = new ZipEntry(getLastPathComponent(sourcePath));
+          out.putNextEntry(entry);
+          byte data[] = new byte[BUFFER_SIZE];
+          int count;
+          while ((count = origin.read(data, 0, BUFFER_SIZE)) != -1) {
+            out.write(data, 0, count);
+          }
+        } catch (Exception e)
+        {
+          Log.e(TAG, "Failed to read zip file entry '" + sourcePath +"' to location '"
+                  + toLocation + "'", e);
+          return false;
         }
       }
-      out.close();
     }
     catch (Exception e)
     {

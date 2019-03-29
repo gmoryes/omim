@@ -66,8 +66,9 @@ public:
 }  // namespace
 
 // PreRankerResult ---------------------------------------------------------------------------------
-PreRankerResult::PreRankerResult(FeatureID const & id, PreRankingInfo const & info)
-  : m_id(id), m_info(info)
+PreRankerResult::PreRankerResult(FeatureID const & id, PreRankingInfo const & info,
+                                 vector<ResultTracer::Branch> const & provenance)
+  : m_id(id), m_info(info), m_provenance(provenance)
 {
   ASSERT(m_id.IsValid(), ());
 }
@@ -259,8 +260,12 @@ string DebugPrint(RankerResult const & r)
   stringstream ss;
   ss << "RankerResult ["
      << "Name: " << r.GetName()
-     << "; Type: " << r.GetBestType()
-     << "; " << DebugPrint(r.GetRankingInfo())
+     << "; Type: " << r.GetBestType();
+
+    if (!r.GetProvenance().empty())
+      ss << "; Provenance: " << ::DebugPrint(r.GetProvenance());
+
+     ss << "; " << DebugPrint(r.GetRankingInfo())
      << "; Linear model rank: " << r.GetLinearModelRank()
      << "]";
   return ss.str();

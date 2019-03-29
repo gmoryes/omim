@@ -21,7 +21,8 @@ enum class ApiVersion
   Invalid = -1,
   OpenGLES2 = 0,
   OpenGLES3,
-  Metal
+  Metal,
+  Vulkan
 };
 
 enum Anchor
@@ -95,7 +96,38 @@ inline std::string DebugPrint(dp::ApiVersion apiVersion)
   case dp::ApiVersion::OpenGLES2: return "OpenGLES2";
   case dp::ApiVersion::OpenGLES3: return "OpenGLES3";
   case dp::ApiVersion::Metal: return "Metal";
+  case dp::ApiVersion::Vulkan: return "Vulkan";
   }
   return "Unknown";
+}
+
+inline dp::ApiVersion ApiVersionFromString(std::string const & str)
+{
+#if defined(OMIM_METAL_AVAILABLE)
+  if (str == "Metal")
+    return dp::ApiVersion::Metal;
+#endif
+
+#if defined(OMIM_OS_ANDROID)
+  if (str == "Vulkan")
+    return dp::ApiVersion::Vulkan;
+#endif
+
+  if (str == "OpenGLES2")
+    return dp::ApiVersion::OpenGLES2;
+
+  if (str == "OpenGLES3")
+    return dp::ApiVersion::OpenGLES3;
+
+  // Default behavior for different OS. Appropriate fallback will be chosen
+  // if default API is not supported.
+#if defined(OMIM_METAL_AVAILABLE)
+  return dp::ApiVersion::Metal;
+#elif defined(OMIM_OS_ANDROID)
+  //TODO(@rokuz,@darina): Uncomment on full laucnch of Vulkan.
+  return dp::ApiVersion::OpenGLES3; //dp::ApiVersion::Vulkan;
+#else
+  return dp::ApiVersion::OpenGLES3;
+#endif
 }
 }  // namespace dp

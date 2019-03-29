@@ -13,6 +13,12 @@
 
 #include "platform/local_country_file_utils.hpp"
 
+#include "base/assert.hpp"
+
+#include <string>
+#include <utility>
+#include <vector>
+
 namespace editor
 {
 namespace testing
@@ -45,14 +51,14 @@ public:
   void SaveTransactionTest();
 
 private:
-  template <typename TBuildFn>
-  MwmSet::MwmId ConstructTestMwm(TBuildFn && fn)
+  template <typename BuildFn>
+  MwmSet::MwmId ConstructTestMwm(BuildFn && fn)
   {
-    return BuildMwm("TestCountry", forward<TBuildFn>(fn));
+    return BuildMwm("TestCountry", std::forward<BuildFn>(fn));
   }
 
-  template <typename TBuildFn>
-  MwmSet::MwmId BuildMwm(string const & name, TBuildFn && fn, int64_t version = 0)
+  template <typename BuildFn>
+  MwmSet::MwmId BuildMwm(std::string const & name, BuildFn && fn, int64_t version = 0)
   {
     m_mwmFiles.emplace_back(GetPlatform().WritableDir(), platform::CountryFile(name), version);
     auto & file = m_mwmFiles.back();
@@ -82,7 +88,7 @@ private:
 
   EditableDataSource m_dataSource;
   storage::CountryInfoGetterForTesting m_infoGetter;
-  vector<platform::LocalCountryFile> m_mwmFiles;
+  std::vector<platform::LocalCountryFile> m_mwmFiles;
 };
 }  // namespace testing
 }  // namespace editor

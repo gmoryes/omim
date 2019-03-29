@@ -312,6 +312,10 @@ size_t OrderCountries(boost::optional<m2::PointD> const & position, m2::RectD co
   auto const sep = stable_partition(infos.begin(), infos.end(), intersects);
   return distance(infos.begin(), sep);
 }
+
+#define TRACE(branch)                                      \
+  m_resultTracer.CallMethod(ResultTracer::Branch::branch); \
+  SCOPE_GUARD(tracerGuard, [&] { m_resultTracer.LeaveMethod(ResultTracer::Branch::branch); });
 }  // namespace
 
 // Geocoder::Geocoder ------------------------------------------------------------------------------
@@ -380,6 +384,8 @@ void Geocoder::SetParams(Params const & params)
     }
   }
 
+  m_resultTracer.Clear();
+
   LOG(LDEBUG, (static_cast<QueryParams const &>(m_params)));
 }
 
@@ -394,6 +400,8 @@ void Geocoder::GoEverywhere()
   });
 #endif
 
+  TRACE(GoEverywhere);
+
   if (m_params.GetNumTokens() == 0)
     return;
 
@@ -405,6 +413,8 @@ void Geocoder::GoEverywhere()
 
 void Geocoder::GoInViewport()
 {
+  TRACE(GoInViewport);
+
   if (m_params.GetNumTokens() == 0)
     return;
 
@@ -769,6 +779,8 @@ void Geocoder::ForEachCountry(vector<shared_ptr<MwmInfo>> const & infos, Fn && f
 
 void Geocoder::MatchCategories(BaseContext & ctx, bool aroundPivot)
 {
+  TRACE(MatchCategories);
+
   auto features = ctx.m_features[0];
 
   if (aroundPivot)
@@ -796,6 +808,8 @@ void Geocoder::MatchCategories(BaseContext & ctx, bool aroundPivot)
 
 void Geocoder::MatchRegions(BaseContext & ctx, Region::Type type)
 {
+  TRACE(MatchRegions);
+
   switch (type)
   {
   case Region::TYPE_STATE:
@@ -870,6 +884,8 @@ void Geocoder::MatchRegions(BaseContext & ctx, Region::Type type)
 
 void Geocoder::MatchCities(BaseContext & ctx)
 {
+  TRACE(MatchCities);
+
   ASSERT(!ctx.m_city, ());
 
   // Localities are ordered my (m_startToken, m_endToken) pairs.
@@ -917,6 +933,8 @@ void Geocoder::MatchCities(BaseContext & ctx)
 
 void Geocoder::MatchAroundPivot(BaseContext & ctx)
 {
+  TRACE(MatchAroundPivot);
+
   auto const features = RetrieveGeometryFeatures(*m_context, m_params.m_pivot, RECT_ID_PIVOT);
   ViewportFilter filter(features, m_preRanker.Limit() /* threshold */);
   LimitedSearch(ctx, filter);
@@ -944,6 +962,8 @@ void Geocoder::LimitedSearch(BaseContext & ctx, FeaturesFilter const & filter)
 template <typename Fn>
 void Geocoder::WithPostcodes(BaseContext & ctx, Fn && fn)
 {
+  TRACE(WithPostcodes);
+
   size_t const maxPostcodeTokens = GetMaxNumTokensInPostcode();
 
   for (size_t startToken = 0; startToken != ctx.m_numTokens; ++startToken)
@@ -982,6 +1002,8 @@ void Geocoder::WithPostcodes(BaseContext & ctx, Fn && fn)
 
 void Geocoder::GreedilyMatchStreets(BaseContext & ctx)
 {
+  TRACE(GreedilyMatchStreets);
+
   vector<StreetsMatcher::Prediction> predictions;
   StreetsMatcher::Go(ctx, *m_filter, m_params, predictions);
 
@@ -1009,16 +1031,22 @@ void Geocoder::CreateStreetsLayerAndMatchLowerLayers(BaseContext & ctx,
   layer.m_sortedFeatures = &sortedFeatures;
 
   ScopedMarkTokens mark(ctx.m_tokens, BaseContext::TOKEN_TYPE_STREET, prediction.m_tokenRange);
-//  size_t const numEmitted = ctx.m_numEmitted;
+  size_t const numEmitted = ctx.m_numEmitted;
+
   MatchPOIsAndBuildings(ctx, 0 /* curToken */);
 
   // A relaxed best effort parse: at least show the street if we can find one.
-//  if (numEmitted == ctx.m_numEmitted)
-//    FindPaths(ctx);
+  if (numEmitted == ctx.m_numEmitted && ctx.SkipUsedTokens(0) != ctx.m_numTokens)
+  {
+    TRACE(Relaxed);
+    FindPaths(ctx);
+  }
 }
 
 void Geocoder::MatchPOIsAndBuildings(BaseContext & ctx, size_t curToken)
 {
+  TRACE(MatchPOIsAndBuildings);
+
   BailIfCancelled();
 
   auto & layers = ctx.m_layers;
@@ -1340,9 +1368,9 @@ void Geocoder::EmitResult(BaseContext & ctx, MwmSet::MwmId const & mwmId, uint32
 
   info.m_allTokensUsed = allTokensUsed;
 
-  m_preRanker.Emplace(id, info);
+  m_preRanker.Emplace(id, info, m_resultTracer.GetProvenance());
 
-  // ++ctx.m_numEmitted;
+  ++ctx.m_numEmitted;
 }
 
 void Geocoder::EmitResult(BaseContext & ctx, Region const & region, TokenRange const & tokenRange,
@@ -1362,6 +1390,8 @@ void Geocoder::EmitResult(BaseContext & ctx, City const & city, TokenRange const
 
 void Geocoder::MatchUnclassified(BaseContext & ctx, size_t curToken)
 {
+  TRACE(MatchUnclassified);
+
   ASSERT(ctx.m_layers.empty(), ());
 
   // We need to match all unused tokens to UNCLASSIFIED features,
@@ -1443,3 +1473,5 @@ bool Geocoder::GetTypeInGeocoding(BaseContext const & ctx, uint32_t featureId, M
   return false;
 }
 }  // namespace search
+
+#undef TRACE

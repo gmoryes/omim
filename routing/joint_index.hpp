@@ -6,7 +6,8 @@
 
 #include "base/assert.hpp"
 
-#include "std/vector.hpp"
+#include <cstdint>
+#include <vector>
 
 namespace routing
 {
@@ -52,7 +53,7 @@ private:
     return m_offsets[nextId];
   }
 
-  vector<uint32_t> m_offsets;
-  vector<RoadPoint> m_points;
+  std::vector<uint32_t> m_offsets;
+  std::vector<RoadPoint> m_points;
 };
 }  // namespace routing

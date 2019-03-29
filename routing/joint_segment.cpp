@@ -1,15 +1,23 @@
 #include "routing/joint_segment.hpp"
 
+#include "routing/fake_feature_ids.hpp"
+
 #include "base/assert.hpp"
 
 #include <sstream>
 
 namespace routing
 {
+bool IsRealSegment(Segment const & segment)
+{
+  return segment.GetFeatureId() != FakeFeatureIds::kIndexGraphStarterId;
+}
 
 JointSegment::JointSegment(Segment const & from, Segment const & to)
 {
-  CHECK(from.IsRealSegment() && to.IsRealSegment(),
+  // Can not check segment for fake or not with segment.IsRealSegment(), because all segments
+  // have got fake m_numMwmId during mwm generation.
+  CHECK(IsRealSegment(from) && IsRealSegment(to),
         ("Segments of joints can not be fake. Only through ToFake() method."));
 
   CHECK_EQUAL(from.GetMwmId(), to.GetMwmId(), ("Different mwmIds in segments for JointSegment"));

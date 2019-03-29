@@ -1,12 +1,17 @@
 #include "routing/index_graph.hpp"
 
 #include "routing/restrictions_serialization.hpp"
+#include "routing/routing_options.hpp"
+#include "routing/world_graph.hpp"
+
+#include "platform/settings.hpp"
 
 #include "base/assert.hpp"
 #include "base/checked_cast.hpp"
 #include "base/exception.hpp"
 
 #include <algorithm>
+#include <cstdlib>
 #include <limits>
 
 namespace
@@ -57,8 +62,11 @@ bool IsRestricted(RestrictionVec const & restrictions, Segment const & u, Segmen
 
 namespace routing
 {
-IndexGraph::IndexGraph(shared_ptr<Geometry> geometry, shared_ptr<EdgeEstimator> estimator)
-  : m_geometry(geometry), m_estimator(move(estimator))
+IndexGraph::IndexGraph(shared_ptr<Geometry> geometry, shared_ptr<EdgeEstimator> estimator,
+                       RoutingOptions routingOptions)
+  : m_geometry(geometry),
+    m_estimator(move(estimator)),
+    m_avoidRoutingOptions(routingOptions)
 {
   CHECK(m_geometry, ());
   CHECK(m_estimator, ());
@@ -205,6 +213,9 @@ void IndexGraph::GetNeighboringEdges(Segment const & from, RoadPoint const & rp,
   if (!road.IsValid())
     return;
 
+  if (!road.SuitableForOptions(m_avoidRoutingOptions))
+    return;
+
   bool const bidirectional = !road.IsOneWay();
 
   if ((isOutgoing || bidirectional) && rp.GetPointId() + 1 < road.GetPointsCount())
@@ -237,6 +248,9 @@ void IndexGraph::GetSegmentCandidateForJoint(Segment const & parent, bool isOutg
     if (!road.IsValid())
       return;
 
+    if (!road.SuitableForOptions(m_avoidRoutingOptions))
+      return;
+
     bool const bidirectional = !road.IsOneWay();
     auto const pointId = rp.GetPointId();
 
@@ -265,17 +279,6 @@ void IndexGraph::ReconstructJointSegment(Segment const & parent,
 {
   CHECK_EQUAL(firstChildren.size(), lastPointIds.size(), ());
 
-  auto const step = [this](Segment const & from, Segment const & to, bool isOutgoing, SegmentEdge & edge)
-  {
-    if (IsRestricted(m_restrictions, from, to, isOutgoing))
-      return false;
-
-    RouteWeight weight = CalcSegmentWeight(isOutgoing ? to : from) +
-                         GetPenalties(isOutgoing ? from : to, isOutgoing ? to : from);
-    edge = SegmentEdge(to, weight);
-    return true;
-  };
-
   for (size_t i = 0; i < firstChildren.size(); ++i)
   {
     auto const & firstChild = firstChildren[i];
@@ -296,10 +299,24 @@ void IndexGraph::ReconstructJointSegment(Segment const & parent,
     if (m_roadAccess.GetPointType(parent.GetRoadPoint(isOutgoing)) == RoadAccess::Type::No)
       continue;
 
+    // Check firstChild for UTurn.
+    RoadPoint rp = parent.GetRoadPoint(isOutgoing);
+    if (IsUTurn(parent, firstChild) && m_roadIndex.GetJointId(rp) == Joint::kInvalidId
+        && !m_geometry->GetRoad(parent.GetFeatureId()).IsEndPointId(rp.GetPointId()))
+    {
+      continue;
+    }
+
+    if (parent.GetFeatureId() != firstChild.GetFeatureId() &&
+        IsRestricted(m_restrictions, parent, firstChild, isOutgoing))
+    {
+      continue;
+    }
+
     // Check current JointSegment for bad road access between segments.
+    rp = firstChild.GetRoadPoint(isOutgoing);
     uint32_t start = currentPointId;
     bool noRoadAccess = false;
-    RoadPoint rp = firstChild.GetRoadPoint(isOutgoing);
     do
     {
       if (m_roadAccess.GetPointType(rp) == RoadAccess::Type::No)
@@ -315,44 +332,26 @@ void IndexGraph::ReconstructJointSegment(Segment const & parent,
     if (noRoadAccess)
       continue;
 
-    // Check firstChild for UTurn.
-    rp = parent.GetRoadPoint(isOutgoing);
-    if (IsUTurn(parent, firstChild) && m_roadIndex.GetJointId(rp) == Joint::kInvalidId
-        && !m_geometry->GetRoad(parent.GetFeatureId()).IsEndPointId(rp.GetPointId()))
-    {
-      continue;
-    }
-
     bool forward = currentPointId < lastPointId;
     Segment current = firstChild;
     Segment prev = parent;
-    SegmentEdge edge;
     RouteWeight summaryWeight;
 
-    bool hasRestriction = false;
     do
     {
-      if (step(prev, current, isOutgoing, edge)) // Access ok
-      {
-        if (isOutgoing || prev != parent)
-          summaryWeight += edge.GetWeight();
+      RouteWeight const weight = CalcSegmentWeight(isOutgoing ? current : prev) +
+                                 GetPenalties(isOutgoing ? prev : current, isOutgoing ? current : prev);
 
-        if (prev == parent)
-          parentWeights.emplace_back(edge.GetWeight());
-      }
-      else
-      {
-        hasRestriction = true;
-        break;
-      }
+      if (isOutgoing || prev != parent)
+        summaryWeight += weight;
+
+      if (prev == parent)
+        parentWeights.emplace_back(weight);
 
       prev = current;
       current.Next(forward);
       currentPointId = increment(currentPointId);
     } while (currentPointId != lastPointId);
-
-    if (hasRestriction)
-      continue;
 
     jointEdges.emplace_back(isOutgoing ? JointSegment(firstChild, prev) :
                                          JointSegment(prev, firstChild),
@@ -410,4 +409,6 @@ RouteWeight IndexGraph::GetPenalties(Segment const & u, Segment const & v)
 
   return RouteWeight(uTurnPenalty /* weight */, passThroughPenalty, accessPenalty, 0.0 /* transitTime */);
 }
+
+WorldGraphMode IndexGraph::GetMode() const { return WorldGraphMode::Undefined; }
 }  // namespace routing

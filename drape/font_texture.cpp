@@ -97,11 +97,15 @@ GlyphIndex::GlyphIndex(m2::PointU const & size, ref_ptr<GlyphManager> mng,
   ASSERT(m_generator != nullptr, ());
   m_generator->RegisterListener(make_ref(this));
 
-  // Cache invalid glyph.
-  auto const key = GlyphKey(m_mng->GetInvalidGlyph(GlyphManager::kDynamicGlyphSize).m_code,
-                            GlyphManager::kDynamicGlyphSize);
+  // Cache predefined glyphs.
   bool newResource = false;
-  MapResource(key, newResource);
+  uint32_t constexpr kPredefinedGlyphsCount = 128;
+  for (uint32_t i = 0; i < kPredefinedGlyphsCount; ++i)
+  {
+    auto const key = GlyphKey(i, GlyphManager::kDynamicGlyphSize);
+
+    MapResource(key, newResource);
+  }
 }
 
 GlyphIndex::~GlyphIndex()
@@ -165,16 +169,18 @@ ref_ptr<Texture::ResourceInfo> GlyphIndex::MapResource(GlyphKey const & key, boo
   if (!m_packer.PackGlyph(glyph.m_image.m_width, glyph.m_image.m_height, r))
   {
     glyph.m_image.Destroy();
-    LOG(LWARNING, ("Glyphs packer could not pack a glyph", key.GetUnicodePoint(),
-                   "w =", glyph.m_image.m_width, "h =", glyph.m_image.m_height,
-                   "packerSize =", m_packer.GetSize()));
+    if (glyph.m_metrics.m_isValid)
+    {
+      LOG(LWARNING, ("Glyphs packer could not pack a glyph", key.GetUnicodePoint(),
+        "w =", glyph.m_image.m_width, "h =", glyph.m_image.m_height,
+        "packerSize =", m_packer.GetSize()));
+    }
 
     auto const invalidGlyph = m_mng->GetInvalidGlyph(key.GetFixedSize());
     auto invalidGlyphIndex = m_index.find(GlyphKey(invalidGlyph.m_code, key.GetFixedSize()));
     if (invalidGlyphIndex != m_index.end())
     {
-      generationData.m_glyph = invalidGlyph;
-      generationData.m_rect = r;
+      newResource = false;
       return make_ref(&invalidGlyphIndex->second);
     }
 
@@ -214,7 +220,7 @@ void GlyphIndex::OnCompleteGlyphGeneration(GlyphGenerator::GlyphGenerationDataAr
     m_pendingNodes.emplace_back(g.m_rect, g.m_glyph);
 }
 
-void GlyphIndex::UploadResources(ref_ptr<Texture> texture)
+void GlyphIndex::UploadResources(ref_ptr<dp::GraphicsContext> context, ref_ptr<Texture> texture)
 {
   PendingNodes pendingNodes;
   {
@@ -251,7 +257,7 @@ void GlyphIndex::UploadResources(ref_ptr<Texture> texture)
     ASSERT_EQUAL(glyph.m_image.m_height, rect.SizeY(), ());
 
     uint8_t * srcMemory = SharedBufferManager::GetRawPointer(glyph.m_image.m_data);
-    texture->UploadData(zeroPoint.x, zeroPoint.y, rect.SizeX(), rect.SizeY(), make_ref(srcMemory));
+    texture->UploadData(context, zeroPoint.x, zeroPoint.y, rect.SizeX(), rect.SizeY(), make_ref(srcMemory));
     
     glyph.m_image.Destroy();
   }

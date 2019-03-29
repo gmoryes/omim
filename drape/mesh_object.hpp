@@ -20,6 +20,11 @@ namespace metal
 class MetalMeshObjectImpl;
 }  // namespace metal
 
+namespace vulkan
+{
+class VulkanMeshObjectImpl;
+}  // namespace vulkan
+
 // This class implements a simple mesh object which does not use an index buffer.
 // Use this class only for simple geometry.
 class MeshObject
@@ -27,6 +32,7 @@ class MeshObject
   friend class MeshObjectImpl;
   friend class GLMeshObjectImpl;
   friend class metal::MetalMeshObjectImpl;
+  friend class vulkan::VulkanMeshObjectImpl;
 
 public:
   enum class DrawPrimitive: uint8_t
@@ -42,7 +48,7 @@ public:
   void SetBuffer(uint32_t bufferInd, std::vector<float> && vertices, uint32_t stride);
   void SetAttribute(std::string const & attributeName, uint32_t bufferInd, uint32_t offset, uint32_t componentsCount);
 
-  void UpdateBuffer(uint32_t bufferInd, std::vector<float> && vertices);
+  void UpdateBuffer(ref_ptr<dp::GraphicsContext> context, uint32_t bufferInd, std::vector<float> && vertices);
 
   template <typename TParamsSetter, typename TParams>
   void Render(ref_ptr<dp::GraphicsContext> context, ref_ptr<dp::GpuProgram> program,
@@ -100,6 +106,7 @@ private:
   };
 
   void InitForOpenGL();
+  void InitForVulkan(ref_ptr<dp::GraphicsContext> context);
 
 #if defined(OMIM_METAL_AVAILABLE)
   // Definition of this method is in a .mm-file.
@@ -123,7 +130,7 @@ public:
   virtual ~MeshObjectImpl() = default;
   virtual void Build(ref_ptr<dp::GraphicsContext> context, ref_ptr<dp::GpuProgram> program) = 0;
   virtual void Reset() = 0;
-  virtual void UpdateBuffer(uint32_t bufferInd) = 0;
+  virtual void UpdateBuffer(ref_ptr<dp::GraphicsContext> context, uint32_t bufferInd) = 0;
   virtual void Bind(ref_ptr<dp::GpuProgram> program) = 0;
   virtual void Unbind() = 0;
   virtual void DrawPrimitives(ref_ptr<dp::GraphicsContext> context, uint32_t verticesCount) = 0;

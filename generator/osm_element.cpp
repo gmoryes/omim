@@ -11,22 +11,22 @@ std::string DebugPrint(OsmElement::EntityType e)
 {
   switch (e)
   {
-    case OsmElement::EntityType::Unknown:
-      return "unknown";
-    case OsmElement::EntityType::Way:
-      return "way";
-    case OsmElement::EntityType::Tag:
-      return "tag";
-    case OsmElement::EntityType::Relation:
-      return "relation";
-    case OsmElement::EntityType::Osm:
-      return "osm";
-    case OsmElement::EntityType::Node:
-      return "node";
-    case OsmElement::EntityType::Nd:
-      return "nd";
-    case OsmElement::EntityType::Member:
-      return "member";
+  case OsmElement::EntityType::Unknown:
+    return "unknown";
+  case OsmElement::EntityType::Way:
+    return "way";
+  case OsmElement::EntityType::Tag:
+    return "tag";
+  case OsmElement::EntityType::Relation:
+    return "relation";
+  case OsmElement::EntityType::Osm:
+    return "osm";
+  case OsmElement::EntityType::Node:
+    return "node";
+  case OsmElement::EntityType::Nd:
+    return "nd";
+  case OsmElement::EntityType::Member:
+    return "member";
   }
   UNREACHABLE();
 }
@@ -83,42 +83,45 @@ std::string OsmElement::ToString(std::string const & shift) const
   ss << (shift.empty() ? "\n" : shift);
   switch (type)
   {
-    case EntityType::Node:
-      ss << "Node: " << id << " (" << std::fixed << std::setw(7) << lat << ", " << lon << ")"
-         << " tags: " << m_tags.size();
-      break;
-    case EntityType::Nd:
-      ss << "Nd ref: " << ref;
-      break;
-    case EntityType::Way:
-      ss << "Way: " << id << " nds: " << m_nds.size() << " tags: " << m_tags.size();
-      if (!m_nds.empty())
-      {
-        std::string shift2 = shift;
-        shift2 += shift2.empty() ? "\n  " : "  ";
-        for (auto const & e : m_nds)
-          ss << shift2 << e;
-      }
-      break;
-    case EntityType::Relation:
-      ss << "Relation: " << id << " members: " << m_members.size() << " tags: " << m_tags.size();
-      if (!m_members.empty())
-      {
-        std::string shift2 = shift;
-        shift2 += shift2.empty() ? "\n  " : "  ";
-        for (auto const & e : m_members)
-          ss << shift2 << e.ref << " " << DebugPrint(e.type) << " " << e.role;
-      }
-      break;
-    case EntityType::Tag:
-      ss << "Tag: " << k << " = " << v;
-      break;
-    case EntityType::Member:
-      ss << "Member: " << ref << " type: " << DebugPrint(memberType) << " role: " << role;
-      break;
-    default:
-      ss << "Unknown element";
+  case EntityType::Node:
+    ss << "Node: " << id << " (" << std::fixed << std::setw(7) << lat << ", " << lon << ")"
+       << " tags: " << m_tags.size();
+    break;
+  case EntityType::Nd:
+    ss << "Nd ref: " << ref;
+    break;
+  case EntityType::Way:
+    ss << "Way: " << id << " nds: " << m_nds.size() << " tags: " << m_tags.size();
+    if (!m_nds.empty())
+    {
+      std::string shift2 = shift;
+      shift2 += shift2.empty() ? "\n  " : "  ";
+      for (auto const & e : m_nds)
+        ss << shift2 << e;
+    }
+    break;
+  case EntityType::Relation:
+    ss << "Relation: " << id << " members: " << m_members.size() << " tags: " << m_tags.size();
+    if (!m_members.empty())
+    {
+      std::string shift2 = shift;
+      shift2 += shift2.empty() ? "\n  " : "  ";
+      for (auto const & e : m_members)
+        ss << shift2 << e.ref << " " << DebugPrint(e.type) << " " << e.role;
+    }
+    break;
+  case EntityType::Tag:
+    ss << "Tag: " << k << " = " << v;
+    break;
+  case EntityType::Member:
+    ss << "Member: " << ref << " type: " << DebugPrint(memberType) << " role: " << role;
+    break;
+  case EntityType::Unknown:
+  case EntityType::Osm:
+    UNREACHABLE();
+    break;
   }
+
   if (!m_tags.empty())
   {
     std::string shift2 = shift;
@@ -131,15 +134,10 @@ std::string OsmElement::ToString(std::string const & shift) const
 
 std::string OsmElement::GetTag(std::string const & key) const
 {
-  auto const it = std::find_if(begin(m_tags), end(m_tags), [&key](Tag const & tag)
-  {
-    return tag.key == key;
-  });
+  auto const it = std::find_if(m_tags.cbegin(), m_tags.cend(),
+                               [&key](Tag const & tag) { return tag.key == key; });
 
-  if (it == end(m_tags))
-    return {};
-
-  return it->value;
+  return it == m_tags.cend() ? std::string() : it->value;
 }
 
 std::string DebugPrint(OsmElement const & e)
@@ -164,6 +162,13 @@ base::GeoObjectId GetGeoObjectId(OsmElement const & element)
     return base::MakeOsmWay(element.id);
   case OsmElement::EntityType::Relation:
     return base::MakeOsmRelation(element.id);
+  case OsmElement::EntityType::Member:
+  case OsmElement::EntityType::Nd:
+  case OsmElement::EntityType::Osm:
+  case OsmElement::EntityType::Tag:
+  case OsmElement::EntityType::Unknown:
+    UNREACHABLE();
+    return base::GeoObjectId();
   }
   UNREACHABLE();
 }

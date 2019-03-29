@@ -8,11 +8,16 @@
 #include "base/logging.hpp"
 #include "base/macros.hpp"
 
-#include "std/algorithm.hpp"
-#include "std/random.hpp"
-#include "std/sstream.hpp"
+#include <algorithm>
+#include <cstdint>
+#include <exception>
+#include <random>
+#include <sstream>
+#include <utility>
 
 #include "private.h"
+
+using namespace std;
 
 using editor::XMLFeature;
 
@@ -101,8 +106,8 @@ string DebugPrint(xml_document const & doc)
 
 namespace osm
 {
-ChangesetWrapper::ChangesetWrapper(TKeySecret const & keySecret,
-                                   ServerApi06::TKeyValueTags const & comments) noexcept
+ChangesetWrapper::ChangesetWrapper(KeySecret const & keySecret,
+                                   ServerApi06::KeyValueTags const & comments) noexcept
   : m_changesetComments(comments), m_api(OsmOAuth::ServerAuth(keySecret))
 {
 }
@@ -117,7 +122,7 @@ ChangesetWrapper::~ChangesetWrapper()
       m_api.UpdateChangeSet(m_changesetId, m_changesetComments);
       m_api.CloseChangeSet(m_changesetId);
     }
-    catch (std::exception const & ex)
+    catch (exception const & ex)
     {
       LOG(LWARNING, (ex.what()));
     }
@@ -249,7 +254,7 @@ void ChangesetWrapper::Delete(XMLFeature node)
   m_deleted_types[GetTypeForFeature(node)]++;
 }
 
-string ChangesetWrapper::TypeCountToString(TTypeCount const & typeCount)
+string ChangesetWrapper::TypeCountToString(TypeCount const & typeCount)
 {
   if (typeCount.empty())
     return string();

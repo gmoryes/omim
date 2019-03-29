@@ -5,6 +5,7 @@
 #include "routing/joint_segment.hpp"
 #include "routing/road_graph.hpp"
 #include "routing/route.hpp"
+#include "routing/routing_options.hpp"
 #include "routing/segment.hpp"
 #include "routing/transit_info.hpp"
 
@@ -13,11 +14,26 @@
 #include "geometry/point2d.hpp"
 
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
 namespace routing
 {
+enum class WorldGraphMode
+{
+  LeapsOnly,       // Mode for building a cross mwm route containing only leaps. In case of start and
+                   // finish they (start and finish) will be connected with all transition segments of
+                   // their mwm with leap (fake) edges.
+  NoLeaps,         // Mode for building route and getting outgoing/ingoing edges without leaps at all.
+  SingleMwm,       // Mode for building route and getting outgoing/ingoing edges within mwm source
+                   // segment belongs to.
+  Joints,          // Mode for building route with jumps between Joints.
+  JointSingleMwm,  // Like |SingleMwm|, but in |Joints| mode.
+
+  Undefined        // Default mode, until initialization.
+};
+
 class WorldGraph
 {
 public:
@@ -25,18 +41,6 @@ public:
   using Vertex = IndexGraph::Vertex;
   using Edge = IndexGraph::Edge;
   using Weight = IndexGraph::Weight;
-
-  enum class Mode
-  {
-    LeapsOnly,      // Mode for building a cross mwm route containing only leaps. In case of start and
-                    // finish they (start and finish) will be connected with all transition segments of
-                    // their mwm with leap (fake) edges.
-    NoLeaps,        // Mode for building route and getting outgoing/ingoing edges without leaps at all.
-    SingleMwm,      // Mode for building route and getting outgoing/ingoing edges within mwm source
-                    // segment belongs to.
-    Joints,         // Mode for building route with jumps between Joints.
-    JointSingleMwm  // Like |SingleMwm|, but in |Joints| mode.
-  };
 
   virtual ~WorldGraph() = default;
 
@@ -58,8 +62,8 @@ public:
 
   // Clear memory used by loaded graphs.
   virtual void ClearCachedGraphs() = 0;
-  virtual void SetMode(Mode mode) = 0;
-  virtual Mode GetMode() const = 0;
+  virtual void SetMode(WorldGraphMode mode) = 0;
+  virtual WorldGraphMode GetMode() const = 0;
 
   // Interface for AStarAlgorithm:
   virtual void GetOutgoingEdgesList(Segment const & segment, std::vector<SegmentEdge> & edges) = 0;
@@ -77,6 +81,10 @@ public:
   /// \returns transitions for mwm with id |numMwmId|.
   virtual std::vector<Segment> const & GetTransitions(NumMwmId numMwmId, bool isEnter) = 0;
 
+  virtual bool IsRoutingOptionsGood(Segment const & /* segment */);
+  virtual RoutingOptions GetRoutingOptions(Segment const & /* segment */);
+  virtual void SetRoutingOptions(RoutingOptions /* routingOptions */);
+
   /// \returns transit-specific information for segment. For nontransit segments returns nullptr.
   virtual std::unique_ptr<TransitInfo> GetTransitInfo(Segment const & segment) = 0;
 
@@ -90,5 +98,5 @@ protected:
                              std::vector<Segment> & twins) = 0;
 };
 
-std::string DebugPrint(WorldGraph::Mode mode);
+std::string DebugPrint(WorldGraphMode mode);
 }  // namespace routing

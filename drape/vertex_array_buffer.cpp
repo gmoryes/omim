@@ -11,6 +11,8 @@
 
 #include "std/target_os.hpp"
 
+#include <algorithm>
+
 namespace dp
 {
 namespace
@@ -118,8 +120,10 @@ private:
 };
 }  // namespace
 
-VertexArrayBuffer::VertexArrayBuffer(uint32_t indexBufferSize, uint32_t dataBufferSize)
+VertexArrayBuffer::VertexArrayBuffer(uint32_t indexBufferSize, uint32_t dataBufferSize,
+                                     uint64_t batcherHash)
   : m_dataBufferSize(dataBufferSize)
+  , m_batcherHash(batcherHash)
 {
   m_indexBuffer = make_unique_dp<IndexBuffer>(indexBufferSize);
 
@@ -148,13 +152,13 @@ void VertexArrayBuffer::PreflushImpl(ref_ptr<GraphicsContext> context)
 
   // Buffers are ready, so moving them from CPU to GPU.
   for (auto & buffer : m_staticBuffers)
-    buffer.second->MoveToGPU(context, GPUBuffer::ElementBuffer);
+    buffer.second->MoveToGPU(context, GPUBuffer::ElementBuffer, m_batcherHash);
 
   for (auto & buffer : m_dynamicBuffers)
-    buffer.second->MoveToGPU(context, GPUBuffer::ElementBuffer);
+    buffer.second->MoveToGPU(context, GPUBuffer::ElementBuffer, m_batcherHash);
 
   ASSERT(m_indexBuffer != nullptr, ());
-  m_indexBuffer->MoveToGPU(context, GPUBuffer::IndexBuffer);
+  m_indexBuffer->MoveToGPU(context, GPUBuffer::IndexBuffer, m_batcherHash);
 
   // Preflush can be called on BR, where impl is not initialized.
   // For Metal rendering this code has no meaning.
@@ -176,7 +180,7 @@ void VertexArrayBuffer::Render(ref_ptr<GraphicsContext> context, bool drawAsLine
 void VertexArrayBuffer::RenderRange(ref_ptr<GraphicsContext> context,
                                     bool drawAsLine, IndicesRange const & range)
 {
-  if (!(m_staticBuffers.empty() && m_dynamicBuffers.empty()) && GetIndexCount() > 0)
+  if (HasBuffers() && GetIndexCount() > 0)
   {
     // If OES_vertex_array_object is supported than all bindings have already saved in VAO
     // and we need only bind VAO.
@@ -198,6 +202,9 @@ void VertexArrayBuffer::Build(ref_ptr<GraphicsContext> context, ref_ptr<GpuProgr
   if (m_moveToGpuOnBuild && !m_isPreflushed)
     PreflushImpl(context);
 
+  if (!HasBuffers())
+    return;
+
   if (!m_impl)
   {
     auto const apiVersion = context->GetApiVersion();
@@ -211,15 +218,18 @@ void VertexArrayBuffer::Build(ref_ptr<GraphicsContext> context, ref_ptr<GpuProgr
       m_impl = CreateImplForMetal(make_ref(this));
 #endif
     }
+    else if (apiVersion == dp::ApiVersion::Vulkan)
+    {
+      CHECK_NOT_EQUAL(m_bindingInfoCount, 0, ());
+      m_impl = CreateImplForVulkan(context, make_ref(this), std::move(m_bindingInfo), m_bindingInfoCount);
+    }
     else
     {
       CHECK(false, ("Unsupported API version."));
     }
   }
 
-  if (m_staticBuffers.empty())
-    return;
-
+  CHECK(m_impl != nullptr, ());
   if (!m_impl->Build(program))
     return;
 
@@ -228,8 +238,8 @@ void VertexArrayBuffer::Build(ref_ptr<GraphicsContext> context, ref_ptr<GpuProgr
   Unbind();
 }
 
-void VertexArrayBuffer::UploadData(BindingInfo const & bindingInfo, void const * data,
-                                   uint32_t count)
+void VertexArrayBuffer::UploadData(ref_ptr<GraphicsContext> context, BindingInfo const & bindingInfo,
+                                   void const * data, uint32_t count)
 {
   ref_ptr<DataBuffer> buffer;
   if (!bindingInfo.IsDynamic())
@@ -237,9 +247,13 @@ void VertexArrayBuffer::UploadData(BindingInfo const & bindingInfo, void const *
   else
     buffer = GetOrCreateDynamicBuffer(bindingInfo);
 
+  // For Vulkan rendering we have to know the whole collection of binding info.
+  if (context->GetApiVersion() == dp::ApiVersion::Vulkan && !m_impl)
+    CollectBindingInfo(bindingInfo);
+
   if (count > 0)
     m_isChanged = true;
-  buffer->GetBuffer()->UploadData(data, count);
+  buffer->GetBuffer()->UploadData(context, data, count);
 }
 
 ref_ptr<DataBuffer> VertexArrayBuffer::GetOrCreateDynamicBuffer(BindingInfo const & bindingInfo)
@@ -337,10 +351,11 @@ uint32_t VertexArrayBuffer::GetDynamicBufferOffset(BindingInfo const & bindingIn
 
 uint32_t VertexArrayBuffer::GetIndexCount() const { return GetIndexBuffer()->GetCurrentSize(); }
 
-void VertexArrayBuffer::UploadIndexes(void const * data, uint32_t count)
+void VertexArrayBuffer::UploadIndices(ref_ptr<GraphicsContext> context, void const * data,
+                                      uint32_t count)
 {
   ASSERT_LESS_OR_EQUAL(count, GetIndexBuffer()->GetAvailableSize(), ());
-  GetIndexBuffer()->UploadData(data, count);
+  GetIndexBuffer()->UploadData(context, data, count);
 }
 
 void VertexArrayBuffer::ApplyMutation(ref_ptr<GraphicsContext> context,
@@ -357,9 +372,9 @@ void VertexArrayBuffer::ApplyMutation(ref_ptr<GraphicsContext> context,
     if (indexMutator->GetCapacity() > m_indexBuffer->GetBuffer()->GetCapacity())
     {
       m_indexBuffer = make_unique_dp<IndexBuffer>(indexMutator->GetCapacity());
-      m_indexBuffer->MoveToGPU(context, GPUBuffer::IndexBuffer);
+      m_indexBuffer->MoveToGPU(context, GPUBuffer::IndexBuffer, m_batcherHash);
     }
-    m_indexBuffer->UpdateData(indexMutator->GetIndexes(), indexMutator->GetIndexCount());
+    m_indexBuffer->UpdateData(context, indexMutator->GetIndexes(), indexMutator->GetIndexCount());
   }
 
   if (attrMutator == nullptr)
@@ -379,7 +394,7 @@ void VertexArrayBuffer::ApplyMutation(ref_ptr<GraphicsContext> context,
 
     ref_ptr<DataBuffer> buffer = GetDynamicBuffer(it->first);
     ASSERT(buffer != nullptr, ());
-    DataBufferMapper mapper(buffer, offsets.first, offsets.second);
+    DataBufferMapper mapper(context, buffer, offsets.first, offsets.second);
     for (size_t i = 0; i < nodes.size(); ++i)
     {
       MutateNode const & node = nodes[i];
@@ -394,13 +409,17 @@ void VertexArrayBuffer::ApplyMutation(ref_ptr<GraphicsContext> context,
 
 bool VertexArrayBuffer::Bind() const
 {
-  CHECK(m_impl != nullptr, ());
+  if (m_impl == nullptr)
+    return false;
+
   return m_impl->Bind();
 }
 
 void VertexArrayBuffer::Unbind() const
 {
-  CHECK(m_impl != nullptr, ());
+  if (m_impl == nullptr)
+    return;
+
   m_impl->Unbind();
 }
 
@@ -418,5 +437,25 @@ ref_ptr<DataBufferBase> VertexArrayBuffer::GetIndexBuffer() const
 {
   CHECK(m_indexBuffer != nullptr, ());
   return m_indexBuffer->GetBuffer();
+}
+
+void VertexArrayBuffer::CollectBindingInfo(dp::BindingInfo const & bindingInfo)
+{
+  for (size_t i = 0; i < m_bindingInfoCount; ++i)
+  {
+    if (m_bindingInfo[i].GetID() == bindingInfo.GetID())
+    {
+      CHECK(m_bindingInfo[i] == bindingInfo, ("Incorrect binding info."));
+      return;
+    }
+  }
+
+  CHECK_LESS(m_bindingInfoCount, kMaxBindingInfo, ());
+  m_bindingInfo[m_bindingInfoCount++] = bindingInfo;
+  std::sort(m_bindingInfo.begin(), m_bindingInfo.begin() + m_bindingInfoCount,
+            [](dp::BindingInfo const & info1, dp::BindingInfo const & info2)
+  {
+    return info1.GetID() < info2.GetID();
+  });
 }
 }  // namespace dp

@@ -177,6 +177,13 @@ ScreenBase const & UserEventStream::ProcessEvents(bool & modelViewChanged, bool 
         TouchCancel(m_touches);
       }
       break;
+    case UserEvent::EventType::Move:
+      {
+        ref_ptr<MoveEvent> moveEvent = make_ref(e);
+        breakAnim = OnMove(moveEvent);
+        TouchCancel(m_touches);
+      }
+      break;
     case UserEvent::EventType::Resize:
       {
         ref_ptr<ResizeEvent> resizeEvent = make_ref(e);
@@ -360,9 +367,24 @@ bool UserEventStream::OnSetScale(ref_ptr<ScaleEvent> scaleEvent)
   return true;
 }
 
+bool UserEventStream::OnMove(ref_ptr<MoveEvent> moveEvent)
+{
+  double const factorX = moveEvent->GetFactorX();
+  double const factorY = moveEvent->GetFactorY();
+
+  ScreenBase screen;
+  GetTargetScreen(screen);
+  auto const & rect = screen.PixelRectIn3d();
+  screen.Move(factorX * rect.SizeX(), -factorY * rect.SizeY());
+
+  ShrinkAndScaleInto(screen, df::GetWorldRect());
+
+  return SetScreen(screen, moveEvent->IsAnim());
+}
+
 bool UserEventStream::OnSetAnyRect(ref_ptr<SetAnyRectEvent> anyRectEvent)
 {
-  return SetRect(anyRectEvent->GetRect(), anyRectEvent->IsAnim());
+  return SetRect(anyRectEvent->GetRect(), anyRectEvent->IsAnim(), anyRectEvent->FitInViewport());
 }
 
 bool UserEventStream::OnSetRect(ref_ptr<SetRectEvent> rectEvent)
@@ -455,16 +477,22 @@ bool UserEventStream::SetRect(m2::RectD rect, int zoom, bool applyRotation, bool
   CheckMinGlobalRect(rect, kDefault3dScale);
   CheckMinMaxVisibleScale(rect, zoom, kDefault3dScale);
   m2::AnyRectD targetRect = applyRotation ? ToRotated(m_navigator, rect) : m2::AnyRectD(rect);
-  return SetRect(targetRect, isAnim, parallelAnimCreator);
+  return SetRect(targetRect, isAnim, true /* fitInViewport */, parallelAnimCreator);
 }
 
-bool UserEventStream::SetRect(m2::AnyRectD const & rect, bool isAnim,
+bool UserEventStream::SetRect(m2::AnyRectD const & rect, bool isAnim, bool fitInViewport,
                               TAnimationCreator const & parallelAnimCreator)
 {
   ScreenBase tmp = GetCurrentScreen();
-  tmp.SetFromRects(rect, tmp.PixelRectIn3d());
-  tmp.MatchGandP3d(rect.GlobalCenter(), tmp.PixelRectIn3d().Center());
-
+  if (fitInViewport)
+  {
+    tmp.SetFromRects(rect, tmp.PixelRectIn3d());
+    tmp.MatchGandP3d(rect.GlobalCenter(), tmp.PixelRectIn3d().Center());
+  }
+  else
+  {
+    tmp.SetFromRects(rect, tmp.PixelRect());
+  }
   return SetScreen(tmp, isAnim, parallelAnimCreator);
 }
 

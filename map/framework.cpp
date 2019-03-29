@@ -141,10 +141,8 @@ char const kTransitSchemeEnabledKey[] = "TransitSchemeEnabled";
 char const kTrafficSimplifiedColorsKey[] = "TrafficSimplifiedColors";
 char const kLargeFontsSize[] = "LargeFontsSize";
 char const kTranslitMode[] = "TransliterationMode";
-
-#if defined(OMIM_METAL_AVAILABLE)
-char const kMetalAllowed[] = "MetalAllowed";
-#endif
+char const kPreferredGraphicsAPI[] = "PreferredGraphicsAPI";
+char const kShowDebugInfo[] = "DebugInfo";
 
 #if defined(OMIM_OS_ANDROID)
 char const kICUDataFile[] = "icudt57l.dat";
@@ -362,7 +360,7 @@ void Framework::Migrate(bool keepDownloaded)
   if (m_drapeEngine && m_isRenderingEnabled)
   {
     m_drapeEngine->SetRenderingDisabled(true);
-    OnDestroyGLContext();
+    OnDestroySurface();
   }
   m_selectedFeature = FeatureID();
   m_discoveryManager.reset();
@@ -389,8 +387,9 @@ void Framework::Migrate(bool keepDownloaded)
   if (m_drapeEngine && m_isRenderingEnabled)
   {
     m_drapeEngine->SetRenderingEnabled();
-    OnRecoverGLContext(m_currentModelView.PixelRectIn3d().SizeX(),
-                       m_currentModelView.PixelRectIn3d().SizeY());
+    OnRecoverSurface(m_currentModelView.PixelRectIn3d().SizeX(),
+                     m_currentModelView.PixelRectIn3d().SizeY(),
+                     true /* recreateContextDependentResources */);
   }
   InvalidateRect(MercatorBounds::FullRect());
 }
@@ -835,29 +834,6 @@ void Framework::FillFeatureInfo(FeatureID const & fid, place_page::Info & info) 
   }
 
   FillInfoFromFeatureType(ft, info);
-
-  // Fill countryId for place page info
-  uint32_t const placeContinentType = classif().GetTypeByPath({"place", "continent"});
-  if (info.GetTypes().Has(placeContinentType))
-    return;
-
-  uint32_t const placeCountryType = classif().GetTypeByPath({"place", "country"});
-  uint32_t const placeStateType = classif().GetTypeByPath({"place", "state"});
-
-  bool const isState = info.GetTypes().Has(placeStateType);
-  bool const isCountry = info.GetTypes().Has(placeCountryType);
-  if (isCountry || isState)
-  {
-    size_t const level = isState ? 1 : 0;
-    CountriesVec countries;
-    CountryId countryId = m_infoGetter->GetRegionCountryId(info.GetMercator());
-    GetStorage().GetTopmostNodesFor(countryId, countries, level);
-    if (countries.size() == 1)
-      countryId = countries.front();
-
-    info.SetCountryId(countryId);
-    info.SetTopmostCountryIds(move(countries));
-  }
 }
 
 void Framework::FillPointInfo(m2::PointD const & mercator, string const & customTitle, place_page::Info & info) const
@@ -987,6 +963,29 @@ void Framework::FillInfoFromFeatureType(FeatureType & ft, place_page::Info & inf
   ASSERT(m_taxiEngine, ());
   info.SetReachableByTaxiProviders(m_taxiEngine->GetProvidersAtPos(latlon));
   info.SetPopularity(m_popularityLoader.Get(ft.GetID()));
+
+  // Fill countryId for place page info
+  uint32_t const placeContinentType = classif().GetTypeByPath({"place", "continent"});
+  if (info.GetTypes().Has(placeContinentType))
+    return;
+
+  uint32_t const placeCountryType = classif().GetTypeByPath({"place", "country"});
+  uint32_t const placeStateType = classif().GetTypeByPath({"place", "state"});
+
+  bool const isState = info.GetTypes().Has(placeStateType);
+  bool const isCountry = info.GetTypes().Has(placeCountryType);
+  if (isCountry || isState)
+  {
+    size_t const level = isState ? 1 : 0;
+    CountriesVec countries;
+    CountryId countryId = m_infoGetter->GetRegionCountryId(info.GetMercator());
+    GetStorage().GetTopmostNodesFor(countryId, countries, level);
+    if (countries.size() == 1)
+      countryId = countries.front();
+
+    info.SetCountryId(countryId);
+    info.SetTopmostCountryIds(move(countries));
+  }
 }
 
 void Framework::FillApiMarkInfo(ApiMarkPoint const & api, place_page::Info & info) const
@@ -1280,6 +1279,12 @@ void Framework::Scale(double factor, m2::PointD const & pxPoint, bool isAnim)
     m_drapeEngine->Scale(factor, pxPoint, isAnim);
 }
 
+void Framework::Move(double factorX, double factorY, bool isAnim)
+{
+  if (m_drapeEngine != nullptr)
+    m_drapeEngine->Move(factorX, factorY, isAnim);
+}
+
 void Framework::TouchEvent(df::TouchEvent const & touch)
 {
   if (m_drapeEngine != nullptr)
@@ -1447,6 +1452,16 @@ void Framework::InitUGC()
   ASSERT(!m_ugcApi.get(), ("InitUGC() must be called only once."));
 
   m_ugcApi = make_unique<ugc::Api>(m_model.GetDataSource(), [this](size_t numberOfUnsynchronized) {
+
+    bool ugcStorageValidationExecuted = false;
+    UNUSED_VALUE(settings::Get("WasUgcStorageValidationExecuted", ugcStorageValidationExecuted));
+
+    if (!ugcStorageValidationExecuted)
+    {
+      m_ugcApi->ValidateStorage();
+      settings::Set("WasUgcStorageValidationExecuted", true);
+    }
+
     if (numberOfUnsynchronized == 0)
       return;
 
@@ -1906,14 +1921,21 @@ void Framework::CreateDrapeEngine(ref_ptr<dp::GraphicsContextFactory> contextFac
   bool const transitSchemeEnabled = LoadTransitSchemeEnabled();
   m_transitManager.EnableTransitSchemeMode(transitSchemeEnabled);
 
+  // Show debug info if it's enabled in the config.
+  bool showDebugInfo;
+  if (!settings::Get(kShowDebugInfo, showDebugInfo))
+    showDebugInfo = false;
+  if (showDebugInfo)
+    m_drapeEngine->ShowDebugInfo(showDebugInfo);
+
   benchmark::RunGraphicsBenchmark(this);
 }
 
-void Framework::OnRecoverGLContext(int width, int height)
+void Framework::OnRecoverSurface(int width, int height, bool recreateContextDependentResources)
 {
   if (m_drapeEngine)
   {
-    m_drapeEngine->Update(width, height);
+    m_drapeEngine->RecoverSurface(width, height, recreateContextDependentResources);
 
     InvalidateUserMarks();
 
@@ -1922,14 +1944,14 @@ void Framework::OnRecoverGLContext(int width, int height)
     m_drapeApi.Invalidate();
   }
 
-  m_trafficManager.OnRecoverGLContext();
+  m_trafficManager.OnRecoverSurface();
   m_transitManager.Invalidate();
   m_localAdsManager.Invalidate();
 }
 
-void Framework::OnDestroyGLContext()
+void Framework::OnDestroySurface()
 {
-  m_trafficManager.OnDestroyGLContext();
+  m_trafficManager.OnDestroySurface();
 }
 
 ref_ptr<df::DrapeEngine> Framework::GetDrapeEngine()
@@ -1962,11 +1984,11 @@ void Framework::SetRenderingEnabled(ref_ptr<dp::GraphicsContextFactory> contextF
     m_drapeEngine->SetRenderingEnabled(contextFactory);
 }
 
-void Framework::SetRenderingDisabled(bool destroyContext)
+void Framework::SetRenderingDisabled(bool destroySurface)
 {
   m_isRenderingEnabled = false;
   if (m_drapeEngine)
-    m_drapeEngine->SetRenderingDisabled(destroyContext);
+    m_drapeEngine->SetRenderingDisabled(destroySurface);
 }
 
 void Framework::EnableDebugRectRendering(bool enabled)
@@ -2446,19 +2468,20 @@ df::SelectionShape::ESelectedObject Framework::OnTapEventImpl(TapEvent const & t
   }
 
   FeatureID featureTapped = tapInfo.m_featureTapped;
-
   if (!featureTapped.IsValid())
     featureTapped = FindBuildingAtPoint(tapInfo.m_mercator);
 
   bool showMapSelection = false;
-  if (featureTapped.IsValid())
-  {
-    FillFeatureInfo(featureTapped, outInfo);
-    showMapSelection = true;
-  }
-  else if (tapInfo.m_isLong || tapEvent.m_source == TapEvent::Source::Search)
+  if (tapInfo.m_isLong || tapEvent.m_source == TapEvent::Source::Search)
   {
     FillPointInfo(tapInfo.m_mercator, {} /* customTitle */, outInfo);
+    if (!outInfo.IsFeature() && featureTapped.IsValid())
+      FillFeatureInfo(featureTapped, outInfo);
+    showMapSelection = true;
+  }
+  else if (featureTapped.IsValid())
+  {
+    FillFeatureInfo(featureTapped, outInfo);
     showMapSelection = true;
   }
 
@@ -2566,20 +2589,18 @@ void Framework::UpdateSavedDataVersion()
 
 int64_t Framework::GetCurrentDataVersion() const { return m_storage.GetCurrentDataVersion(); }
 
-#if defined(OMIM_METAL_AVAILABLE)
-bool Framework::LoadMetalAllowed()
+dp::ApiVersion Framework::LoadPreferredGraphicsAPI()
 {
-  bool allowed;
-  if (settings::Get(kMetalAllowed, allowed))
-    return allowed;
-  return true;
+  std::string apiStr;
+  if (settings::Get(kPreferredGraphicsAPI, apiStr))
+    return dp::ApiVersionFromString(apiStr);
+  return dp::ApiVersionFromString({});
 }
 
-void Framework::SaveMetalAllowed(bool allowed)
+void Framework::SavePreferredGraphicsAPI(dp::ApiVersion apiVersion)
 {
-  settings::Set(kMetalAllowed, allowed);
+  settings::Set(kPreferredGraphicsAPI, DebugPrint(apiVersion));
 }
-#endif
 
 void Framework::AllowTransliteration(bool allowTranslit)
 {
@@ -2843,9 +2864,16 @@ bool Framework::ParseDrapeDebugCommand(string const & query)
     m_drapeEngine->ShowDebugInfo(true /* shown */);
     return true;
   }
+  if (query == "?debug-info-always")
+  {
+    m_drapeEngine->ShowDebugInfo(true /* shown */);
+    settings::Set(kShowDebugInfo, true);
+    return true;
+  }
   if (query == "?no-debug-info")
   {
     m_drapeEngine->ShowDebugInfo(false /* shown */);
+    settings::Set(kShowDebugInfo, false);
     return true;
   }
   if (query == "?debug-rect")
@@ -2861,15 +2889,22 @@ bool Framework::ParseDrapeDebugCommand(string const & query)
 #if defined(OMIM_METAL_AVAILABLE)
   if (query == "?metal")
   {
-    SaveMetalAllowed(true);
-    return true;
-  }
-  if (query == "?gl")
-  {
-    SaveMetalAllowed(false);
+    SavePreferredGraphicsAPI(dp::ApiVersion::Metal);
     return true;
   }
 #endif
+#if defined(OMIM_OS_ANDROID)
+  if (query == "?vulkan")
+  {
+    SavePreferredGraphicsAPI(dp::ApiVersion::Vulkan);
+    return true;
+  }
+#endif
+  if (query == "?gl")
+  {
+    SavePreferredGraphicsAPI(dp::ApiVersion::OpenGLES3);
+    return true;
+  }
   return false;
 }
 
@@ -3135,7 +3170,7 @@ osm::Editor::SaveResult Framework::SaveEditedMapObject(osm::EditableMapObject em
     }
     else
     {
-      originalFeature.ReplaceBy(emo);
+      originalFeature = FeatureType::ConstructFromMapObject(emo);
     }
 
     // Handle only pois.
@@ -3162,7 +3197,7 @@ osm::Editor::SaveResult Framework::SaveEditedMapObject(osm::EditableMapObject em
     string originalFeatureStreet;
     if (!isCreatedFeature)
     {
-      originalFeatureStreet = coder.GetOriginalFeatureStreetName(originalFeature);
+      originalFeatureStreet = coder.GetOriginalFeatureStreetName(originalFeature.GetID());
     }
     else
     {
@@ -3785,6 +3820,40 @@ booking::AvailabilityParams Framework::GetLastBookingAvailabilityParams() const
   return m_bookingAvailabilityParams;
 }
 
+<<<<<<< HEAD
+=======
+void Framework::OnPowerFacilityChanged(power_management::Facility const facility, bool enabled)
+{
+  if (facility == power_management::Facility::PerspectiveView ||
+      facility == power_management::Facility::Buildings3d)
+  {
+    bool allow3d = true, allow3dBuildings = true;
+    Load3dMode(allow3d, allow3dBuildings);
+
+    if (facility == power_management::Facility::PerspectiveView)
+      allow3d = allow3d && enabled;
+    else
+      allow3dBuildings = allow3dBuildings && enabled;
+
+    Allow3dMode(allow3d, allow3dBuildings);
+  }
+  else if (facility == power_management::Facility::TrafficJams)
+  {
+    auto trafficState = enabled && LoadTrafficEnabled();
+    if (trafficState == GetTrafficManager().IsEnabled())
+      return;
+
+    GetTrafficManager().SetEnabled(trafficState);
+  }
+}
+
+void Framework::OnPowerSchemeChanged(power_management::Scheme const actualScheme)
+{
+  if (actualScheme == power_management::Scheme::EconomyMaximum && GetTrafficManager().IsEnabled())
+    GetTrafficManager().SetEnabled(false);
+}
+
+>>>>>>> origin/joint_runtime_building_generator_to_master
 TipsApi const & Framework::GetTipsApi() const
 {
   return m_tipsApi;

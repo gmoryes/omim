@@ -13,6 +13,7 @@
 #include "drape_frontend/user_mark_shapes.hpp"
 #include "drape_frontend/visual_params.hpp"
 
+#include "drape/support_manager.hpp"
 #include "drape/texture_manager.hpp"
 
 #include "indexer/scales.hpp"
@@ -228,6 +229,7 @@ void BackendRenderer::AcceptMessage(ref_ptr<Message> message)
       {
         CHECK(m_context != nullptr, ());
         ref_ptr<dp::Batcher> batcher = m_batchersPool->GetBatcher(tileKey);
+        batcher->SetBatcherHash(tileKey.GetHashValue(BatcherBucket::Default));
 #if defined(DRAPE_MEASURER_BENCHMARK) && defined(GENERATING_STATISTIC)
         DrapeMeasurer::Instance().StartShapesGeneration();
 #endif
@@ -613,6 +615,7 @@ void BackendRenderer::OnContextCreate()
   m_contextFactory->WaitForInitialization(m_context.get());
   m_context->MakeCurrent();
   m_context->Init(m_apiVersion);
+  dp::SupportManager::Instance().Init(m_context);
 
   m_readManager->Start();
   InitContextDependentResources();
@@ -652,8 +655,11 @@ void BackendRenderer::Routine::Do()
 void BackendRenderer::RenderFrame()
 {
   CHECK(m_context != nullptr, ());
-  if (m_context->Validate())
-    ProcessSingleMessage();
+  if (!m_context->Validate())
+    return;
+
+  ProcessSingleMessage();
+  m_context->CollectMemory();
 }
 
 void BackendRenderer::InitContextDependentResources()

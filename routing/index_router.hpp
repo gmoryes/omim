@@ -25,9 +25,8 @@
 
 #include "geometry/tree4d.hpp"
 
-#include "std/unique_ptr.hpp"
-
 #include <functional>
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>
@@ -69,7 +68,7 @@ public:
   IndexRouter(VehicleType vehicleType, bool loadAltitudes,
               CountryParentNameGetterFn const & countryParentNameGetterFn,
               TCountryFileFn const & countryFileFn, CourntryRectFn const & countryRectFn,
-              shared_ptr<NumMwmIds> numMwmIds, unique_ptr<m4::Tree<NumMwmId>> numMwmTree,
+              std::shared_ptr<NumMwmIds> numMwmIds, std::unique_ptr<m4::Tree<NumMwmId>> numMwmTree,
               traffic::TrafficCache const & trafficCache, DataSource & dataSource);
 
   std::unique_ptr<WorldGraph> MakeSingleMwmWorldGraph();
@@ -112,7 +111,7 @@ private:
   // Input route may contains 'leaps': shortcut edges from mwm border enter to exit.
   // ProcessLeaps replaces each leap with calculated route through mwm.
   RouterResultCode ProcessLeapsJoints(vector<Segment> const & input, RouterDelegate const & delegate,
-                                      WorldGraph::Mode prevMode, IndexGraphStarter & starter,
+                                      WorldGraphMode prevMode, IndexGraphStarter & starter,
                                       vector<Segment> & output);
   RouterResultCode RedressRoute(std::vector<Segment> const & segments,
                                 RouterDelegate const & delegate, IndexGraphStarter & starter,
@@ -147,7 +146,7 @@ private:
       RoutingResult<typename Graph::Vertex, typename Graph::Weight> & routingResult) const
   {
     AStarAlgorithm<Graph> algorithm;
-    if (params.m_graph.GetMode() == WorldGraph::Mode::LeapsOnly)
+    if (params.m_graph.GetMode() == WorldGraphMode::LeapsOnly)
     {
       return ConvertTransitResult(mwmIds,
                                   ConvertResult<Graph>(algorithm.FindPath(params, routingResult)));

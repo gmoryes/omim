@@ -8,6 +8,7 @@
 #include "base/logging.hpp"
 #include "base/string_utils.hpp"
 
+#include <algorithm>
 #include <atomic>
 #include <cstddef>
 #include <mutex>
@@ -43,7 +44,12 @@ Index::Doc const & Index::GetDoc(DocId const id) const
 // static
 string Index::MakeIndexKey(Tokens const & tokens)
 {
-  return strings::JoinStrings(tokens, " ");
+  if (tokens.size() == 1 || is_sorted(begin(tokens), end(tokens)))
+    return strings::JoinStrings(tokens, " ");
+
+  auto indexTokens = tokens;
+  sort(begin(indexTokens), end(indexTokens));
+  return strings::JoinStrings(indexTokens, " ");
 }
 
 void Index::AddEntries()
@@ -83,11 +89,25 @@ void Index::AddStreet(DocId const & docId, Index::Doc const & doc)
 {
   CHECK_EQUAL(doc.m_type, Type::Street, ());
   size_t const t = static_cast<size_t>(doc.m_type);
+
+  auto isStreetSynonym = [] (string const & s) {
+    return search::IsStreetSynonym(strings::MakeUniString(s));
+  };
+
+  if (all_of(begin(doc.m_address[t]), end(doc.m_address[t]), isStreetSynonym))
+  {
+    LOG(LDEBUG, ("Undefined proper name in tokens", doc.m_address[t], "of street entry",
+                 doc.m_osmId, "(", doc.m_address, ")"));
+    if (doc.m_address[t].size() > 1)
+      m_docIdsByTokens[MakeIndexKey(doc.m_address[t])].emplace_back(docId);
+    return;
+  }
+
   m_docIdsByTokens[MakeIndexKey(doc.m_address[t])].emplace_back(docId);
 
   for (size_t i = 0; i < doc.m_address[t].size(); ++i)
   {
-    if (!search::IsStreetSynonym(strings::MakeUniString(doc.m_address[t][i])))
+    if (!isStreetSynonym(doc.m_address[t][i]))
       continue;
     auto addr = doc.m_address[t];
     addr.erase(addr.begin() + i);
@@ -98,7 +118,7 @@ void Index::AddStreet(DocId const & docId, Index::Doc const & doc)
 void Index::AddHouses(unsigned int loadThreadsCount)
 {
   atomic<size_t> numIndexed{0};
-  mutex mutex;
+  mutex buildingsMutex;
 
   vector<thread> threads(loadThreadsCount);
   CHECK_GREATER(threads.size(), 0, ());
@@ -134,7 +154,7 @@ void Index::AddHouses(unsigned int loadThreadsCount)
           auto const & candidateDoc = GetDoc(candidate);
           if (candidateDoc.IsParentTo(buildingDoc))
           {
-            auto && lock = lock_guard<std::mutex>(mutex);
+            lock_guard<mutex> lock(buildingsMutex);
             m_relatedBuildings[candidate].emplace_back(docId);
           }
         });

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "routing/road_graph.hpp"
+#include "routing/routing_options.hpp"
 #include "routing/routing_settings.hpp"
 #include "routing/segment.hpp"
 #include "routing/transit_info.hpp"
@@ -99,8 +100,10 @@ public:
   TransitInfo const & GetTransitInfo() const { return m_transitInfo.Get(); }
 
   void SetSpeedCameraInfo(std::vector<SpeedCamera> && data) { m_speedCameras = std::move(data); }
-  bool IsRealSegment() const { return m_segment.IsRealSegment(); }
   std::vector<SpeedCamera> const & GetSpeedCams() const { return m_speedCameras; }
+
+  RoutingOptions GetRoadTypes() const { return m_roadTypes; }
+  void SetRoadTypes(RoutingOptions types) { m_roadTypes = types; }
 
 private:
   Segment m_segment;
@@ -133,6 +136,8 @@ private:
   // Stored coefficients where they placed at the segment (numbers from 0 to 1)
   // and theirs' max speed.
   std::vector<SpeedCamera> m_speedCameras;
+
+  RoutingOptions m_roadTypes;
 };
 
 class Route
