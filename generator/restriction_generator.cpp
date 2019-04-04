@@ -15,25 +15,45 @@
 
 namespace routing
 {
-bool BuildRoadRestrictions(std::string const & mwmPath, std::string const & restrictionPath,
-                           std::string const & osmIdsTofeatureIdsPath)
+std::unique_ptr<RestrictionCollector>
+CreateRestrictionCollectorAndParse(
+    std::string const & targetPath, std::string const & mwmPath, std::string const & country,
+    std::string const & restrictionPath, std::string const & osmIdsToFeatureIdsPath,
+    CountryParentNameGetterFn const & countryParentNameGetterFn)
 {
-  LOG(LDEBUG, ("BuildRoadRestrictions(", mwmPath, ", ", restrictionPath, ", ",
-              osmIdsTofeatureIdsPath, ");"));
-  RestrictionCollector restrictionCollector(restrictionPath, osmIdsTofeatureIdsPath);
-  if (!restrictionCollector.HasRestrictions())
+  LOG(LDEBUG, ("BuildRoadRestrictions(", targetPath, ", ", restrictionPath, ", ",
+                                         osmIdsToFeatureIdsPath, ");"));
+
+  auto restrictionCollector = std::make_unique<RestrictionCollector>();
+  if (!restrictionCollector->PrepareOsmIdToFeatureId(osmIdsToFeatureIdsPath))
+    return {};
+
+  try
   {
-    LOG(LINFO, ("No restrictions for", mwmPath, "It's necessary to check that",
-                   restrictionPath, "and", osmIdsTofeatureIdsPath, "are available."));
-    return false;
+    restrictionCollector->InitIndexGraph(targetPath, mwmPath, country, countryParentNameGetterFn);
   }
-  if (!restrictionCollector.IsValid())
+  catch (std::exception const & e)
   {
-    LOG(LWARNING, ("Found invalid restrictions for", mwmPath, "Are osm2ft files relevant?"));
-    return false;
+    LOG(LINFO, ("Can not init IndexGraph for RestrictionCollector:", e.what()));
   }
 
-  RestrictionVec const & restrictions = restrictionCollector.GetRestrictions();
+  if (!restrictionCollector->Process(restrictionPath))
+    return {};
+
+  if (!restrictionCollector->HasRestrictions())
+  {
+    LOG(LINFO, ("No restrictions for", targetPath, "It's necessary to check that",
+                restrictionPath, "and", osmIdsToFeatureIdsPath, "are available."));
+    return {};
+  }
+
+  return restrictionCollector;
+}
+
+void SerializeRestrictions(RestrictionCollector const & restrictionCollector,
+                           std::string const & mwmPath)
+{
+  std::vector<Restriction> const & restrictions = restrictionCollector.GetRestrictions();
 
   auto const firstOnlyIt =
       std::lower_bound(restrictions.cbegin(), restrictions.cend(),
@@ -52,7 +72,23 @@ bool BuildRoadRestrictions(std::string const & mwmPath, std::string const & rest
   header.Serialize(w);
 
   RestrictionSerializer::Serialize(header, restrictions.cbegin(), restrictions.cend(), w);
+}
 
+bool BuildRoadRestrictions(std::string const & targetPath,
+                           std::string const & mwmPath,
+                           std::string const & country,
+                           std::string const & restrictionPath,
+                           std::string const & osmIdsTofeatureIdsPath,
+                           CountryParentNameGetterFn const & countryParentNameGetterFn)
+{
+  auto collector =
+      CreateRestrictionCollectorAndParse(targetPath, mwmPath, country, restrictionPath,
+                                         osmIdsTofeatureIdsPath, countryParentNameGetterFn);
+
+  if (!collector)
+    return false;
+
+  SerializeRestrictions(*collector, mwmPath);
   return true;
 }
 }  // namespace routing
