@@ -474,25 +474,6 @@ typename AStarAlgorithm<Vertex, Edge, Weight>::Result
 AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
                                                             RoutingResult<Vertex, Weight> & result) const
 {
-  bool draw = std::getenv("DRAW_A") && !std::string(std::getenv("DRAW_A")).empty();
-  std::ofstream output_forward;
-  std::ofstream output_backward;
-  static uint64_t cnt = 0;
-  if (cnt == 0 && draw)
-  {
-    std::ofstream tmp1("/tmp/points_forward", std::ofstream::trunc);
-    std::ofstream tmp2("/tmp/points_backward", std::ofstream::trunc);
-  }
-  cnt++;
-
-  if (draw)
-  {
-    output_forward.open("/tmp/points_forward", std::ofstream::app);
-    output_backward.open("/tmp/points_backward", std::ofstream::app);
-    output_forward << std::setprecision(20);
-    output_backward << std::setprecision(20);
-  }
-
   auto & graph = params.m_graph;
   auto const & finalVertex = params.m_finalVertex;
   auto const & startVertex = params.m_startVertex;
@@ -575,14 +556,7 @@ AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
     State const stateV = cur->queue.top();
     cur->queue.pop();
 
-    /*if (draw)
-    {
-      auto p = MercatorBounds::ToLatLon(graph.GetPoint(stateV.vertex, stateV.vertex.IsForward()));
-      if (cur->forward)
-        output_forward << p.lat << ' ' << p.lon << '\n';
-      else
-        output_backward << p.lat << ' ' << p.lon << '\n';
-    }*/
+
 
     if (stateV.distance > cur->bestDistance[stateV.vertex])
       continue;
