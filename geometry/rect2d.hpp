@@ -151,6 +151,11 @@ public:
     return !(m_minX > pt.x || pt.x > m_maxX || m_minY > pt.y || pt.y > m_maxY);
   }
 
+  bool IsPointOutside(Point<T> const & pt) const
+  {
+    return m_minX > pt.x || pt.x > m_maxX || m_minY > pt.y || pt.y > m_maxY;
+  }
+
   bool IsRectInside(Rect<T> const & rect) const
   {
     return (IsPointInside(Point<T>(rect.minX(), rect.minY())) &&

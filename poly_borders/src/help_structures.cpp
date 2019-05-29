@@ -1,0 +1,120 @@
+#include "poly_borders/src/help_structures.hpp"
+
+#include "geometry/mercator.hpp"
+
+#include <algorithm>
+
+namespace poly_borders
+{
+// Link --------------------------------------------------------------------------------------------
+bool Link::operator<(Link const & rhs) const
+{
+  if (m_borderId != rhs.m_borderId)
+    return m_borderId < rhs.m_borderId;
+
+  return m_pointId < rhs.m_pointId;
+}
+
+// ReplaceData -------------------------------------------------------------------------------------
+bool ReplaceData::operator<(ReplaceData const & rhs) const
+{
+  if (m_replaceFrom != rhs.m_replaceFrom)
+    return m_replaceFrom < rhs.m_replaceFrom;
+
+  return m_replaceTo < rhs.m_replaceTo;
+}
+
+// MarkedPoint -------------------------------------------------------------------------------------
+void MarkedPoint::AddLink(size_t borderId, size_t pointId)
+{
+  std::lock_guard<std::mutex> lock(*m_mutex);
+  m_links.emplace(borderId, pointId);
+}
+
+bool MarkedPoint::GetLink(size_t curBorderId, Link & linkToSave)
+{
+  if (m_links.empty() || m_links.size() > 1)
+    return false;
+
+  size_t anotherBorderId = m_links.begin()->m_borderId;
+  if (anotherBorderId == curBorderId)
+    return false;
+
+  linkToSave = *m_links.begin();
+  return true;
+}
+
+// Polygon -----------------------------------------------------------------------------------------
+void Polygon::MakeFrozen(size_t a, size_t b)
+{
+  if (a > b)
+    std::swap(a, b);
+
+  if (b - a + 1 > 2)
+    m_replaced.AddInterval(a + 1, b - 1);
+}
+
+bool Polygon::IsFrozen(size_t a, size_t b)
+{
+  if (a > b)
+    std::swap(a, b);
+  return m_replaced.IsIntersects(a, b);
+}
+
+void Polygon::AddReplaceInfo(size_t replaceFrom, size_t replaceTo, size_t replaceFromSrc,
+                             size_t replaceToSrc, size_t borderIdSrc)
+{
+  bool reversed = (replaceFromSrc > replaceToSrc) != (replaceFrom > replaceTo);
+
+  if (replaceFrom > replaceTo)
+    std::swap(replaceFrom, replaceTo);
+
+  if (replaceFromSrc > replaceToSrc)
+    std::swap(replaceFromSrc, replaceToSrc);
+
+  CHECK(!IsFrozen(replaceFrom, replaceTo), ());
+  MakeFrozen(replaceFrom, replaceTo);
+
+  m_replaceData.emplace(replaceFrom, replaceTo, replaceFromSrc, replaceToSrc, borderIdSrc,
+                        reversed);
+}
+
+std::set<ReplaceData>::const_iterator Polygon::FindReplaceData(size_t index)
+{
+  for (auto it = m_replaceData.begin(); it != m_replaceData.end(); ++it)
+  {
+    if (it->m_replaceFrom <= index && index <= it->m_replaceTo)
+      return it;
+  }
+
+  return m_replaceData.cend();
+}
+
+double FindPolygonArea(std::vector<m2::PointD> const & points, bool convertToMeters)
+{
+  if (points.empty())
+    return 0.0;
+
+  double result = 0.0;
+  for (size_t i = 0; i < points.size(); ++i)
+  {
+    auto const & prev = i == 0 ? points.back() : points[i - 1];
+    auto const & cur = points[i];
+
+    static m2::PointD const kZero = m2::PointD::Zero();
+    auto const prevLen =
+        convertToMeters ? MercatorBounds::DistanceOnEarth(kZero, prev) : prev.Length();
+    auto const curLen =
+        convertToMeters ? MercatorBounds::DistanceOnEarth(kZero, cur) : cur.Length();
+
+    if (base::AlmostEqualAbs(prevLen, 0.0, 1e-20) || base::AlmostEqualAbs(curLen, 0.0, 1e-20))
+      continue;
+
+    double sinAlpha = CrossProduct(prev, cur) / (prev.Length() * cur.Length());
+
+    result += prevLen * curLen * sinAlpha / 2.0;
+  }
+
+  return std::abs(result);
+}
+}  // namespace poly_borders

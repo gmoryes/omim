@@ -316,6 +316,7 @@ add_subdirectory(traffic)
 add_subdirectory(transit)
 add_subdirectory(ugc)
 add_subdirectory(web_api)
+add_subdirectory(poly_borders)
 
 if (PLATFORM_DESKTOP)
   if (BUILD_MAPSHOT)
