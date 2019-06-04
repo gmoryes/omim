@@ -8,6 +8,7 @@ omim_add_executable(${PROJECT_NAME} ${SRC})
 
 omim_link_libraries(
         ${PROJECT_NAME}
+        poly_borders_postprocessor_library
         generator
         storage
         indexer
@@ -22,4 +23,7 @@ omim_link_libraries(
 )
 
 link_qt5_core(${PROJECT_NAME})
-link_qt5_network(${PROJECT_NAME})
+
+add_subdirectory(src)
+
+omim_add_test_subdirectory(tests)
