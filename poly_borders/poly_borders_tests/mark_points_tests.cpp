@@ -1,8 +1,8 @@
 #include "testing/testing.hpp"
 
-#include "poly_borders/tests/tools.hpp"
+#include "poly_borders/poly_borders_tests/tools.hpp"
 
-#include "poly_borders/src/borders_data.hpp"
+#include "poly_borders/borders_data.hpp"
 
 #include "platform/platform_tests_support/scoped_dir.hpp"
 #include "platform/platform_tests_support/scoped_file.hpp"
@@ -18,7 +18,6 @@ using namespace std;
 namespace
 {
 static std::string const kTestDir = "borders_poly_dir";
-std::string const & kExt = BordersData::kBorderExtension;
 
 void TestMarked(Polygon const & polygon, size_t i)
 {
@@ -75,10 +74,10 @@ UNIT_TEST(PolyBordersPostprocessor_MarkPoints_1)
   bordersData.Init(bordersDir);
   bordersData.MarkPoints();
 
-  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + kExt);
+  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension);
   CheckByMask(bordersPolygon1, markedMask1[0]);
 
-  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + kExt);
+  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension);
   CheckByMask(bordersPolygon2, markedMask2[0]);
 }
 
@@ -111,10 +110,10 @@ UNIT_TEST(PolyBordersPostprocessor_MarkPoints_2)
   bordersData.Init(bordersDir);
   bordersData.MarkPoints();
 
-  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + kExt);
+  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension);
   CheckByMask(bordersPolygon1, markedMask1[0]);
 
-  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + kExt);
+  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension);
   CheckByMask(bordersPolygon2, markedMask2[0]);
 }
 
@@ -172,16 +171,16 @@ UNIT_TEST(PolyBordersPostprocessor_MarkPoints_3)
   bordersData.Init(bordersDir);
   bordersData.MarkPoints();
 
-  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + kExt);
+  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension);
   CheckByMask(bordersPolygon1, markedMask1[0]);
 
-  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + kExt);
+  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension);
   CheckByMask(bordersPolygon2, markedMask2[0]);
 
-  auto const & bordersPolygon3 = bordersData.GetBordersPolygonByName("Third" + kExt);
+  auto const & bordersPolygon3 = bordersData.GetBordersPolygonByName("Third" + BordersData::kBorderExtension);
   CheckByMask(bordersPolygon3, markedMask3[0]);
 
-  auto const & bordersPolygon4 = bordersData.GetBordersPolygonByName("Fourth" + kExt);
+  auto const & bordersPolygon4 = bordersData.GetBordersPolygonByName("Fourth" + BordersData::kBorderExtension);
   CheckByMask(bordersPolygon4, markedMask4[0]);
 }
 
@@ -219,13 +218,13 @@ UNIT_TEST(PolyBordersPostprocessor_MarkPoints_4)
   bordersData.Init(bordersDir);
   bordersData.MarkPoints();
 
-  auto const & firstBordersPolygon1 = bordersData.GetBordersPolygonByName("First" + kExt);
+  auto const & firstBordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension);
   CheckByMask(firstBordersPolygon1, markedMask1[0]);
 
-  auto const & secondBordersPolygon1 = bordersData.GetBordersPolygonByName("First" + kExt + "1");
+  auto const & secondBordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension + "1");
   CheckByMask(secondBordersPolygon1, markedMask1[1]);
 
-  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + kExt);
+  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension);
   CheckByMask(bordersPolygon2, markedMask2[0]);
 }
 }  // namespace

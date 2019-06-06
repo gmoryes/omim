@@ -1,8 +1,8 @@
 #include "testing/testing.hpp"
 
-#include "poly_borders/tests/tools.hpp"
+#include "poly_borders/poly_borders_tests/tools.hpp"
 
-#include "poly_borders/src/borders_data.hpp"
+#include "poly_borders/borders_data.hpp"
 
 #include "platform/platform_tests_support/scoped_dir.hpp"
 #include "platform/platform_tests_support/scoped_file.hpp"
@@ -147,7 +147,7 @@ UNIT_TEST(PolyBordersPostprocessor_RemoveEmptySpaces_3)
       {a, b, c, d, e, f}
   };
 
-  // Point |c| absents in polygons2, algorithm should add it.
+  // Point |c| is absent from polygons2, algorithm should add it.
   std::vector<std::vector<m2::PointD>> polygons2 = {
       {a, b, e, f}
   };

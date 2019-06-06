@@ -1,4 +1,4 @@
-#include "poly_borders/src/help_structures.hpp"
+#include "poly_borders/help_structures.hpp"
 
 #include "geometry/mercator.hpp"
 
@@ -16,12 +16,19 @@ bool Link::operator<(Link const & rhs) const
 }
 
 // ReplaceData -------------------------------------------------------------------------------------
+
+//static
+bool ReplaceData::IsReversedIntervals(size_t fromDst, size_t toDst, size_t fromSrc, size_t toSrc)
+{
+  return (fromDst > toDst) != (fromSrc > toSrc);
+}
+
 bool ReplaceData::operator<(ReplaceData const & rhs) const
 {
-  if (m_replaceFrom != rhs.m_replaceFrom)
-    return m_replaceFrom < rhs.m_replaceFrom;
+  if (m_dstFrom != rhs.m_dstFrom)
+    return m_dstFrom < rhs.m_dstFrom;
 
-  return m_replaceTo < rhs.m_replaceTo;
+  return m_dstTo < rhs.m_dstTo;
 }
 
 // MarkedPoint -------------------------------------------------------------------------------------
@@ -47,8 +54,7 @@ bool MarkedPoint::GetLink(size_t curBorderId, Link & linkToSave)
 // Polygon -----------------------------------------------------------------------------------------
 void Polygon::MakeFrozen(size_t a, size_t b)
 {
-  if (a > b)
-    std::swap(a, b);
+  CHECK_LESS(a, b, ());
 
   if (b - a + 1 > 2)
     m_replaced.AddInterval(a + 1, b - 1);
@@ -56,34 +62,29 @@ void Polygon::MakeFrozen(size_t a, size_t b)
 
 bool Polygon::IsFrozen(size_t a, size_t b)
 {
-  if (a > b)
-    std::swap(a, b);
-  return m_replaced.IsIntersects(a, b);
+  CHECK_LESS_OR_EQUAL(a, b, ());
+
+  return m_replaced.Intersects(a, b);
 }
 
-void Polygon::AddReplaceInfo(size_t replaceFrom, size_t replaceTo, size_t replaceFromSrc,
-                             size_t replaceToSrc, size_t borderIdSrc)
+void Polygon::AddReplaceInfo(size_t dstFrom, size_t dstTo,
+                             size_t srcFrom, size_t srcTo, size_t srcBorderId,
+                             bool reversed)
 {
-  bool reversed = (replaceFromSrc > replaceToSrc) != (replaceFrom > replaceTo);
+  CHECK_LESS(dstFrom, dstTo, ());
+  CHECK_LESS(srcFrom, srcTo, ());
 
-  if (replaceFrom > replaceTo)
-    std::swap(replaceFrom, replaceTo);
+  CHECK(!IsFrozen(dstFrom, dstTo), ());
+  MakeFrozen(dstFrom, dstTo);
 
-  if (replaceFromSrc > replaceToSrc)
-    std::swap(replaceFromSrc, replaceToSrc);
-
-  CHECK(!IsFrozen(replaceFrom, replaceTo), ());
-  MakeFrozen(replaceFrom, replaceTo);
-
-  m_replaceData.emplace(replaceFrom, replaceTo, replaceFromSrc, replaceToSrc, borderIdSrc,
-                        reversed);
+  m_replaceData.emplace(dstFrom, dstTo, srcFrom, srcTo, srcBorderId, reversed);
 }
 
 std::set<ReplaceData>::const_iterator Polygon::FindReplaceData(size_t index)
 {
   for (auto it = m_replaceData.begin(); it != m_replaceData.end(); ++it)
   {
-    if (it->m_replaceFrom <= index && index <= it->m_replaceTo)
+    if (it->m_dstFrom <= index && index <= it->m_dstTo)
       return it;
   }
 

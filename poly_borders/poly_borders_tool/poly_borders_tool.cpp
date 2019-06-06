@@ -1,5 +1,5 @@
-#include "poly_borders/src/borders_data.hpp"
-#include "poly_borders/src/help_structures.hpp"
+#include "poly_borders/borders_data.hpp"
+#include "poly_borders/help_structures.hpp"
 
 #include "platform/platform.hpp"
 
@@ -12,7 +12,7 @@
 #include "3party/gflags/src/gflags/gflags.h"
 
 DEFINE_string(borders_path, "", "Path to directory with *.poly files.");
-DEFINE_string(output_path, "", "Path to target directory where will be placed *.poly files.");
+DEFINE_string(output_path, "", "Path to target directory where the output *.poly files will be placed.");
 
 using namespace poly_borders;
 
@@ -21,7 +21,7 @@ int main(int argc, char ** argv)
   google::ParseCommandLineFlags(&argc, &argv, true);
   google::SetUsageMessage("\n\n\tThe tool is used to process *.poly borders files. We use such files\n"
                           "\tfor \"planet to mwms separation\" in generator. The problem is that we have\n"
-                          "\tempty spaces between neighbouring borders. This tool create new borders\n"
+                          "\tempty spaces between neighbouring borders. This tool creates new borders\n"
                           "\tbased on input data by adding new points to borders in this way that the\n"
                           "\tchanged area of each border will not too much.\n"
                           "\tArguments:\n"

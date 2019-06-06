@@ -48,8 +48,8 @@ struct ReplaceData
 {
   ReplaceData(size_t replaceFrom, size_t replaceTo, size_t replaceFromSrc, size_t replaceToSrc,
               size_t borderIdSrc, bool reversed)
-    : m_replaceFrom(replaceFrom)
-    , m_replaceTo(replaceTo)
+    : m_dstFrom(replaceFrom)
+    , m_dstTo(replaceTo)
     , m_srcReplaceFrom(replaceFromSrc)
     , m_srcReplaceTo(replaceToSrc)
     , m_srcBorderId(borderIdSrc)
@@ -57,10 +57,12 @@ struct ReplaceData
   {
   }
 
+  static bool IsReversedIntervals(size_t fromDst, size_t toDst, size_t fromSrc, size_t toSrc);
+
   bool operator<(ReplaceData const & rhs) const;
 
-  size_t m_replaceFrom;
-  size_t m_replaceTo;
+  size_t m_dstFrom;
+  size_t m_dstTo;
 
   size_t m_srcReplaceFrom;
   size_t m_srcReplaceTo;
@@ -82,7 +84,7 @@ struct MarkedPoint
   m2::PointD m_point{};
   AtomicBoolWrapper m_marked{};
   std::set<Link> m_links;
-  std::shared_ptr<std::mutex> m_mutex = std::make_shared<std::mutex>();
+  std::unique_ptr<std::mutex> m_mutex = std::make_unique<std::mutex>();
 };
 
 struct Polygon
@@ -99,7 +101,8 @@ struct Polygon
 
   // [replaceFrom, replaceTo], [replaceFromSrc, replaceToSrc]
   void AddReplaceInfo(size_t replaceFrom, size_t replaceTo,
-                      size_t replaceFromSrc, size_t replaceToSrc, size_t borderIdSrc);
+                      size_t replaceFromSrc, size_t replaceToSrc, size_t borderIdSrc,
+                      bool reversed);
 
   std::set<ReplaceData>::const_iterator FindReplaceData(size_t index);
 

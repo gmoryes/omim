@@ -1,29 +1,15 @@
-project(poly_borders_postprocessor)
+project(poly_borders)
 
-include_directories(${OMIM_ROOT}/3party/gflags/src)
-
-set(SRC main.cpp)
-
-omim_add_executable(${PROJECT_NAME} ${SRC})
-
-omim_link_libraries(
-        ${PROJECT_NAME}
-        poly_borders_postprocessor_library
-        generator
-        storage
-        indexer
-        platform
-        geometry
-        coding
-        base
-        stats_client
-        gflags
-        ${CMAKE_DL_LIBS}
-        ${LIBZ}
+set(
+  SRC
+  borders_data.cpp
+  borders_data.hpp
+  help_structures.cpp
+  help_structures.hpp
 )
 
-link_qt5_core(${PROJECT_NAME})
+omim_add_library(${PROJECT_NAME} ${SRC})
 
-add_subdirectory(src)
+omim_add_test_subdirectory(poly_borders_tests)
 
-omim_add_test_subdirectory(tests)
+add_subdirectory(poly_borders_tool)

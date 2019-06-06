@@ -1,6 +1,6 @@
 #include "testing/testing.hpp"
 
-#include "poly_borders/src/help_structures.hpp"
+#include "poly_borders/help_structures.hpp"
 
 #include "geometry/point2d.hpp"
 

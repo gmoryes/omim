@@ -1,6 +1,6 @@
-#include "poly_borders/src/borders_data.hpp"
+#include "poly_borders/borders_data.hpp"
 
-#include "poly_borders/src/help_structures.hpp"
+#include "poly_borders/help_structures.hpp"
 
 #include "generator/borders.hpp"
 
@@ -29,7 +29,7 @@ namespace
 using namespace poly_borders;
 
 std::vector<m2::PointD> CopyPointsWithAnyDirection(std::vector<MarkedPoint> const & copyFrom, 
-                                                   int32_t from, int32_t to)
+                                                   size_t from, size_t to)
 {
   std::vector<m2::PointD> result;
   if (from > to)
@@ -76,21 +76,17 @@ void CopyWithReversedOption(size_t from, size_t to, bool reversed,
 
 m2::RectD FindRectForPolygon(std::vector<MarkedPoint> const & points)
 {
-  double minX = std::numeric_limits<double>::max();
-  double minY = std::numeric_limits<double>::max();
-  double maxX = std::numeric_limits<double>::min();
-  double maxY = std::numeric_limits<double>::min();
-
+  m2::RectD rect;
   for (auto const & point : points)
-  {
-    minX = std::min(minX, point.m_point.x);
-    minY = std::min(minY, point.m_point.y);
+    rect.Add(point.m_point);
 
-    maxX = std::max(maxX, point.m_point.x);
-    maxY = std::max(maxY, point.m_point.y);
-  }
+  return rect;
+}
 
-  return m2::RectD(minX, minY, maxX, maxY);
+void MakeSwapIfNeeds(size_t & a, size_t & b)
+{
+  if (a > b)
+    std::swap(a, b);
 }
 }  // namespace
 
@@ -148,7 +144,7 @@ void BordersData::MarkPoints()
   size_t const threadsNumber = std::thread::hardware_concurrency();
   LOG(LINFO, ("Start marking points, threads number:", threadsNumber));
 
-  base::thread_pool::computational::ThreadPool threadPool(threadsNumber);
+  base::thread_pool::computational::ThreadPool threadPool(1);
 
   std::vector<std::future<void>> tasks;
   for (size_t i = 0; i < m_bordersPolygons.size(); ++i)
@@ -202,8 +198,8 @@ void BordersData::DumpPolyFile(std::string const & polyPath, std::string mwmName
   std::ofstream output(polyPath);
   output << std::setprecision(20);
 
-  static std::string const kPolyExtension = ".poly";
-  mwmName.replace(mwmName.end() - kPolyExtension.size(), mwmName.end(), "");
+  CHECK(strings::EndsWith(mwmName, kBorderExtension), ());
+  mwmName.replace(mwmName.end() - kBorderExtension.size(), mwmName.end(), "");
 
   output << mwmName << std::endl;
   for (size_t i = 0; i < polygons.size(); ++i)
@@ -240,6 +236,7 @@ void BordersData::RemoveDuplicatePoints()
   for (auto & polygon : m_bordersPolygons)
   {
     std::vector<MarkedPoint> withoutDuplicates;
+    CHECK(!polygon.m_points.empty(), ());
     withoutDuplicates.emplace_back(polygon.m_points[0].m_point);
     for (size_t i = 1; i < polygon.m_points.size(); ++i)
     {
@@ -376,7 +373,7 @@ void BordersData::RemoveEmptySpaceBetweenBorders()
 
     auto & curPolygon = m_bordersPolygons[curBorderId];
 
-    for (int32_t i = 0; i < static_cast<int32_t>(curPolygon.m_points.size()); ++i)
+    for (size_t i = 0; i < curPolygon.m_points.size(); ++i)
     {
       // if point with index = i is frozen.
       if (curPolygon.IsFrozen(i, i))
@@ -390,8 +387,8 @@ void BordersData::RemoveEmptySpaceBetweenBorders()
       size_t anotherBorderId = prevLink.m_borderId;
       auto & anotherPolygon = m_bordersPolygons[anotherBorderId];
 
-      static int32_t constexpr kMaxLookAhead = 5;
-      for (int32_t shift = 1; shift <= kMaxLookAhead; ++shift)
+      static size_t constexpr kMaxLookAhead = 5;
+      for (size_t shift = 1; shift <= kMaxLookAhead; ++shift)
       {
         if (i + shift >= curPolygon.m_points.size())
           break;
@@ -411,14 +408,15 @@ void BordersData::RemoveEmptySpaceBetweenBorders()
         if (curLink.m_borderId != prevLink.m_borderId)
           continue;
 
-        auto anotherPrevPointId = static_cast<int32_t>(prevLink.m_pointId);
-        auto anotherCurPointId = static_cast<int32_t>(curLink.m_pointId);
+        auto anotherPrevPointId = prevLink.m_pointId;
+        auto anotherCurPointId = curLink.m_pointId;
 
         if (anotherPolygon.IsFrozen(anotherPrevPointId, anotherCurPointId))
           continue;
 
         auto const currentIdsLength = shift + 1;
-        auto const anotherIdsLength = std::abs(anotherCurPointId - anotherPrevPointId) + 1;
+        auto const anotherIdsLength = std::abs(static_cast<int32_t>(anotherCurPointId) -
+                                               static_cast<int32_t>(anotherPrevPointId)) + 1;
 
         auto const & anotherPoints = anotherPolygon.m_points;
 
@@ -438,21 +436,29 @@ void BordersData::RemoveEmptySpaceBetweenBorders()
         static double constexpr kMaxAreaDiff = 2000;
         if (areaDiff < kMaxAreaDiff)
         {
-          if (currentIdsLength > anotherIdsLength)
-          {
-            m_additionalAreaMetersSqr[anotherBorderId] += areaDiff;
-            anotherPolygon.AddReplaceInfo(anotherPrevPointId, anotherCurPointId,
-                                          i, i + shift, curBorderId);
-            curPolygon.MakeFrozen(i, i + shift);
-          }
-          else
-          {
-            m_additionalAreaMetersSqr[curBorderId] += areaDiff;
-            curPolygon.AddReplaceInfo(i, i + shift,
-                                      anotherPrevPointId, anotherCurPointId, anotherBorderId);
+          bool const curLenIsMore = currentIdsLength > anotherIdsLength;
 
-            anotherPolygon.MakeFrozen(anotherPrevPointId, anotherCurPointId);
-          }
+          size_t dstFrom = curLenIsMore ? anotherPrevPointId : i;
+          size_t dstTo   = curLenIsMore ? anotherCurPointId  : i + shift;
+
+          size_t srcFrom = curLenIsMore ? i         : anotherPrevPointId;
+          size_t srcTo   = curLenIsMore ? i + shift : anotherCurPointId;
+
+          size_t const areaChangeBorderId = curLenIsMore ? anotherBorderId : curBorderId;
+          size_t const srcBorderId        = curLenIsMore ? curBorderId     : anotherBorderId;
+
+          bool const reversed = ReplaceData::IsReversedIntervals(dstFrom, dstTo, srcFrom, srcTo);
+
+          m_additionalAreaMetersSqr[areaChangeBorderId] += areaDiff;
+
+          MakeSwapIfNeeds(dstFrom, dstTo);
+          MakeSwapIfNeeds(srcFrom, srcTo);
+
+          m_bordersPolygons[areaChangeBorderId].AddReplaceInfo(dstFrom, dstTo,
+                                                               srcFrom, srcTo, srcBorderId,
+                                                               reversed);
+
+          m_bordersPolygons[srcBorderId].MakeFrozen(srcFrom, srcTo);
         }
 
         i = i + shift - 1;
@@ -493,10 +499,10 @@ void BordersData::DoReplace()
       auto const srcBorderId = replaceDataIter->m_srcBorderId;
       size_t const srcFrom = replaceDataIter->m_srcReplaceFrom;
       size_t const srcTo = replaceDataIter->m_srcReplaceTo;
-      size_t const nextI = replaceDataIter->m_replaceTo;
+      size_t const nextI = replaceDataIter->m_dstTo;
       bool const reversed = replaceDataIter->m_reversed;
 
-      CHECK_EQUAL(i, replaceDataIter->m_replaceFrom, ());
+      CHECK_EQUAL(i, replaceDataIter->m_dstFrom, ());
 
       auto const & srcPolygon = m_bordersPolygons[srcBorderId];
 
