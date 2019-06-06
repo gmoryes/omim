@@ -287,22 +287,6 @@ void BordersData::MarkPoint(size_t curBorderId, MarkedPoint & point, int pointId
   }
 }
 
-BordersData::BorderResult BordersData::GetFinalResult(Polygon const & polygon)
-{
-  size_t all = 0;
-  size_t marked = 0;
-
-  for (auto const & point : polygon.m_points)
-  {
-    if (point.m_marked)
-      ++marked;
-
-    ++all;
-  }
-
-  return BorderResult(marked, all);
-}
-
 void PrintWithSpaces(std::string const & str, size_t maxN)
 {
   std::cout << str;
@@ -325,12 +309,9 @@ void BordersData::PrintDiff()
   for (size_t i = 0; i < m_bordersPolygons.size(); ++i)
   {
     auto const & mwmName = m_indexToName[i];
-    auto const & result = GetFinalResult(m_bordersPolygons[i]);
 
-    auto const & resultBefore = GetFinalResult(m_prevCopy[i]);
-
-    size_t all = result.m_all;
-    size_t allBefore = resultBefore.m_all;
+    size_t all = m_bordersPolygons[i].m_points.size();
+    size_t allBefore = m_prevCopy[i].m_points.size();
 
     m_numberOfAddPoints += all - allBefore;
 
@@ -411,7 +392,11 @@ void BordersData::RemoveEmptySpaceBetweenBorders()
         auto anotherPrevPointId = prevLink.m_pointId;
         auto anotherCurPointId = curLink.m_pointId;
 
-        if (anotherPolygon.IsFrozen(anotherPrevPointId, anotherCurPointId))
+        size_t const a = anotherPrevPointId < anotherCurPointId ? anotherPrevPointId
+                                                                : anotherCurPointId;
+        size_t const b = anotherPrevPointId < anotherCurPointId ? anotherCurPointId
+                                                                : anotherPrevPointId;
+        if (anotherPolygon.IsFrozen(a, b))
           continue;
 
         auto const currentIdsLength = shift + 1;
@@ -434,7 +419,7 @@ void BordersData::RemoveEmptySpaceBetweenBorders()
           break;
 
         static double constexpr kMaxAreaDiff = 2000;
-        if (areaDiff < kMaxAreaDiff)
+        if (areaDiff < kMaxAreaDiff && anotherIdsLength > 1)
         {
           bool const curLenIsMore = currentIdsLength > anotherIdsLength;
 

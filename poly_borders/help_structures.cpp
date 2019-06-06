@@ -62,6 +62,8 @@ void Polygon::MakeFrozen(size_t a, size_t b)
 
 bool Polygon::IsFrozen(size_t a, size_t b)
 {
+  // We use LESS_OR_EQUAL because we want sometimes check if
+  // point i - [i, i] is frozen.
   CHECK_LESS_OR_EQUAL(a, b, ());
 
   return m_replaced.Intersects(a, b);
@@ -71,7 +73,7 @@ void Polygon::AddReplaceInfo(size_t dstFrom, size_t dstTo,
                              size_t srcFrom, size_t srcTo, size_t srcBorderId,
                              bool reversed)
 {
-  CHECK_LESS(dstFrom, dstTo, ());
+  CHECK_LESS_OR_EQUAL(dstFrom, dstTo, ());
   CHECK_LESS(srcFrom, srcTo, ());
 
   CHECK(!IsFrozen(dstFrom, dstTo), ());

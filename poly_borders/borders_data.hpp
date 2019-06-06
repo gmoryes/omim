@@ -37,19 +37,9 @@ private:
     BordersData & m_data;
   };
 
-  struct BorderResult
-  {
-    BorderResult(size_t marked, size_t all) : m_marked(marked), m_all(all) {}
-
-    size_t m_marked = 0;
-    size_t m_all = 0;
-  };
-
   void RemoveDuplicatePoints();
 
   void MarkPoint(size_t curBorderId, MarkedPoint & point, int pointId);
-
-  BorderResult GetFinalResult(Polygon const & polygon);
 
   size_t m_numberOfAddPoints = 0;
   std::map<size_t, double> m_additionalAreaMetersSqr;
