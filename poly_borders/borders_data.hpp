@@ -20,8 +20,6 @@ public:
   void RemoveEmptySpaceBetweenBorders();
 
   void DumpPolyFiles(std::string const & targetDir);
-  static void DumpPolyFile(std::string const & polyPath, std::string mwmName,
-                           std::vector<std::vector<m2::PointD>> const & polygons);
 
   std::vector<Polygon> const & GetBordersPolygon() const { return m_bordersPolygons; }
   Polygon const & GetBordersPolygonByName(std::string const & name) const;

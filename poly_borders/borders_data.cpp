@@ -186,35 +186,8 @@ void BordersData::DumpPolyFiles(std::string const & targetDir)
       }
     }
 
-    std::string const polyPath = base::JoinPath(targetDir, name);
-    DumpPolyFile(polyPath, name, points);
+    borders::DumpBorderToPolyFile(targetDir, name, points);
   }
-}
-
-// static
-void BordersData::DumpPolyFile(std::string const & polyPath, std::string mwmName,
-                               std::vector<std::vector<m2::PointD>> const & polygons)
-{
-  std::ofstream output(polyPath);
-  output << std::setprecision(20);
-
-  CHECK(strings::EndsWith(mwmName, kBorderExtension), ());
-  mwmName.replace(mwmName.end() - kBorderExtension.size(), mwmName.end(), "");
-
-  output << mwmName << std::endl;
-  for (size_t i = 0; i < polygons.size(); ++i)
-  {
-    output << i + 1 << std::endl;
-    for (auto const & point : polygons[i])
-    {
-      auto const latlon = MercatorBounds::ToLatLon(point);
-      output << latlon.m_lon << " " << latlon.m_lat << std::endl;
-    }
-
-    output << "END" << std::endl;
-  }
-
-  output << "END" << std::endl;
 }
 
 void BordersData::Processor::operator()(size_t borderId)
