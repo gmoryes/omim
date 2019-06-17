@@ -3,6 +3,8 @@
 #include "geometry/mercator.hpp"
 
 #include <algorithm>
+#include <cmath>
+#include <tuple>
 
 namespace poly_borders
 {
@@ -25,10 +27,7 @@ bool ReplaceData::IsReversedIntervals(size_t fromDst, size_t toDst, size_t fromS
 
 bool ReplaceData::operator<(ReplaceData const & rhs) const
 {
-  if (m_dstFrom != rhs.m_dstFrom)
-    return m_dstFrom < rhs.m_dstFrom;
-
-  return m_dstTo < rhs.m_dstTo;
+  return std::tie(m_dstFrom, m_dstTo) < std::tie(rhs.m_dstFrom, rhs.m_dstTo);
 }
 
 // MarkedPoint -------------------------------------------------------------------------------------
@@ -62,8 +61,8 @@ void Polygon::MakeFrozen(size_t a, size_t b)
 
 bool Polygon::IsFrozen(size_t a, size_t b)
 {
-  // We use LESS_OR_EQUAL because we want sometimes check if
-  // point i - [i, i] is frozen.
+  // We use LESS_OR_EQUAL because we want sometimes to check if
+  // point i (associated with interval: [i, i]) is frozen.
   CHECK_LESS_OR_EQUAL(a, b, ());
 
   return m_replaced.Intersects(a, b);
@@ -93,7 +92,7 @@ std::set<ReplaceData>::const_iterator Polygon::FindReplaceData(size_t index)
   return m_replaceData.cend();
 }
 
-double FindPolygonArea(std::vector<m2::PointD> const & points, bool convertToMeters)
+double FindPolygonArea(std::vector<m2::PointD> const & points, bool convertToMeters /* = true */)
 {
   if (points.empty())
     return 0.0;

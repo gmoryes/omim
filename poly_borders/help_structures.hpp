@@ -6,6 +6,7 @@
 #include "base/non_intersecting_intervals.hpp"
 
 #include <atomic>
+#include <limits>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -40,8 +41,8 @@ struct Link
 
   bool operator<(Link const & rhs) const;
 
-  size_t m_borderId = 0;
-  size_t m_pointId = 0;
+  size_t m_borderId = std::numeric_limits<size_t>::max();
+  size_t m_pointId = std::numeric_limits<size_t>::max();
 };
 
 struct ReplaceData
@@ -53,9 +54,7 @@ struct ReplaceData
     , m_srcReplaceFrom(replaceFromSrc)
     , m_srcReplaceTo(replaceToSrc)
     , m_srcBorderId(borderIdSrc)
-    , m_reversed(reversed)
-  {
-  }
+    , m_reversed(reversed) {}
 
   static bool IsReversedIntervals(size_t fromDst, size_t toDst, size_t fromSrc, size_t toSrc);
 

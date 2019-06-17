@@ -8,6 +8,7 @@
 
 #include "geometry/mercator.hpp"
 #include "geometry/point2d.hpp"
+#include "geometry/rect2d.hpp"
 #include "geometry/region2d.hpp"
 
 #include "base/assert.hpp"
@@ -20,8 +21,11 @@
 
 #include <algorithm>
 #include <fstream>
+#include <future>
 #include <iostream>
 #include <iterator>
+#include <threads>
+#include <tuple>
 #include <utility>
 
 namespace
@@ -144,7 +148,7 @@ void BordersData::MarkPoints()
   size_t const threadsNumber = std::thread::hardware_concurrency();
   LOG(LINFO, ("Start marking points, threads number:", threadsNumber));
 
-  base::thread_pool::computational::ThreadPool threadPool(1);
+  base::thread_pool::computational::ThreadPool threadPool(threadsNumber);
 
   std::vector<std::future<void>> tasks;
   for (size_t i = 0; i < m_bordersPolygons.size(); ++i)
@@ -239,7 +243,7 @@ void BordersData::MarkPoint(size_t curBorderId, MarkedPoint & point, int pointId
 
     Polygon & anotherPolygon = m_bordersPolygons[i];
 
-    if (anotherPolygon.m_rect.IsPointOutside(point.m_point))
+    if (!anotherPolygon.m_rect.IsPointInside(point.m_point))
       continue;
 
     for (size_t anotherPointId = 0; anotherPointId < anotherPolygon.m_points.size(); ++anotherPointId)

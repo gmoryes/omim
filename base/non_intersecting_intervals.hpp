@@ -54,7 +54,6 @@ bool NonIntersectingIntervals<T>::Intersects(T left, T right)
   return false;
 }
 
-
 template <typename T>
 bool NonIntersectingIntervals<T>::AddInterval(T left, T right)
 {

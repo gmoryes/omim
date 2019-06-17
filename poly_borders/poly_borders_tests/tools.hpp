@@ -4,6 +4,7 @@
 
 #include "geometry/point2d.hpp"
 
+#include <memory>
 #include <string>
 #include <vector>
 

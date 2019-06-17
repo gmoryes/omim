@@ -6,8 +6,6 @@
 
 #include "platform/platform.hpp"
 
-#include "geometry/point2d.hpp"
-
 #include "base/file_name_utils.hpp"
 
 #include <string>

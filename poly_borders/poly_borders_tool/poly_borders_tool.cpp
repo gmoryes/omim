@@ -23,7 +23,7 @@ int main(int argc, char ** argv)
                           "\tfor \"planet to mwms separation\" in generator. The problem is that we have\n"
                           "\tempty spaces between neighbouring borders. This tool creates new borders\n"
                           "\tbased on input data by adding new points to borders in this way that the\n"
-                          "\tchanged area of each border will not too much.\n"
+                          "\tchanged area of each border will not be too much.\n"
                           "\tArguments:\n"
                           "\t\t--borders_path=/path/to/directory/with/borders\n"
                           "\t\t--output_path=/path/to/directory/where/new/borders/will/be/placed\n");
@@ -49,15 +49,15 @@ int main(int argc, char ** argv)
   }
   catch (RootException const & e)
   {
-    LOG(LINFO, ("Core exception:", e.Msg()));
+    LOG(LERROR, ("Core exception:", e.Msg()));
   }
   catch (std::exception const & e)
   {
-    LOG(LINFO, ("Std exception:", e.what()));
+    LOG(LERROR, ("Std exception:", e.what()));
   }
   catch (...)
   {
-    LOG(LINFO, ("Unknown exception."));
+    LOG(LERROR, ("Unknown exception."));
   }
 
   return 0;

@@ -10,6 +10,12 @@
 
 #include "platform/platform.hpp"
 
+#include "base/assert.hpp"
+
+#include <memory>
+#include <string>
+#include <vector>
+
 using namespace platform::tests_support;
 using namespace platform;
 using namespace poly_borders;
@@ -17,7 +23,7 @@ using namespace std;
 
 namespace
 {
-static std::string const kTestDir = "borders_poly_dir";
+static string const kTestDir = "borders_poly_dir";
 
 void TestMarked(Polygon const & polygon, size_t i)
 {
@@ -30,7 +36,7 @@ void TestNotMarked(Polygon const & polygon, size_t i)
 }
 
 void CheckByMask(Polygon const & polygons,
-                 std::vector<bool> markedMask)
+                 vector<bool> markedMask)
 {
   CHECK_EQUAL(polygons.m_points.size(), markedMask.size(), ());
   for (size_t i = 0; i < polygons.m_points.size(); ++i)
@@ -45,24 +51,24 @@ void CheckByMask(Polygon const & polygons,
 UNIT_TEST(PolyBordersPostprocessor_MarkPoints_1)
 {
   ScopedDir const scopedDir(kTestDir);
-  std::string const & bordersDir = scopedDir.GetFullPath();
+  string const & bordersDir = scopedDir.GetFullPath();
 
   m2::PointD a(-1.0, -1.0);
   m2::PointD b(-1.0, 1.0);
 
-  std::vector<std::vector<m2::PointD>> polygons1 = {
+  vector<vector<m2::PointD>> polygons1 = {
       {a, b, {1.0, 1.0}, {1.0, -1.0}}
   };
 
-  std::vector<std::vector<bool>> markedMask1 = {
+  vector<vector<bool>> markedMask1 = {
       {true, true, false, false}
   };
 
-  std::vector<std::vector<m2::PointD>> polygons2 = {
+  vector<vector<m2::PointD>> polygons2 = {
       {a, b, {2.0, 1.0}, {5.0, -1.0}}
   };
 
-  std::vector<std::vector<bool>> markedMask2 = {
+  vector<vector<bool>> markedMask2 = {
       {true, true, false, false}
   };
 
@@ -84,21 +90,21 @@ UNIT_TEST(PolyBordersPostprocessor_MarkPoints_1)
 UNIT_TEST(PolyBordersPostprocessor_MarkPoints_2)
 {
   ScopedDir const scopedDir(kTestDir);
-  std::string const & bordersDir = scopedDir.GetFullPath();
+  string const & bordersDir = scopedDir.GetFullPath();
 
-  std::vector<std::vector<m2::PointD>> polygons1 = {
+  vector<vector<m2::PointD>> polygons1 = {
       {{-1.0, -1.0}, {-1.0, 1.0}, {1.0, 1.0}, {1.0, -1.0}}
   };
 
-  std::vector<std::vector<bool>> markedMask1 = {
+  vector<vector<bool>> markedMask1 = {
       {false, false, false, false}
   };
 
-  std::vector<std::vector<m2::PointD>> polygons2 = {
+  vector<vector<m2::PointD>> polygons2 = {
       {{-12.0, -1.0}, {-10.0, 1.0}, {2.0, 1.0}, {5.0, -1.0}}
   };
 
-  std::vector<std::vector<bool>> markedMask2 = {
+  vector<vector<bool>> markedMask2 = {
       {false, false, false, false}
   };
 
@@ -120,7 +126,7 @@ UNIT_TEST(PolyBordersPostprocessor_MarkPoints_2)
 UNIT_TEST(PolyBordersPostprocessor_MarkPoints_3)
 {
   ScopedDir const scopedDir(kTestDir);
-  std::string const & bordersDir = scopedDir.GetFullPath();
+  string const & bordersDir = scopedDir.GetFullPath();
 
   m2::PointD a(-2.0, 1.0);
   m2::PointD b(0.0, 3.0);
@@ -129,35 +135,35 @@ UNIT_TEST(PolyBordersPostprocessor_MarkPoints_3)
   m2::PointD e(-4.0, 2.0);
   m2::PointD f(-1.0, 4.0);
 
-  std::vector<std::vector<m2::PointD>> polygons1 = {
+  vector<vector<m2::PointD>> polygons1 = {
       {a, b, c, {1.0, -3.0}, d}
   };
 
-  std::vector<std::vector<bool>> markedMask1 = {
+  vector<vector<bool>> markedMask1 = {
       {true, true, true, false, true}
   };
 
-  std::vector<std::vector<m2::PointD>> polygons2 = {
+  vector<vector<m2::PointD>> polygons2 = {
       {b, f, {2.0, 5.0}, {6.0, 3.0}, c}
   };
 
-  std::vector<std::vector<bool>> markedMask2 = {
+  vector<vector<bool>> markedMask2 = {
       {true, true, false, false, true}
   };
 
-  std::vector<std::vector<m2::PointD>> polygons3 = {
+  vector<vector<m2::PointD>> polygons3 = {
       {a, b, f, {-3.0, 4.0}, e}
   };
 
-  std::vector<std::vector<bool>> markedMask3 = {
+  vector<vector<bool>> markedMask3 = {
       {true, true, true, false, true}
   };
 
-  std::vector<std::vector<m2::PointD>> polygons4 = {
+  vector<vector<m2::PointD>> polygons4 = {
       {a, e, {-3.0, -1.0}, d}
   };
 
-  std::vector<std::vector<bool>> markedMask4 = {
+  vector<vector<bool>> markedMask4 = {
       {true, true, false, true}
   };
 
@@ -187,26 +193,26 @@ UNIT_TEST(PolyBordersPostprocessor_MarkPoints_3)
 UNIT_TEST(PolyBordersPostprocessor_MarkPoints_4)
 {
   ScopedDir const scopedDir(kTestDir);
-  std::string const & bordersDir = scopedDir.GetFullPath();
+  string const & bordersDir = scopedDir.GetFullPath();
 
   m2::PointD a(6.0, 2.0);
   m2::PointD b(6.0, 4.0);
   
-  std::vector<std::vector<m2::PointD>> polygons1 = {
+  vector<vector<m2::PointD>> polygons1 = {
       {{-2.0, -2.0}, {-2.0, 2.0}, {2.0, 2.0}, {2.0, -2.0}},
       {{4.0, 2.0}, {4.0, 4.0}, a, b}
   };
 
-  std::vector<std::vector<bool>> markedMask1 = {
+  vector<vector<bool>> markedMask1 = {
       {false, false, false, false},
       {false, false, true, true}
   };
 
-  std::vector<std::vector<m2::PointD>> polygons2 = {
+  vector<vector<m2::PointD>> polygons2 = {
       {a, b, {8.0, 6.0}, {8.0, 0.0}}
   };
 
-  std::vector<std::vector<bool>> markedMask2 = {
+  vector<vector<bool>> markedMask2 = {
       {true, true, false, false}
   };
 
