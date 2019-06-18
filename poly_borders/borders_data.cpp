@@ -24,7 +24,7 @@
 #include <future>
 #include <iostream>
 #include <iterator>
-#include <threads>
+#include <thread>
 #include <tuple>
 #include <utility>
 
@@ -170,15 +170,15 @@ void BordersData::DumpPolyFiles(std::string const & targetDir)
       LOG(LINFO, ("Dumping poly files:", i + 1, "/", n));
 
     auto name = m_indexToName[i];
-    std::vector<std::vector<m2::PointD>> points;
+    std::vector<m2::RegionD> regions;
     size_t id = 1;
     for (;;)
     {
-      std::vector<m2::PointD> toAppend;
+      m2::RegionD region;
       for (auto const & markedPoint : m_bordersPolygons[i].m_points)
-        toAppend.emplace_back(markedPoint.m_point);
+        region.AddPoint(markedPoint.m_point);
 
-      points.emplace_back(std::move(toAppend));
+      regions.emplace_back(std::move(region));
       if (i + 1 < n && m_indexToName[i + 1] == name + std::to_string(id))
       {
         ++i;
@@ -190,7 +190,7 @@ void BordersData::DumpPolyFiles(std::string const & targetDir)
       }
     }
 
-    borders::DumpBorderToPolyFile(targetDir, name, points);
+    borders::DumpBorderToPolyFile(targetDir, name, regions);
   }
 }
 
