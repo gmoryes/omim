@@ -62,6 +62,15 @@ namespace location
     bool HasBearing() const { return m_bearing >= 0.0; }
     bool HasSpeed() const { return m_speedMpS >= 0.0; }
     bool HasVerticalAccuracy() const { return m_verticalAccuracy >= 0.0; }
+    std::string Dump() const
+    {
+      std::stringstream ss;
+      ss << std::setprecision(10);
+      ss << m_timestamp << " " << m_latitude << " " << m_longitude << " "
+         << m_horizontalAccuracy << " " << m_verticalAccuracy << " " << m_altitude << " "
+         << m_bearing << " " << m_speedMpS;
+      return ss.str();
+    }
   };
 
   /// GpsTrackInfo struct describes a point for GPS tracking
@@ -243,5 +252,4 @@ namespace location
   };
 
   using TMyPositionModeChanged = function<void (location::EMyPositionMode, bool)>;
-
 } // namespace location

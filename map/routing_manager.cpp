@@ -431,6 +431,13 @@ void RoutingManager::OnRoutePointPassed(RouteMarkType type, size_t intermediateI
 
 void RoutingManager::OnLocationUpdate(location::GpsInfo const & info)
 {
+  std::string path;
+  static std::string savePath = "/sdcard/MapsWithMe/1.gps.log";
+
+  std::ofstream output(savePath, std::ofstream::app);
+  output << info.Dump() << std::endl;
+  
+  LOG(LINFO, (info.Dump()));
   m_extrapolator.OnLocationUpdate(info);
 }
 
