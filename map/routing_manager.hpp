@@ -119,7 +119,7 @@ public:
   };
   using RouteRecommendCallback = std::function<void(Recommendation)>;
 
-  RoutingManager(Callbacks && callbacks, Delegate & delegate);
+  RoutingManager(ScreenBase & sc, Callbacks && callbacks, Delegate & delegate);
 
   void SetBookmarkManager(BookmarkManager * bmManager);
   void SetTransitManager(TransitReadManager * transitManager);
@@ -307,6 +307,8 @@ public:
 
   routing::RouterType GetCurrentRouterType() const { return m_currentRouterType; }
 
+  void DrawPoints(ScreenBase & sc);
+
 private:
   /// \returns true if the route has warnings.
   bool InsertRoute(routing::Route const & route);
@@ -385,4 +387,6 @@ private:
   TransitReadManager * m_transitReadManager = nullptr;
 
   DECLARE_THREAD_CHECKER(m_threadChecker);
+
+  ScreenBase & m_screenBase;
 };

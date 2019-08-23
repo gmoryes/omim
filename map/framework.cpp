@@ -356,6 +356,7 @@ Framework::Framework(FrameworkParams const & params)
                      },
                      bind(&Framework::GetMwmsByRect, this, _1, false /* rough */))
   , m_routingManager(
+        m_currentModelView,
         RoutingManager::Callbacks(
             [this]() -> DataSource & { return m_featuresFetcher.GetDataSource(); },
             [this]() -> storage::CountryInfoGetter & { return GetCountryInfoGetter(); },

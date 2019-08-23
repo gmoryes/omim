@@ -294,6 +294,7 @@ SessionState RoutingSession::OnLocationPositionChanged(GpsInfo const & info)
 
   if (iteratorAction.m_movedIterator)
   {
+    LOG(LINFO, ("iterator moved"));
     m_moveAwayCounter = 0;
     m_lastDistance = 0.0;
 
@@ -324,6 +325,7 @@ SessionState RoutingSession::OnLocationPositionChanged(GpsInfo const & info)
 
   if (!iteratorAction.m_closerToFake)
   {
+    LOG(LINFO, ("can not move iterator"));
     // Distance from the last known projection on route
     // (check if we are moving far from the last known projection).
     auto const & lastGoodPoint = m_route->GetFollowedPolyline().GetCurrentIter().m_pt;
@@ -341,6 +343,7 @@ SessionState RoutingSession::OnLocationPositionChanged(GpsInfo const & info)
 
     if (m_moveAwayCounter > kOnRouteMissedCount)
     {
+      LOG(LINFO, ("need rebuild"));
       m_passedDistanceOnRouteMeters += m_route->GetCurrentDistanceFromBeginMeters();
       SetState(SessionState::RouteNeedRebuild);
       alohalytics::TStringMap params = {

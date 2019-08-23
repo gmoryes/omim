@@ -296,6 +296,10 @@ void Route::MatchLocationToRoute(location::GpsInfo & location, location::RouteMa
 
       routeMatchingInfo.Set(iter.m_pt, iter.m_ind, GetMercatorDistanceFromBegin());
     }
+    else
+    {
+      LOG(LINFO, ("distFromRouteM =", distFromRouteM, "m_routingSettings.m_matchingThresholdM =", m_routingSettings.m_matchingThresholdM));
+    }
   }
 }
 

@@ -309,15 +309,16 @@ namespace marketing
 char const * const kRoutingCalculatingRoute = "Routing_CalculatingRoute";
 }  // namespace marketing
 
-RoutingManager::RoutingManager(Callbacks && callbacks, Delegate & delegate)
+RoutingManager::RoutingManager(ScreenBase & screenBase, Callbacks && callbacks, Delegate & delegate)
   : m_callbacks(move(callbacks))
   , m_delegate(delegate)
   , m_trackingReporter(platform::CreateSocket(), TRACKING_REALTIME_HOST, TRACKING_REALTIME_PORT,
                        tracking::Reporter::kPushDelayMs)
   , m_extrapolator(
         [this](location::GpsInfo const & gpsInfo) { this->OnExtrapolatedLocationUpdate(gpsInfo); })
+  , m_screenBase(screenBase)
 {
-  auto const routingStatisticsFn = [](map<string, string> const & statistics) {
+  auto const routingStatisticsFn = [&](map<string, string> const & statistics) {
     alohalytics::LogEvent("Routing_CalculatingRoute", statistics);
     GetPlatform().GetMarketingService().SendMarketingEvent(marketing::kRoutingCalculatingRoute, {});
   };
@@ -456,6 +457,71 @@ void RoutingManager::OnNeedMoreMaps(uint64_t routeId, storage::CountriesSet cons
 
   HidePreviewSegments();
   CallRouteBuilded(RouterResultCode::NeedMoreMaps, absentCountries);
+}
+
+void RoutingManager::DrawPoints(ScreenBase & screen)
+{
+  auto editSession = m_bmManager->GetEditSession();
+  editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
+  std::ifstream input("/tmp/points");
+  double lat, lon, speed, acc;
+  double maxspeed = -10;
+  std::vector<std::tuple<double, double, double, double>> points;
+  while (input >> lat >> lon >> speed >> acc)
+  {
+//    LOG(LINFO, ("speed =", measurement_utils::MpsToKmph(speed), "kmph"));
+    maxspeed = std::max(maxspeed, speed);
+    points.emplace_back(lat, lon, speed, acc);
+  }
+
+//      maxspeed = routing::KMPH2MPS();
+  bool radius = true;
+  LOG(LINFO, ("maxspeed =", measurement_utils::MpsToKmph(maxspeed), "kmph"));
+  for (auto const & point : points)
+  {
+    std::tie(lat, lon, speed, acc) = point;
+    auto const pt = MercatorBounds::FromLatLon({lat, lon});
+
+    if (radius)
+    {
+      auto acc_mark = editSession.CreateUserMark<ColoredMarkPoint>(pt);
+      if (acc != -1)
+      {
+        if (acc <= 50)
+          acc_mark->SetColor(dp::Color(0, 0, 255, 100));
+        else
+          acc_mark->SetColor(dp::Color(0, 255, 0, 100));
+      }
+      else
+      {
+        acc_mark->SetColor(dp::Color(0, 0, 0, 100));
+      }
+
+      LOG(LINFO, ("acc =", acc));
+      acc = MercatorBounds::MetersToMercator(acc);
+      m2::PointD accuracyPoint(pt.x + acc, pt.y);
+      //    screen.SetScale(15);
+      auto const pixelAccuracy =
+          static_cast<float>((screen.GtoP(accuracyPoint) - screen.GtoP(m2::PointD(pt))).Length());
+
+      acc_mark->SetRadius(pixelAccuracy);
+    }
+  }
+
+  for (auto const & point : points)
+  {
+    std::tie(lat, lon, speed, acc) = point;
+    auto const pt = MercatorBounds::FromLatLon({lat, lon});
+
+//    if (speed <= routing::KMPH2MPS(5))
+//      continue;
+
+    auto mark = editSession.CreateUserMark<ColoredMarkPoint>(pt);
+    if (speed <= routing::KMPH2MPS(5))
+      mark->SetColor(dp::Color(0, 0, 255, 255));
+    else
+      mark->SetColor(dp::Color(static_cast<uint8_t>(255 * speed / maxspeed), 0, 0, 255));
+  }
 }
 
 void RoutingManager::OnRemoveRoute(routing::RouterResultCode code)

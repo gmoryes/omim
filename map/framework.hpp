@@ -208,6 +208,9 @@ protected:
   search::QuerySaver m_searchQuerySaver;
 
   ScreenBase m_currentModelView;
+public:
+  ScreenBase & GetScreenBase() { return m_currentModelView; }
+private:
   m2::RectD m_visibleViewport;
 
   using TViewportChangedFn = df::DrapeEngine::ModelViewChangedHandler;

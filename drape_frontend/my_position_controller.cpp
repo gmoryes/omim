@@ -538,7 +538,10 @@ void MyPositionController::OnLocationUpdate(location::GpsInfo const & info, bool
   m_isPositionAssigned = true;
 
   if (m_listener != nullptr)
+  {
+//    LOG(LINFO, ("PositionChanged()"));
     m_listener->PositionChanged(Position(), IsModeHasPosition());
+  }
 
   double const kEps = 1e-5;
   if (fabs(m_lastLocationTimestamp - info.m_timestamp) > kEps)
