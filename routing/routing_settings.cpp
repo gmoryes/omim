@@ -43,3 +43,4 @@ RoutingSettings GetRoutingSettings(VehicleType vehicleType)
   UNREACHABLE();
 }
 }  // namespace routing
+
