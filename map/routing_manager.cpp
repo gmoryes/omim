@@ -475,7 +475,7 @@ void RoutingManager::DrawPoints(ScreenBase & screen)
   }
 
 //      maxspeed = routing::KMPH2MPS();
-  bool radius = true;
+  bool radius = std::getenv("RADIUS") && !std::string(std::getenv("RADIUS")).empty();
   LOG(LINFO, ("maxspeed =", measurement_utils::MpsToKmph(maxspeed), "kmph"));
   for (auto const & point : points)
   {
