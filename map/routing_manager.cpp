@@ -472,6 +472,11 @@ void RoutingManager::DrawPoints(ScreenBase & screen)
 //    LOG(LINFO, ("speed =", measurement_utils::MpsToKmph(speed), "kmph"));
     maxspeed = std::max(maxspeed, speed);
     points.emplace_back(lat, lon, speed, acc);
+    auto const & point = MercatorBounds::FromLatLon({50.1411955, 8.074009});
+    auto const & asdasdasd = MercatorBounds::FromLatLon({lat, lon});
+    if (base::AlmostEqualAbs(point, asdasdasd, 1e-5)) {
+      LOG(LINFO, ("acc =", acc));
+    }
   }
 
 //      maxspeed = routing::KMPH2MPS();
@@ -485,19 +490,20 @@ void RoutingManager::DrawPoints(ScreenBase & screen)
     if (radius)
     {
       auto acc_mark = editSession.CreateUserMark<ColoredMarkPoint>(pt);
-      if (acc != -1)
-      {
-        if (acc <= 50)
-          acc_mark->SetColor(dp::Color(0, 0, 255, 100));
-        else
-          acc_mark->SetColor(dp::Color(0, 255, 0, 100));
-      }
-      else
-      {
-        acc_mark->SetColor(dp::Color(0, 0, 0, 100));
-      }
+      acc_mark->SetColor(dp::Color(0, 0, 255, 70));
+//      if (acc != -1)
+//      {
+//        if (acc <= 50)
+//          acc_mark->SetColor(dp::Color(0, 0, 255, 100));
+//        else
+//          acc_mark->SetColor(dp::Color(0, 255, 0, 100));
+//      }
+//      else
+//      {
+//        acc_mark->SetColor(dp::Color(0, 0, 0, 100));
+//      }
 
-      LOG(LINFO, ("acc =", acc));
+      //LOG(LINFO, ("acc =", acc));
       acc = MercatorBounds::MetersToMercator(acc);
       m2::PointD accuracyPoint(pt.x + acc, pt.y);
       //    screen.SetScale(15);
