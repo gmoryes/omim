@@ -27,6 +27,7 @@ DEFINE_string(save_result, "", "The directory where results of tool will be save
 
 DEFINE_double(kml_percent, 0.0, "The percent of routes for which kml file will be generated."
                                 "With kml files you can make screenshots with desktop app of MAPS.ME");
+DEFINE_bool(copy_intersection, false, "Copy intersection of results.");
 
 namespace
 {
@@ -88,6 +89,9 @@ template <typename AnotherResult>
 void RunComparison(std::vector<std::pair<RoutesBuilder::Result, std::string>> && mapsmeResults,
                    std::vector<std::pair<AnotherResult, std::string>> && anotherResults)
 {
+  std::string const intersectionPath = base::JoinPath(FLAGS_save_result, "intersection");
+  size_t intersectionCount = 0;
+
   ComparisonType type = IsMapsmeVsApi() ? ComparisonType::MapsmeVsApi
                                         : ComparisonType::MapsmeVsMapsme;
   RoutesSaver routesSaver(FLAGS_save_result, type);
@@ -108,6 +112,15 @@ void RunComparison(std::vector<std::pair<RoutesBuilder::Result, std::string>> &&
 
     auto const & anotherResult = anotherResultPair.first;
     auto const & anotherFile = anotherResultPair.second;
+
+    if (FLAGS_copy_intersection)
+    {
+      auto const mapsmeCopyPath = base::JoinPath(intersectionPath, "mapsme", std::to_string(intersectionCount) + ".mapsme.dump");
+      auto const oldMapsmeCopyPath = base::JoinPath(intersectionPath, "old_mapsme", std::to_string(intersectionCount) + ".mapsme.dump");
+
+      base::CopyFileX(mapsmeFile, mapsmeCopyPath);
+      base::CopyFileX(anotherFile, oldMapsmeCopyPath);
+    }
 
     auto const & startLatLon = MercatorBounds::ToLatLon(anotherResult.GetStartPoint());
     auto const & finishLatLon = MercatorBounds::ToLatLon(anotherResult.GetFinishPoint());

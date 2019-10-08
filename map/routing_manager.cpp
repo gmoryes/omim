@@ -3,6 +3,7 @@
 #include "map/chart_generator.hpp"
 #include "map/power_management/power_manager.hpp"
 #include "map/routing_mark.hpp"
+#include "map/framework.hpp"
 
 #include "private.h"
 
@@ -459,38 +460,67 @@ void RoutingManager::OnNeedMoreMaps(uint64_t routeId, storage::CountriesSet cons
   CallRouteBuilded(RouterResultCode::NeedMoreMaps, absentCountries);
 }
 
-void RoutingManager::DrawPoints(ScreenBase & screen)
+void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
 {
+  static bool kDelete = false;
   auto editSession = m_bmManager->GetEditSession();
+  if (kDelete)
+  {
+    auto empty = [](auto const &) { return true; };
+    editSession.DeleteUserMarks<ColoredMarkPoint>(UserMark::Type::COLORED, std::move(empty));
+    kDelete = false;
+    return;
+  }
+  kDelete = true;
   editSession.SetIsVisible(UserMark::Type::DEBUG_MARK, true);
-  std::ifstream input("/tmp/points");
+  CHECK(std::getenv("PATH_FILE"), ("env PATH_FILE empty"));
+  std::string path_points = std::string(std::getenv("PATH_FILE"));
+  std::ifstream input(path_points);
   double lat, lon, speed, acc;
   double maxspeed = -10;
   std::vector<std::tuple<double, double, double, double>> points;
-  while (input >> lat >> lon >> speed >> acc)
+  std::vector<std::vector<m2::PointD>> groupPoints;
+  bool drawLines = false;
+
+  if (drawLines)
   {
-//    LOG(LINFO, ("speed =", measurement_utils::MpsToKmph(speed), "kmph"));
-    maxspeed = std::max(maxspeed, speed);
-    points.emplace_back(lat, lon, speed, acc);
-    auto const & point = MercatorBounds::FromLatLon({50.1411955, 8.074009});
-    auto const & asdasdasd = MercatorBounds::FromLatLon({lat, lon});
-    if (base::AlmostEqualAbs(point, asdasdasd, 1e-5)) {
-      LOG(LINFO, ("acc =", acc));
+    size_t n;
+    while (input >> n)
+    {
+      groupPoints.emplace_back();
+      groupPoints.back().reserve(n);
+      for (size_t i = 0; i < n; ++i)
+      {
+        input >> lat >> lon;
+        groupPoints.back().emplace_back(MercatorBounds::FromLatLon(lat, lon));
+      }
+    }
+  }
+  else
+  {
+    while (input >> lat >> lon >> acc)
+    {
+      //    LOG(LINFO, ("speed =", measurement_utils::MpsToKmph(speed), "kmph"));
+      maxspeed = std::max(maxspeed, speed);
+      points.emplace_back(lat, lon, speed, acc);
     }
   }
 
 //      maxspeed = routing::KMPH2MPS();
   bool radius = std::getenv("RADIUS") && !std::string(std::getenv("RADIUS")).empty();
   LOG(LINFO, ("maxspeed =", measurement_utils::MpsToKmph(maxspeed), "kmph"));
+  int cnt = 0;
+  bool first = false;
   for (auto const & point : points)
   {
+
     std::tie(lat, lon, speed, acc) = point;
     auto const pt = MercatorBounds::FromLatLon({lat, lon});
 
-    if (radius)
+    if (true)
     {
       auto acc_mark = editSession.CreateUserMark<ColoredMarkPoint>(pt);
-      acc_mark->SetColor(dp::Color(0, 0, 255, 70));
+        acc_mark->SetColor(dp::Color(0, 0, 255, 70));
 //      if (acc != -1)
 //      {
 //        if (acc <= 50)
@@ -514,19 +544,40 @@ void RoutingManager::DrawPoints(ScreenBase & screen)
     }
   }
 
-  for (auto const & point : points)
+  vector<dp::Color> colorList = {
+      dp::Color(255, 0, 0, 255),   dp::Color(0, 255, 0, 255),   dp::Color(0, 0, 255, 255),
+      dp::Color(255, 255, 0, 255), dp::Color(0, 255, 255, 255), dp::Color(255, 0, 255, 255),
+      dp::Color(100, 0, 0, 255),   dp::Color(0, 100, 0, 255),   dp::Color(0, 0, 100, 255),
+      dp::Color(100, 100, 0, 255), dp::Color(0, 100, 100, 255), dp::Color(100, 0, 100, 255)};
+  size_t kColorCounter = 0;
+
+
+  if (drawLines)
   {
-    std::tie(lat, lon, speed, acc) = point;
-    auto const pt = MercatorBounds::FromLatLon({lat, lon});
+    for (auto & group : groupPoints)
+    {
+      group.emplace_back(group.front());
+      cnt++;
+      ++kColorCounter;
+      kColorCounter %= colorList.size();
+      LOG(LINFO, ("cnt =", cnt));
 
-//    if (speed <= routing::KMPH2MPS(5))
-//      continue;
+      auto lineData = df::DrapeApiLineData(group, colorList[kColorCounter]).Width(4.0f).ShowId();
+      framework.GetDrapeApi().AddLine(std::to_string(cnt), lineData);
+    }
+  }
+  else
+  {
+    LOG(LINFO, ("draw points"));
+    for (auto const & point : points)
+    {
+      std::tie(lat, lon, speed, acc) = point;
 
-    auto mark = editSession.CreateUserMark<ColoredMarkPoint>(pt);
-    if (speed <= routing::KMPH2MPS(5))
-      mark->SetColor(dp::Color(0, 0, 255, 255));
-    else
-      mark->SetColor(dp::Color(static_cast<uint8_t>(255 * speed / maxspeed), 0, 0, 255));
+      auto const pt = MercatorBounds::FromLatLon({lat, lon});
+
+      auto mark = editSession.CreateUserMark<ColoredMarkPoint>(pt);
+      mark->SetColor(dp::Color(255, 0, 0, 255));
+    }
   }
 }
 

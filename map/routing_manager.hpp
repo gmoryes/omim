@@ -60,6 +60,8 @@ struct RoutePointInfo
   m2::PointD m_position;
 };
 
+class Framework;
+
 class RoutingManager final
 {
 public:
@@ -307,7 +309,7 @@ public:
 
   routing::RouterType GetCurrentRouterType() const { return m_currentRouterType; }
 
-  void DrawPoints(ScreenBase & sc);
+  void DrawPoints(Framework & framework, ScreenBase & screen);
 
 private:
   /// \returns true if the route has warnings.

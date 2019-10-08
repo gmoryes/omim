@@ -218,7 +218,7 @@ void DrawWidget::mousePressEvent(QMouseEvent * e)
   {
     if (IsAltModifier(e))
     {
-      m_framework.GetRoutingManager().DrawPoints(m_framework.GetScreenBase());
+      m_framework.GetRoutingManager().DrawPoints(m_framework, m_framework.GetScreenBase());
     }
     else if (!m_currentSelectionMode || IsCommandModifier(e))
     {
