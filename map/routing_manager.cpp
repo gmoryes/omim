@@ -480,7 +480,7 @@ void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
   double maxspeed = -10;
   std::vector<std::tuple<double, double, double, double>> points;
   std::vector<std::vector<m2::PointD>> groupPoints;
-  bool drawLines = false;
+  bool drawLines = true;
 
   if (drawLines)
   {
@@ -545,7 +545,7 @@ void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
   }
 
   vector<dp::Color> colorList = {
-      dp::Color(255, 0, 0, 255),   dp::Color(0, 255, 0, 255),   dp::Color(0, 0, 255, 255),
+      dp::Color(0, 255, 0, 255),   dp::Color(255, 0, 0, 255),   dp::Color(0, 0, 255, 255),
       dp::Color(255, 255, 0, 255), dp::Color(0, 255, 255, 255), dp::Color(255, 0, 255, 255),
       dp::Color(100, 0, 0, 255),   dp::Color(0, 100, 0, 255),   dp::Color(0, 0, 100, 255),
       dp::Color(100, 100, 0, 255), dp::Color(0, 100, 100, 255), dp::Color(100, 0, 100, 255)};
@@ -556,13 +556,14 @@ void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
   {
     for (auto & group : groupPoints)
     {
-      group.emplace_back(group.front());
       cnt++;
       ++kColorCounter;
       kColorCounter %= colorList.size();
       LOG(LINFO, ("cnt =", cnt));
 
-      auto lineData = df::DrapeApiLineData(group, colorList[kColorCounter]).Width(4.0f).ShowId();
+      auto lineData = df::DrapeApiLineData(group, colorList[kColorCounter]).Width(7.0f).ShowId();
+      if (std::getenv("SHOW_POINTS") && !std::string(std::getenv("SHOW_POINTS")).empty())
+        lineData.ShowPoints(true);
       framework.GetDrapeApi().AddLine(std::to_string(cnt), lineData);
     }
   }
