@@ -113,6 +113,7 @@ void RunComparison(std::vector<std::pair<RoutesBuilder::Result, std::string>> &&
     auto const & anotherResult = anotherResultPair.first;
     auto const & anotherFile = anotherResultPair.second;
 
+<<<<<<< HEAD
     if (FLAGS_copy_intersection)
     {
       auto const mapsmeCopyPath = base::JoinPath(intersectionPath, "mapsme", std::to_string(intersectionCount) + ".mapsme.dump");
@@ -122,8 +123,8 @@ void RunComparison(std::vector<std::pair<RoutesBuilder::Result, std::string>> &&
       base::CopyFileX(anotherFile, oldMapsmeCopyPath);
     }
 
-    auto const & startLatLon = MercatorBounds::ToLatLon(anotherResult.GetStartPoint());
-    auto const & finishLatLon = MercatorBounds::ToLatLon(anotherResult.GetFinishPoint());
+    auto const & startLatLon = mercator::ToLatLon(anotherResult.GetStartPoint());
+    auto const & finishLatLon = mercator::ToLatLon(anotherResult.GetFinishPoint());
 
     if (!mapsmeResult.IsCodeOK() && anotherResult.IsCodeOK())
     {
