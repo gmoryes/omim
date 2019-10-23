@@ -283,6 +283,7 @@ void RoutesBuilder::Processor::InitRouter(VehicleType type)
 RoutesBuilder::Result
 RoutesBuilder::Processor::operator()(Params const & params)
 {
+  LOG_FORCE(LINFO, ("================================"));
   InitRouter(params.m_type);
   SCOPE_GUARD(returnDataSource, [&]() {
     m_dataSourceStorage.PushDataSource(std::move(m_dataSource));
