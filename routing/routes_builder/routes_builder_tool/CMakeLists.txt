@@ -33,6 +33,7 @@ omim_link_libraries(
   protobuf
   stats_client
   gflags
+  tcmalloc
   ${LIBZ}
 )
 

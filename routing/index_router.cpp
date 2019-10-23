@@ -653,8 +653,12 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
       delegate, onVisitJunction, checkLength);
 
     set<NumMwmId> const mwmIds = starter.GetMwms();
+    if (mode == WorldGraphMode::LeapsOnly)
+      LOG_FORCE(LINFO, ("Start FindPath in LeapsOnly"));
+    else
+      LOG_FORCE(LINFO, ("Start FindPath in NoLeaps"));
     RouterResultCode const result = FindPath<Vertex, Edge, Weight>(params, mwmIds, routingResult, mode);
-
+    LOG_FORCE(LINFO, ("End FindPath"));
     if (mode == WorldGraphMode::LeapsOnly)
       progress.PushAndDropLastSubProgress();
 
