@@ -411,6 +411,7 @@ RouterResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoints,
   vector<Segment> segments;
 
   vector<Segment> startSegments;
+  LOG_FORCE(LINFO, ("DoCalculateRoute start"));
   bool startSegmentIsAlmostCodirectionalDirection = false;
   if (!FindBestSegments(checkpoints.GetPointFrom(), startDirection, true /* isOutgoing */, *graph,
                         startSegments, startSegmentIsAlmostCodirectionalDirection))
@@ -464,8 +465,10 @@ RouterResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoints,
       progress.PushAndDropLastSubProgress();
     });
 
+    LOG_FORCE(LINFO, ("CalculateSubroute start"));
     auto const result = CalculateSubroute(checkpoints, i, delegate, progress, subrouteStarter,
                                           subroute);
+    LOG_FORCE(LINFO, ("CalculateSubroute end"));
 
     if (result != RouterResultCode::NoError)
       return result;
@@ -511,6 +514,7 @@ RouterResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoints,
 
   m_lastFakeEdges = make_unique<FakeEdgesContainer>(move(*starter));
 
+  LOG_FORCE(LINFO, ("DoCalculateRoute end"));
   return RouterResultCode::NoError;
 }
 
