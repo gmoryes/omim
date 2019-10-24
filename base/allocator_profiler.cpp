@@ -45,6 +45,7 @@ std::vector<std::string> AllocatorProfilerLogsProducer::GetLastBatchOfLogs(
     lines.emplace_back(std::move(line));
   } while (!end());
 
+  LOG_FORCE(LINFO, ("return:", lines.size()));
   return lines;
 }
 
