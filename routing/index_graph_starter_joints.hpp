@@ -493,6 +493,28 @@ template <typename Graph>
 void IndexGraphStarterJoints<Graph>::GetEdgeList(JointSegment const & vertex, bool isOutgoing,
                                                  std::vector<JointEdge> & edges)
 {
+  {
+    static uint64_t cnt = 0;
+    cnt++;
+    if (cnt == 1)
+    {
+      std::ofstream output("/tmp/astar");
+    }
+
+    if (cnt % 10 == 0)
+    {
+      std::ofstream output("/tmp/astar", std::ofstream::app);
+      auto latlon = MercatorBounds::ToLatLon(GetPoint(vertex, true));
+      output << std::setprecision(20);
+      output << latlon.m_lat << " " << latlon.m_lon << " ";
+      if (isOutgoing)
+        output << "red";
+      else
+        output << "blue";
+      output << std::endl;
+    }
+  }
+
   CHECK(m_init, ("IndexGraphStarterJoints was not initialized."));
 
   edges.clear();

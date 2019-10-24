@@ -1064,6 +1064,16 @@ RouterResultCode IndexRouter::ProcessLeapsJoints(vector<Segment> const & input,
     return RouterResultCode::NoError;
   }
 
+  for (auto const & segment : input)
+  {
+    {
+      std::ofstream output("/tmp/astar", std::ofstream::app);
+      auto latlon = MercatorBounds::ToLatLon(starter.GetPoint(segment, true));
+      output << std::setprecision(20);
+      output << latlon.m_lat << " " << latlon.m_lon << std::endl;
+    }
+  }
+
   SCOPE_GUARD(progressGuard, [&progress]() {
     progress.PushAndDropLastSubProgress();
   });

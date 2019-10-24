@@ -281,6 +281,7 @@ void DrawWidget::VisualizeMwmsBordersInRect(m2::RectD const & rect, bool withVer
       std::string const path = base::JoinPath(bordersDir, mwmName + BORDERS_EXTENSION);
       std::vector<m2::RegionD> polygons;
       borders::LoadBorders(path, polygons);
+      LOG(LINFO, ("LoadBorders:", polygons.size(), "polygons."));
 
       return polygons;
     }

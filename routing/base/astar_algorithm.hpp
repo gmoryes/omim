@@ -13,7 +13,9 @@
 #include <map>
 #include <queue>
 #include <vector>
-
+#include <fstream>
+#include <iomanip>
+#include "geometry/mercator.hpp"
 namespace routing
 {
 template <typename Vertex, typename Edge, typename Weight>

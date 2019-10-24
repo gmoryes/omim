@@ -252,10 +252,10 @@ unique_ptr<IndexGraphLoader> IndexGraphLoader::Create(
 
 void DeserializeIndexGraph(MwmValue const & mwmValue, VehicleType vehicleType, IndexGraph & graph)
 {
-//  LOG_FORCE(LINFO, ("DeserializeIndexGraph:", mwmValue.GetCountryFileName()));
-  auto & logsProducer = base::AllocatorProfilerLogsProducer::Instance();
-  std::string name = "DeserializeIndexGraph: " + mwmValue.GetCountryFileName();
-  base::AllocatorProfiler profiler(name, logsProducer);
+  LOG_FORCE(LINFO, ("DeserializeIndexGraph:", mwmValue.GetCountryFileName()));
+//  auto & logsProducer = base::AllocatorProfilerLogsProducer::Instance();
+//  std::string name = "DeserializeIndexGraph: " + mwmValue.GetCountryFileName();
+//  base::AllocatorProfiler profiler(name, logsProducer);
 
   FilesContainerR::TReader reader(mwmValue.m_cont.GetReader(ROUTING_FILE_TAG));
   ReaderSource<FilesContainerR::TReader> src(reader);
