@@ -480,7 +480,9 @@ void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
   double maxspeed = -10;
   std::vector<std::tuple<double, double, double, double>> points;
   std::vector<std::vector<m2::PointD>> groupPoints;
-  bool drawLines = true;
+  bool drawLines = false;
+  bool drawPoints = false;
+  bool drawPointsWithRadius = true;
 
   if (drawLines)
   {
@@ -496,12 +498,19 @@ void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
       }
     }
   }
-  else
+  else if (drawPointsWithRadius)
   {
     while (input >> lat >> lon >> acc)
     {
       //    LOG(LINFO, ("speed =", measurement_utils::MpsToKmph(speed), "kmph"));
       maxspeed = std::max(maxspeed, speed);
+      points.emplace_back(lat, lon, speed, acc);
+    }
+  }
+  else if (drawPoints)
+  {
+    while (input >> lat >> lon)
+    {
       points.emplace_back(lat, lon, speed, acc);
     }
   }
@@ -517,7 +526,7 @@ void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
     std::tie(lat, lon, speed, acc) = point;
     auto const pt = MercatorBounds::FromLatLon({lat, lon});
 
-    if (true)
+    if (drawPointsWithRadius)
     {
       auto acc_mark = editSession.CreateUserMark<ColoredMarkPoint>(pt);
         acc_mark->SetColor(dp::Color(0, 0, 255, 70));
