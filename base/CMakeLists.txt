@@ -2,6 +2,8 @@ project(base)
 
 set(
   SRC
+  allocator_profiler.cpp
+  allocator_profiler.hpp
   array_adapters.hpp
   assert.hpp
   atomic_shared_ptr.hpp

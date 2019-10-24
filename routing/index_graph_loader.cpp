@@ -13,6 +13,7 @@
 
 #include "coding/files_container.hpp"
 
+#include "base/allocator_profiler.hpp"
 #include "base/assert.hpp"
 #include "base/timer.hpp"
 
@@ -251,7 +252,11 @@ unique_ptr<IndexGraphLoader> IndexGraphLoader::Create(
 
 void DeserializeIndexGraph(MwmValue const & mwmValue, VehicleType vehicleType, IndexGraph & graph)
 {
-  LOG_FORCE(LINFO, ("DeserializeIndexGraph:", mwmValue.GetCountryFileName()));
+//  LOG_FORCE(LINFO, ("DeserializeIndexGraph:", mwmValue.GetCountryFileName()));
+  auto & logsProducer = base::AllocatorProfilerLogsProducer::Instance();
+  std::string name = "DeserializeIndexGraph: " + mwmValue.GetCountryFileName();
+  base::AllocatorProfiler profiler(name, logsProducer);
+
   FilesContainerR::TReader reader(mwmValue.m_cont.GetReader(ROUTING_FILE_TAG));
   ReaderSource<FilesContainerR::TReader> src(reader);
   IndexGraphSerializer::Deserialize(graph, src, GetVehicleMask(vehicleType));
@@ -265,6 +270,6 @@ void DeserializeIndexGraph(MwmValue const & mwmValue, VehicleType vehicleType, I
   RoadAccess roadAccess;
   if (ReadRoadAccessFromMwm(mwmValue, vehicleType, roadAccess))
     graph.SetRoadAccess(move(roadAccess));
-  LOG_FORCE(LINFO, ("End:", mwmValue.GetCountryFileName()));
+//  LOG_FORCE(LINFO, ("End:", mwmValue.GetCountryFileName()));
 }
 }  // namespace routing
