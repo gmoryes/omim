@@ -139,6 +139,7 @@ AllocatorProfiler::~AllocatorProfiler()
   }
 
   double const start = RetrieveMemoryUsage(lines[baseMemoryPoint]);
+  LOG_FORCE(LINFO, ("startIndex:", startIndex, "endIndex:", endIndex, "base:", start));
   double end = start;
   for (size_t i = startIndex; i < endIndex; ++i)
   {
