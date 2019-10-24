@@ -109,7 +109,7 @@ double AllocatorProfiler::RetrieveMemoryUsage(std::string const & line)
 
   for (size_t i = 0; i < line.size(); ++i)
   {
-    if (isnumber(line[i]))
+    if (isdigit(line[i]))
     {
       double n = readNumber(i);
       if (tryRead(i, " MB currently in use"))
