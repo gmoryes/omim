@@ -87,7 +87,7 @@ double AllocatorProfiler::RetrieveMemoryUsage(std::string const & line)
   // Dumping heap profile to /tmp/mybin.hprof.0150.heap (2449 MB allocated cumulatively, 102 MB currently in use)
   auto const readNumber = [&line](size_t & i) {
     uint64_t n = 0.0;
-    while (i < line.size() && isnumber(line[i]))
+    while (i < line.size() && isdigit(line[i]))
     {
       n *= 10;
       n += line[i] - '0';
