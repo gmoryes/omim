@@ -22,7 +22,7 @@ using platform::LocalCountryFile;
 
 MwmInfo::MwmInfo() : m_minScale(0), m_maxScale(0), m_status(STATUS_DEREGISTERED), m_numRefs(0) {}
 
-MwmInfo::MwmTypeT MwmInfo::GetType() const
+MwmInfo::MwmType MwmInfo::GetType() const
 {
   if (m_minScale > 0)
     return COUNTRY;
@@ -409,17 +409,17 @@ MwmValue::MwmValue(LocalCountryFile const & localFile)
   m_factory.Load(m_cont);
 }
 
-void MwmValue::SetTable(MwmInfoEx & info)
+void MwmValue::SetTable(MwmInfo & info)
 {
   auto const version = GetHeader().GetFormat();
   CHECK_GREATER(version, version::Format::v5, ("Old maps should not be registered."));
 
-  m_table = info.m_table.lock();
+  m_table = info.GetTable().lock();
   if (m_table)
     return;
 
   m_table = feature::FeaturesOffsetsTable::Load(m_cont);
-  info.m_table = m_table;
+  info.SetTable(m_table);
 }
 
 string DebugPrint(MwmSet::RegResult result)

@@ -164,16 +164,14 @@ unique_ptr<MwmInfo> DataSource::CreateInfo(platform::LocalCountryFile const & lo
   if (!h.IsMWMSuitable())
     return nullptr;
 
-  auto info = make_unique<MwmInfoEx>();
+  auto info = make_unique<MwmInfo>();
   info->m_bordersRect = h.GetBounds();
 
   pair<int, int> const scaleR = h.GetScaleRange();
   info->m_minScale = static_cast<uint8_t>(scaleR.first);
   info->m_maxScale = static_cast<uint8_t>(scaleR.second);
   info->m_version = value.GetMwmVersion();
-  // Copying to drop the const qualifier.
-  feature::RegionData regionData(value.GetRegionData());
-  info->m_data = regionData;
+  info->m_data = value.GetRegionData();
 
   return unique_ptr<MwmInfo>(move(info));
 }
@@ -182,11 +180,11 @@ unique_ptr<MwmValue> DataSource::CreateValue(MwmInfo & info) const
 {
   // Create a section with rank table if it does not exist.
   platform::LocalCountryFile const & localFile = info.GetLocalFile();
-  unique_ptr<MwmValue> p(new MwmValue(localFile));
+  auto p = std::make_unique<MwmValue>(localFile);
   if (!p || version::GetMwmType(p->GetMwmVersion()) != version::MwmType::SingleMwm)
     return nullptr;
 
-  p->SetTable(dynamic_cast<MwmInfoEx &>(info));
+  p->SetTable(info);
   ASSERT(p->GetHeader().IsMWMSuitable(), ());
   return unique_ptr<MwmValue>(move(p));
 }

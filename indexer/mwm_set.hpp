@@ -30,7 +30,7 @@ public:
   friend class DataSource;
   friend class MwmSet;
 
-  enum MwmTypeT
+  enum MwmType
   {
     COUNTRY,
     WORLD,
@@ -65,14 +65,17 @@ public:
 
   int64_t GetVersion() const { return m_file.GetVersion(); }
 
-  MwmTypeT GetType() const;
+  MwmType GetType() const;
 
   feature::RegionData const & GetRegionData() const { return m_data; }
 
   /// Returns the lock counter value for test needs.
   uint8_t GetNumRefs() const { return m_numRefs; }
 
-protected:
+  std::weak_ptr<feature::FeaturesOffsetsTable> const & GetTable() const { return m_table; }
+  void SetTable(std::shared_ptr<feature::FeaturesOffsetsTable> p) { m_table = std::move(p); }
+
+private:
   Status SetStatus(Status status)
   {
     Status result = m_status;
@@ -85,13 +88,6 @@ protected:
   platform::LocalCountryFile m_file;  ///< Path to the mwm file.
   std::atomic<Status> m_status;       ///< Current country status.
   uint32_t m_numRefs;                 ///< Number of active handles.
-};
-
-class MwmInfoEx : public MwmInfo
-{
-private:
-  friend class DataSource;
-  friend class MwmValue;
 
   // weak_ptr is needed here to access offsets table in already
   // instantiated MwmValue-s for the MWM, including MwmValues in the
@@ -373,14 +369,8 @@ private:
 class MwmValue
 {
 public:
-  FilesContainerR const m_cont;
-  IndexFactory m_factory;
-  platform::LocalCountryFile const m_file;
-
-  std::shared_ptr<feature::FeaturesOffsetsTable> m_table;
-
   explicit MwmValue(platform::LocalCountryFile const & localFile);
-  void SetTable(MwmInfoEx & info);
+  void SetTable(MwmInfo & info);
 
   feature::DataHeader const & GetHeader() const  { return m_factory.GetHeader(); }
   feature::RegionData const & GetRegionData() const { return m_factory.GetRegionData(); }
@@ -389,6 +379,12 @@ public:
 
   bool HasSearchIndex() const { return m_cont.IsExist(SEARCH_INDEX_FILE_TAG); }
   bool HasGeometryIndex() const { return m_cont.IsExist(INDEX_FILE_TAG); }
+
+  FilesContainerR const m_cont;
+  IndexFactory m_factory;
+  platform::LocalCountryFile const m_file;
+
+  std::shared_ptr<feature::FeaturesOffsetsTable> m_table;
 }; // class MwmValue
 
 

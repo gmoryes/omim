@@ -151,7 +151,7 @@ void ReadMetalineTask::Run()
   if (!m_mwmId.IsAlive())
     return;
 
-  if (m_mwmId.GetInfo()->GetType() != MwmInfo::MwmTypeT::COUNTRY)
+  if (m_mwmId.GetInfo()->GetType() != MwmInfo::MwmType::COUNTRY)
     return;
 
   auto metalines = ReadMetalinesFromFile(m_mwmId);
