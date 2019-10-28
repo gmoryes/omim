@@ -478,11 +478,13 @@ void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
   std::ifstream input(path_points);
   double lat, lon, speed, acc;
   double maxspeed = -10;
-  std::vector<std::tuple<double, double, double, double>> points;
+  dp::Color color = dp::Color::Red();
+  std::vector<std::tuple<double, double, double, double, dp::Color>> points;
   std::vector<std::vector<m2::PointD>> groupPoints;
   bool drawLines = false;
   bool drawPoints = false;
-  bool drawPointsWithRadius = true;
+  bool drawPointsWithRadius = false;
+  bool drawPointWithColor = true;
 
   if (drawLines)
   {
@@ -504,14 +506,26 @@ void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
     {
       //    LOG(LINFO, ("speed =", measurement_utils::MpsToKmph(speed), "kmph"));
       maxspeed = std::max(maxspeed, speed);
-      points.emplace_back(lat, lon, speed, acc);
+      points.emplace_back(lat, lon, speed, acc, color);
     }
   }
   else if (drawPoints)
   {
     while (input >> lat >> lon)
     {
-      points.emplace_back(lat, lon, speed, acc);
+      points.emplace_back(lat, lon, speed, acc, color);
+    }
+  }
+  else if (drawPointWithColor)
+  {
+    std::string colorStr;
+    while (input >> lat >> lon >> colorStr)
+    {
+      if (colorStr == "red")
+        color = dp::Color::Red();
+      else if (colorStr == "blue")
+        color = dp::Color::Blue();
+      points.emplace_back(lat, lon, speed, acc, color);
     }
   }
 
@@ -523,7 +537,7 @@ void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
   for (auto const & point : points)
   {
 
-    std::tie(lat, lon, speed, acc) = point;
+    std::tie(lat, lon, speed, acc, color) = point;
     auto const pt = MercatorBounds::FromLatLon({lat, lon});
 
     if (drawPointsWithRadius)
@@ -581,12 +595,12 @@ void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
     LOG(LINFO, ("draw points"));
     for (auto const & point : points)
     {
-      std::tie(lat, lon, speed, acc) = point;
+      std::tie(lat, lon, speed, acc, color) = point;
 
       auto const pt = MercatorBounds::FromLatLon({lat, lon});
 
       auto mark = editSession.CreateUserMark<ColoredMarkPoint>(pt);
-      mark->SetColor(dp::Color(255, 0, 0, 255));
+      mark->SetColor(color);
     }
   }
 }
