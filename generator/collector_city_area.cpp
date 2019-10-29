@@ -11,7 +11,6 @@
 
 #include "geometry/area_on_earth.hpp"
 #include "geometry/mercator.hpp"
-#include "geometry/polygon.hpp"
 
 #include "base/assert.hpp"
 #include "base/string_utils.hpp"
@@ -83,7 +82,7 @@ ftypes::LocalityType GetPlaceType(FeatureBuilder const & feature)
   return ftypes::IsLocalityChecker::Instance().GetType(h);
 }
 
-// Node: temporary function.
+// Note: temporary function.
 // TODO (@gmoryes) implementation.
 double AreaOnEarth(std::vector<m2::PointD> const & points)
 {

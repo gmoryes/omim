@@ -6,7 +6,6 @@
 #include "indexer/ftypes_matcher.hpp"
 
 #include <cstdint>
-#include <limits>
 #include <memory>
 
 namespace generator
