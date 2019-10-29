@@ -20,6 +20,8 @@ using namespace std;
 using platform::CountryFile;
 using platform::LocalCountryFile;
 
+// MwmInfo -----------------------------------------------------------------------------------------
+
 MwmInfo::MwmInfo() : m_minScale(0), m_maxScale(0), m_status(STATUS_DEREGISTERED), m_numRefs(0) {}
 
 MwmInfo::MwmType MwmInfo::GetType() const
@@ -31,6 +33,15 @@ MwmInfo::MwmType MwmInfo::GetType() const
   ASSERT_EQUAL(m_maxScale, scales::GetUpperScale(), ());
   return COASTS;
 }
+
+MwmInfo::Status MwmInfo::SetStatus(Status status)
+{
+  Status result = m_status;
+  m_status = status;
+  return result;
+}
+
+// MwmSet::MwmId -----------------------------------------------------------------------------------
 
 bool MwmSet::MwmId::IsDeregistered(platform::LocalCountryFile const & deregisteredCountryFile) const
 {
@@ -47,6 +58,8 @@ string DebugPrint(MwmSet::MwmId const & id)
     ss << "MwmId [invalid]";
   return ss.str();
 }
+
+// MwmSet::MwmHandle -------------------------------------------------------------------------------
 
 MwmSet::MwmHandle::MwmHandle() : m_mwmSet(nullptr), m_value(nullptr) {}
 
@@ -83,6 +96,8 @@ MwmSet::MwmHandle & MwmSet::MwmHandle::operator=(MwmHandle && handle)
   swap(m_value, handle.m_value);
   return *this;
 }
+
+// MwmSet ------------------------------------------------------------------------------------------
 
 MwmSet::MwmId MwmSet::GetMwmIdByCountryFileImpl(CountryFile const & countryFile) const
 {

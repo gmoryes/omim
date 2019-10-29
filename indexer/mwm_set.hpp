@@ -54,6 +54,7 @@ public:
   version::MwmVersion m_version;  ///< Mwm file version.
 
   Status GetStatus() const { return m_status; }
+  Status SetStatus(Status status);
 
   bool IsUpToDate() const { return IsRegistered(); }
 
@@ -69,20 +70,10 @@ public:
 
   feature::RegionData const & GetRegionData() const { return m_data; }
 
-  /// Returns the lock counter value for test needs.
-  uint8_t GetNumRefs() const { return m_numRefs; }
-
   std::weak_ptr<feature::FeaturesOffsetsTable> const & GetTable() const { return m_table; }
   void SetTable(std::shared_ptr<feature::FeaturesOffsetsTable> p) { m_table = std::move(p); }
 
 private:
-  Status SetStatus(Status status)
-  {
-    Status result = m_status;
-    m_status = status;
-    return result;
-  }
-
   feature::RegionData m_data;
 
   platform::LocalCountryFile m_file;  ///< Path to the mwm file.
