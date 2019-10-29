@@ -31,6 +31,7 @@ set(
   mini_roundabout_tests.cpp
   node_mixer_test.cpp
   osm2meta_test.cpp
+  osm_element_helpers_tests.cpp
   osm_o5m_source_test.cpp
   osm_type_test.cpp
   place_processor_tests.cpp

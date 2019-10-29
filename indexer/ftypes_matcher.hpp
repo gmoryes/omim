@@ -420,6 +420,7 @@ bool IsCityTownOrVillage(Types const & types)
 //@{
 uint64_t GetPopulation(FeatureType & ft);
 double GetRadiusByPopulation(uint64_t p);
+double GetRadiusByPopulationForRouting(uint64_t p, LocalityType localityType);
 uint64_t GetPopulationByRadius(double r);
 //@}
 

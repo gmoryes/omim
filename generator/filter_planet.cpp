@@ -12,7 +12,11 @@ std::shared_ptr<FilterInterface> FilterPlanet::Clone() const
 bool FilterPlanet::IsAccepted(OsmElement const & element)
 {
   if (element.IsRelation())
-    return element.HasAnyTag({{"type", "multipolygon"}, {"type", "boundary"}});
+  {
+    return element.HasAnyTag(
+        {{"type", "multipolygon"}, {"type", "boundary"}, {"boundary", "administrative"}});
+  }
+
   if (element.IsNode())
     return !element.m_tags.empty();
 
