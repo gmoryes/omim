@@ -1,4 +1,6 @@
-#include "generator/collector_city_area.hpp"
+#pragma once
+
+#include "generator/collector_routing_city_boundaries.hpp"
 
 #include "generator/intermediate_data.hpp"
 #include "generator/osm_element.hpp"
@@ -124,17 +126,20 @@ void TransformPointToCircle(FeatureBuilder & feature, m2::PointD const & center,
 
 namespace generator
 {
-CityAreaCollector::CityAreaCollector(std::string const & filename)
-    : CollectorInterface(filename),
-      m_writer(std::make_unique<FeatureBuilderWriter<MaxAccuracy>>(GetTmpFilename())) {}
-
-std::shared_ptr<CollectorInterface>
-CityAreaCollector::Clone(std::shared_ptr<cache::IntermediateDataReader> const &) const
+RoutingCityBoundariesCollector::RoutingCityBoundariesCollector(std::string const & filename)
+  : CollectorInterface(filename)
+  , m_writer(std::make_unique<FeatureBuilderWriter<MaxAccuracy>>(GetTmpFilename()))
 {
-  return std::make_shared<CityAreaCollector>(GetFilename());
 }
 
-void CityAreaCollector::CollectFeature(FeatureBuilder const & feature, OsmElement const & osmElement)
+std::shared_ptr<CollectorInterface> RoutingCityBoundariesCollector::Clone(
+    std::shared_ptr<cache::IntermediateDataReader> const &) const
+{
+  return std::make_shared<RoutingCityBoundariesCollector>(GetFilename());
+}
+
+void RoutingCityBoundariesCollector::CollectFeature(FeatureBuilder const & feature,
+                                                    OsmElement const & osmElement)
 {
   if (feature.IsArea() && IsSuitablePlaceType(GetPlaceType(feature)))
   {
@@ -170,16 +175,13 @@ void CityAreaCollector::CollectFeature(FeatureBuilder const & feature, OsmElemen
   }
 }
 
-void CityAreaCollector::Finish()
-{
-  m_writer.reset({});
-}
+void RoutingCityBoundariesCollector::Finish() { m_writer.reset({}); }
 
-void CityAreaCollector::Save()
+void RoutingCityBoundariesCollector::Save()
 {
   uint32_t pointToCircle = 0;
   uint32_t matchedBoundary = 0;
-  // |m_writer| is closed after CityAreaCollector::Finish(), so open it with append mode.
+  // |m_writer| is closed after RoutingCityBoundariesCollector::Finish(), so open it with append mode.
   m_writer = std::make_unique<FeatureBuilderWriter<MaxAccuracy>>(GetTmpFilename(),
                                                                  FileWriter::Op::OP_APPEND);
   for (auto const & item : m_nodeOsmIdToBoundaries)
@@ -232,12 +234,12 @@ void CityAreaCollector::Save()
   LOG(LINFO, (matchedBoundary, "boundaries were approved as city/town/village boundary."));
 }
 
-void CityAreaCollector::Merge(generator::CollectorInterface const & collector)
+void RoutingCityBoundariesCollector::Merge(generator::CollectorInterface const & collector)
 {
   collector.MergeInto(*this);
 }
 
-void CityAreaCollector::MergeInto(CityAreaCollector & collector) const
+void RoutingCityBoundariesCollector::MergeInto(RoutingCityBoundariesCollector & collector) const
 {
   for (auto const & item : m_nodeOsmIdToBoundaries)
   {

@@ -210,6 +210,7 @@ public:
     std::transform(std::cbegin(fbsWithIds), std::cend(fbsWithIds), std::back_inserter(fbs),
                    base::RetrieveFirst());
     auto const affiliations = GetAffiliations(fbs, m_affiliation, m_threadsCount);
+    LOG(LINFO, ("affiliations.size() =", affiliations.size()));
     AppendToCountries(fbs, affiliations, m_temporaryMwmPath, m_threadsCount);
   }
 

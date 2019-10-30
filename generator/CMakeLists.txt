@@ -49,6 +49,8 @@ set(
   collector_interface.hpp
   collector_mini_roundabout.cpp
   collector_mini_roundabout.hpp
+  collector_routing_city_boundaries.cpp
+  collector_routing_city_boundaries.hpp
   collector_tag.cpp
   collector_tag.hpp
   complex_loader.cpp
