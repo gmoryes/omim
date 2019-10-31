@@ -407,8 +407,8 @@ public:
     Write(m_writer, fb);
   }
 
-  template <typename AnyWriter>
-  static void Write(AnyWriter & writer, FeatureBuilder const & fb)
+  template <typename Sink>
+  static void Write(Sink & writer, FeatureBuilder const & fb)
   {
     FeatureBuilder::Buffer buffer;
     SerializationPolicy::Serialize(fb, buffer);
