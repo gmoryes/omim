@@ -64,20 +64,7 @@ uint64_t GetPopulation(std::string const & populationStr)
 
 uint64_t GetPopulation(OsmElement const & osmElement)
 {
-  std::string const * value = nullptr;
-  for (auto const & tag : osmElement.m_tags)
-  {
-    if (tag.m_key == "population")
-    {
-      value = &tag.m_value;
-      break;
-    }
-  }
-
-  if (value == nullptr)
-    return 0;
-
-  return GetPopulation(*value);
+  return GetPopulation(osmElement.GetTag("population"));
 }
 }  // namespace osm_element
 }  // namespace generator

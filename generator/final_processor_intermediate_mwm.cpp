@@ -9,6 +9,7 @@
 #include "generator/osm2type.hpp"
 #include "generator/place_processor.hpp"
 #include "generator/promo_catalog_cities.hpp"
+#include "generator/routing_city_boundaries_processor.hpp"
 #include "generator/type_helper.hpp"
 #include "generator/utils.hpp"
 
@@ -210,7 +211,6 @@ public:
     std::transform(std::cbegin(fbsWithIds), std::cend(fbsWithIds), std::back_inserter(fbs),
                    base::RetrieveFirst());
     auto const affiliations = GetAffiliations(fbs, m_affiliation, m_threadsCount);
-    LOG(LINFO, ("affiliations.size() =", affiliations.size()));
     AppendToCountries(fbs, affiliations, m_temporaryMwmPath, m_threadsCount);
   }
 
@@ -295,6 +295,13 @@ void CountryFinalProcessor::DumpCitiesBoundaries(std::string const & filename)
   m_citiesBoundariesFilename = filename;
 }
 
+void CountryFinalProcessor::DumpRoutingCitiesBoundariesFilename(
+    std::string const & collectorFilename, std::string const & dumpPath)
+{
+  m_routingCityBoundariesCollectorFilename = collectorFilename;
+  m_routingCityBoundariesDumpPath = dumpPath;
+}
+
 void CountryFinalProcessor::SetCoastlines(std::string const & coastlineGeomFilename,
                                           std::string const & worldCoastsFilename)
 {
@@ -316,6 +323,8 @@ void CountryFinalProcessor::Process()
 {
   if (!m_hotelsFilename.empty())
     ProcessBooking();
+  if (!m_routingCityBoundariesCollectorFilename.empty())
+    ProcessRoutingCityBoundaries();
   if (!m_citiesAreasTmpFilename.empty() || !m_citiesFilename.empty())
     ProcessCities();
   if (!m_coastlineGeomFilename.empty())
@@ -389,6 +398,16 @@ void CountryFinalProcessor::ProcessRoundabouts()
       });
     });
   }
+}
+
+void CountryFinalProcessor::ProcessRoutingCityBoundaries()
+{
+  CHECK(!m_routingCityBoundariesCollectorFilename.empty() &&
+        !m_routingCityBoundariesDumpPath.empty(), ());
+
+  RoutingCityBoundariesProcessor processor(m_routingCityBoundariesCollectorFilename);
+  processor.ProcessDataFromCollector();
+  processor.DumpBoundaries(m_routingCityBoundariesDumpPath);
 }
 
 void CountryFinalProcessor::ProcessCities()

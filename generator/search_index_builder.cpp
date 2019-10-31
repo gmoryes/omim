@@ -576,7 +576,6 @@ bool BuildPostcodesImpl(FilesContainerR & container, storage::CountryId const & 
 
 bool BuildSearchIndexFromDataFile(string const & filename, bool forceRebuild, uint32_t threadsCount)
 {
-//  return true;
   Platform & platform = GetPlatform();
 
   FilesContainerR readContainer(platform.GetReader(filename, "f"));

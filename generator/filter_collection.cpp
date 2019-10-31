@@ -24,8 +24,6 @@ bool FilterCollection::IsAccepted(OsmElement const & element)
 bool FilterCollection::IsAccepted(FeatureBuilder const & feature)
 {
   return std::all_of(std::begin(m_collection), std::end(m_collection), [&] (auto & filter) {
-    int asd =123;
-    (void)asd;
     return filter->IsAccepted(feature);
   });
 }

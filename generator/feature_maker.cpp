@@ -108,9 +108,6 @@ std::shared_ptr<FeatureMakerBase> FeatureMaker::Clone() const
 
 void FeatureMaker::ParseParams(FeatureParams & params, OsmElement & p) const
 {
-//  ftype::GetNameAndType(&p, params);
-  ftype::GetNameAndType(&p, params, [] (uint32_t type) {
-    return classif().IsTypeValid(type);
-  });
+  ftype::GetNameAndType(&p, params);
 }
 }  // namespace generator

@@ -42,9 +42,6 @@ void Translator::SetFilter(std::shared_ptr<FilterInterface> const & filter) { m_
 
 void Translator::Emit(OsmElement & element)
 {
-//  if (element.m_id != 2998891)
-//    return;
-
   Preprocess(element);
   if (!m_filter->IsAccepted(element))
     return;

@@ -886,9 +886,9 @@ void GetNameAndType(OsmElement * p, FeatureParams & params, function<bool(uint32
       {"population", "*",
        [&params](string & k, string & v) {
          // Get population rank.
-         uint64_t n = generator::osm_element::GetPopulation(v);
-         if (n)
-           params.rank = feature::PopulationToRank(n);
+         uint64_t const population = generator::osm_element::GetPopulation(v);
+         if (population != 0)
+           params.rank = feature::PopulationToRank(population);
        }},
       {"ref", "*",
        [&params](string & k, string & v) {

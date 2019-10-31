@@ -1,5 +1,3 @@
-#pragma once
-
 #include "generator/collector_routing_city_boundaries.hpp"
 
 #include "generator/intermediate_data.hpp"
@@ -18,9 +16,7 @@
 #include "base/string_utils.hpp"
 
 #include <algorithm>
-#include <cctype>
 #include <iterator>
-#include <limits>
 
 using namespace feature;
 using namespace feature::serialization_policy;
@@ -43,25 +39,12 @@ boost::optional<uint64_t> GetPlaceNodeFromMembers(OsmElement const & element)
   }
 
   if (labelRef)
-    return {labelRef};
+    return labelRef;
 
   if (adminCentreRef)
-    return {adminCentreRef};
+    return adminCentreRef;
 
   return {};
-}
-
-std::vector<m2::PointD> CreateCircleGeometry(m2::PointD const & center, double radiusMercator,
-                                             double angleStepDegree)
-{
-  std::vector<m2::PointD> result;
-  double const radStep = base::DegToRad(angleStepDegree);
-  for (double angleRad = 0; angleRad <= 2 * math::pi; angleRad += radStep)
-  {
-    result.emplace_back(center.x + radiusMercator * cos(angleRad),
-                        center.y + radiusMercator * sin(angleRad));
-  }
-  return result;
 }
 
 bool IsSuitablePlaceType(ftypes::LocalityType localityType)
@@ -77,75 +60,77 @@ bool IsSuitablePlaceType(ftypes::LocalityType localityType)
 
 ftypes::LocalityType GetPlaceType(FeatureBuilder const & feature)
 {
-  TypesHolder h;
-  for (auto const t : feature.GetTypes())
-    h.Add(t);
-
-  return ftypes::IsLocalityChecker::Instance().GetType(h);
-}
-
-// Note: temporary function.
-// TODO (@gmoryes) implementation.
-double AreaOnEarth(std::vector<m2::PointD> const & points)
-{
-  return std::numeric_limits<double>::max();
-}
-
-std::pair<FeatureBuilder, double> GetBoundaryWithSmallestArea(
-    std::vector<FeatureBuilder> const & boundaries)
-{
-  size_t bestIndex = 0;
-  double minArea = std::numeric_limits<double>::max();
-  for (size_t i = 0; i < boundaries.size(); ++i)
-  {
-    auto const & geometry = boundaries[i].GetOuterGeometry();
-    double const area = AreaOnEarth(geometry);
-
-    if (minArea > area)
-    {
-      minArea = area;
-      bestIndex = i;
-    }
-  }
-
-  return {boundaries[bestIndex], minArea};
-}
-
-void TransformPointToCircle(FeatureBuilder & feature, m2::PointD const & center,
-                            double radiusMeters)
-{
-  auto const circleGeometry = CreateCircleGeometry(
-      center, MercatorBounds::MetersToMercator(radiusMeters), 1.0 /* angleStepDegree */);
-
-  feature.SetArea();
-  feature.ResetGeometry();
-  for (auto const & point : circleGeometry)
-    feature.AddPoint(point);
+  return ftypes::IsLocalityChecker::Instance().GetType(feature.GetTypesHolder());
 }
 }  // namespace
 
 namespace generator
 {
-RoutingCityBoundariesCollector::RoutingCityBoundariesCollector(std::string const & filename)
+// RoutingCityBoundariesCollector::LocalityData ----------------------------------------------------
+
+void RoutingCityBoundariesCollector::LocalityData::Serialize(FileWriter & writer,
+                                                             LocalityData const & localityData)
+{
+  writer.Write(&localityData.m_population, sizeof(localityData.m_population));
+
+  auto const placeType = static_cast<uint32_t>(localityData.m_place);
+  writer.Write(&placeType, sizeof(placeType));
+
+  writer.Write(&localityData.m_position, sizeof(localityData.m_position));
+}
+
+RoutingCityBoundariesCollector::LocalityData
+RoutingCityBoundariesCollector::LocalityData::Deserialize(ReaderSource<FileReader> & reader)
+{
+  LocalityData localityData;
+  reader.Read(&localityData.m_population, sizeof(localityData.m_population));
+
+  uint32_t placeType = 0;
+  reader.Read(&placeType, sizeof(placeType));
+  localityData.m_place = static_cast<ftypes::LocalityType>(placeType);
+
+  reader.Read(&localityData.m_position, sizeof(localityData.m_position));
+
+  return localityData;
+}
+
+// RoutingCityBoundariesCollector ------------------------------------------------------------------
+
+RoutingCityBoundariesCollector::RoutingCityBoundariesCollector(
+    std::string const & filename, std::shared_ptr<cache::IntermediateData> cache)
   : CollectorInterface(filename)
-  , m_writer(std::make_unique<FeatureBuilderWriter<MaxAccuracy>>(GetTmpFilename()))
+  , m_writer(std::make_unique<RoutingCityBoundariesWriter>(GetTmpFilename()))
+  , m_cache(std::move(cache))
+  , m_featureMakerSimple(m_cache)
 {
 }
 
 std::shared_ptr<CollectorInterface> RoutingCityBoundariesCollector::Clone(
     std::shared_ptr<cache::IntermediateDataReader> const &) const
 {
-  return std::make_shared<RoutingCityBoundariesCollector>(GetFilename());
+  return std::make_shared<RoutingCityBoundariesCollector>(GetFilename(), m_cache);
 }
 
-void RoutingCityBoundariesCollector::CollectFeature(FeatureBuilder const & feature,
-                                                    OsmElement const & osmElement)
+void RoutingCityBoundariesCollector::Collect(OsmElement const & osmElement)
+{
+  auto osmElementCopy = osmElement;
+  feature::FeatureBuilder feature;
+  m_featureMakerSimple.Add(osmElementCopy);
+
+  while (m_featureMakerSimple.GetNextFeature(feature))
+  {
+    if (feature.GetParams().IsValid())
+      Process(feature, osmElementCopy);
+  }
+}
+
+void RoutingCityBoundariesCollector::Process(feature::FeatureBuilder & feature,
+                                             OsmElement const & osmElement)
 {
   if (feature.IsArea() && IsSuitablePlaceType(GetPlaceType(feature)))
   {
-    auto copy = feature;
-    if (copy.PreSerialize())
-      m_writer->Write(copy);
+    if (feature.PreSerialize())
+      m_writer->Process(feature);
     return;
   }
 
@@ -156,7 +141,9 @@ void RoutingCityBoundariesCollector::CollectFeature(FeatureBuilder const & featu
       return;
 
     auto const placeOsmId = *placeOsmIdOp;
-    m_nodeOsmIdToBoundaries[placeOsmId].emplace_back(feature);
+
+    if (feature.PreSerialize())
+      m_writer->Process(placeOsmId, feature);
     return;
   }
   else if (feature.IsPoint())
@@ -171,67 +158,15 @@ void RoutingCityBoundariesCollector::CollectFeature(FeatureBuilder const & featu
 
     uint64_t nodeOsmId = osmElement.m_id;
     m2::PointD const center = MercatorBounds::FromLatLon(osmElement.m_lat, osmElement.m_lon);
-    m_nodeOsmIdToLocalityData.emplace(nodeOsmId, LocalityData(population, placeType, center));
+    m_writer->Process(nodeOsmId, LocalityData(population, placeType, center));
   }
 }
 
-void RoutingCityBoundariesCollector::Finish() { m_writer.reset({}); }
+void RoutingCityBoundariesCollector::Finish() { m_writer->Reset(); }
 
 void RoutingCityBoundariesCollector::Save()
 {
-  uint32_t pointToCircle = 0;
-  uint32_t matchedBoundary = 0;
-  // |m_writer| is closed after RoutingCityBoundariesCollector::Finish(), so open it with append mode.
-  m_writer = std::make_unique<FeatureBuilderWriter<MaxAccuracy>>(GetTmpFilename(),
-                                                                 FileWriter::Op::OP_APPEND);
-  for (auto const & item : m_nodeOsmIdToBoundaries)
-  {
-    uint64_t const nodeOsmId = item.first;
-    auto const & boundaries = item.second;
-
-    auto const it = m_nodeOsmIdToLocalityData.find(nodeOsmId);
-    if (it == m_nodeOsmIdToLocalityData.cend())
-      continue;
-
-    auto const & localityData = it->second;
-    if (localityData.m_population == 0)
-      continue;
-
-    double bestFeatureBuilderArea = 0.0;
-    FeatureBuilder bestFeatureBuilder;
-    std::tie(bestFeatureBuilder, bestFeatureBuilderArea) = GetBoundaryWithSmallestArea(boundaries);
-
-    double const radiusMeters =
-        ftypes::GetRadiusByPopulationForRouting(localityData.m_population, localityData.m_place);
-    double const areaUpperBound = ms::CircleAreaOnEarth(radiusMeters);
-
-    if (bestFeatureBuilderArea > areaUpperBound)
-    {
-      ++pointToCircle;
-      TransformPointToCircle(bestFeatureBuilder, localityData.m_position, radiusMeters);
-    }
-    else
-    {
-      ++matchedBoundary;
-    }
-
-    static std::unordered_map<ftypes::LocalityType, uint32_t> const kLocalityTypeToClassifType = {
-        {ftypes::LocalityType::City, classif().GetTypeByPath({"place", "city"})},
-        {ftypes::LocalityType::Town, classif().GetTypeByPath({"place", "town"})},
-        {ftypes::LocalityType::Village, classif().GetTypeByPath({"place", "village"})},
-    };
-
-    CHECK_NOT_EQUAL(kLocalityTypeToClassifType.count(localityData.m_place), 0, ());
-    bestFeatureBuilder.AddType(kLocalityTypeToClassifType.at(localityData.m_place));
-
-    if (bestFeatureBuilder.PreSerialize())
-      m_writer->Write(bestFeatureBuilder);
-  }
-
-  m_writer.reset({});
-  CHECK(base::CopyFileX(GetTmpFilename(), GetFilename()), ());
-  LOG(LINFO, (pointToCircle, "places were transformed to circle."));
-  LOG(LINFO, (matchedBoundary, "boundaries were approved as city/town/village boundary."));
+  m_writer->Save(GetFilename());
 }
 
 void RoutingCityBoundariesCollector::Merge(generator::CollectorInterface const & collector)
@@ -241,23 +176,107 @@ void RoutingCityBoundariesCollector::Merge(generator::CollectorInterface const &
 
 void RoutingCityBoundariesCollector::MergeInto(RoutingCityBoundariesCollector & collector) const
 {
-  for (auto const & item : m_nodeOsmIdToBoundaries)
-  {
-    uint64_t const osmId = item.first;
-    auto const & featureBuilders = item.second;
+  m_writer->MergeInto(*collector.m_writer);
+}
 
-    collector.m_nodeOsmIdToBoundaries.emplace(osmId, featureBuilders);
+// RoutingCityBoundariesWriter ---------------------------------------------------------------------
+
+// static
+std::string RoutingCityBoundariesWriter::GetNodeToLocalityDataFilename(std::string const & filename)
+{
+  return filename + ".nodeId2locality";
+}
+
+// static
+std::string RoutingCityBoundariesWriter::GetNodeToBoundariesFilename(std::string const & filename)
+{
+  return filename + ".nodeId2Boundaries";
+}
+
+// static
+std::string RoutingCityBoundariesWriter::GetFeaturesBuilderFilename(std::string const & filename)
+{
+  return filename + ".features";
+}
+
+RoutingCityBoundariesWriter::RoutingCityBoundariesWriter(std::string const & filename)
+  : m_nodeOsmIdToLocalityDataFilename(GetNodeToLocalityDataFilename(filename))
+  , m_nodeOsmIdToBoundariesFilename(GetNodeToBoundariesFilename(filename))
+  , m_featureBuilderFilename(GetFeaturesBuilderFilename(filename))
+  , m_nodeOsmIdToLocalityDataWriter(std::make_unique<FileWriter>(m_nodeOsmIdToLocalityDataFilename))
+  , m_nodeOsmIdToBoundariesWriter(std::make_unique<FileWriter>(m_nodeOsmIdToBoundariesFilename))
+  , m_featureBuilderWriter(std::make_unique<FeatureWriter>(m_featureBuilderFilename))
+{
+}
+
+void RoutingCityBoundariesWriter::Process(uint64_t nodeOsmId, LocalityData const & localityData)
+{
+  m_nodeOsmIdToLocalityDataWriter->Write(&nodeOsmId, sizeof(nodeOsmId));
+  LocalityData::Serialize(*m_nodeOsmIdToLocalityDataWriter, localityData);
+
+  ++m_nodeOsmIdToLocalityDataCount;
+}
+
+void RoutingCityBoundariesWriter::Process(uint64_t nodeOsmId,
+                                          feature::FeatureBuilder const & feature)
+{
+  m_nodeOsmIdToBoundariesWriter->Write(&nodeOsmId, sizeof(nodeOsmId));
+  FeatureWriter::Write(*m_nodeOsmIdToBoundariesWriter, feature);
+
+  ++m_nodeOsmIdToBoundariesCount;
+}
+
+void RoutingCityBoundariesWriter::Process(feature::FeatureBuilder const & feature)
+{
+  m_featureBuilderWriter->Write(feature);
+}
+
+void RoutingCityBoundariesWriter::Reset()
+{
+  m_nodeOsmIdToLocalityDataWriter.reset({});
+  m_nodeOsmIdToBoundariesWriter.reset({});
+  m_featureBuilderWriter.reset({});
+}
+
+void RoutingCityBoundariesWriter::MergeInto(RoutingCityBoundariesWriter & writer)
+{
+  CHECK(!m_nodeOsmIdToLocalityDataWriter || !writer.m_nodeOsmIdToLocalityDataWriter,
+        ("Finish() has not been called."));
+  base::AppendFileToFile(m_nodeOsmIdToLocalityDataFilename,
+                         writer.m_nodeOsmIdToLocalityDataFilename);
+
+  CHECK(!m_nodeOsmIdToBoundariesWriter || !writer.m_nodeOsmIdToBoundariesWriter,
+        ("Finish() has not been called."));
+  base::AppendFileToFile(m_nodeOsmIdToBoundariesFilename,
+                         writer.m_nodeOsmIdToBoundariesFilename);
+
+  CHECK(!m_featureBuilderWriter || !writer.m_featureBuilderWriter,
+        ("Finish() has not been called."));
+  base::AppendFileToFile(m_featureBuilderFilename,
+                         writer.m_featureBuilderFilename);
+
+  writer.m_nodeOsmIdToLocalityDataCount += m_nodeOsmIdToLocalityDataCount;
+  writer.m_nodeOsmIdToBoundariesCount += m_nodeOsmIdToBoundariesCount;
+}
+
+void RoutingCityBoundariesWriter::Save(std::string const & finalFileName)
+{
+  auto const nodeToLocalityFilename = GetNodeToLocalityDataFilename(finalFileName);
+  auto const nodeToBoundariesFilename = GetNodeToBoundariesFilename(finalFileName);
+
+  {
+    FileWriter writer(nodeToLocalityFilename, FileWriter::Op::OP_WRITE_TRUNCATE);
+    writer.Write(&m_nodeOsmIdToLocalityDataCount, sizeof(m_nodeOsmIdToLocalityDataCount));
+  }
+  {
+    FileWriter writer(nodeToBoundariesFilename, FileWriter::Op::OP_WRITE_TRUNCATE);
+    writer.Write(&m_nodeOsmIdToBoundariesCount, sizeof(m_nodeOsmIdToBoundariesCount));
   }
 
-  for (auto const & item : m_nodeOsmIdToLocalityData)
-  {
-    uint64_t const osmId = item.first;
-    auto const & localityData = item.second;
+  base::AppendFileToFile(m_nodeOsmIdToLocalityDataFilename, nodeToLocalityFilename);
+  base::AppendFileToFile(m_nodeOsmIdToBoundariesFilename, nodeToBoundariesFilename);
 
-    collector.m_nodeOsmIdToLocalityData.emplace(osmId, localityData);
-  }
-
-  CHECK(!m_writer || !collector.m_writer, ("Finish() has not been called."));
-  base::AppendFileToFile(GetTmpFilename(), collector.GetTmpFilename());
+  CHECK(base::CopyFileX(m_featureBuilderFilename,
+                        GetFeaturesBuilderFilename(finalFileName)), ());
 }
 }  // namespace generator
