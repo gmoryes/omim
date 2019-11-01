@@ -8,12 +8,18 @@
 #include "coding/file_reader.hpp"
 
 #include "geometry/area_on_earth.hpp"
+#include "geometry/distance_on_sphere.hpp"
 #include "geometry/mercator.hpp"
 #include "geometry/point2d.hpp"
 
 #include "base/logging.hpp"
 
+#include "3party/boost/boost/geometry.hpp"
+#include "3party/boost/boost/geometry/geometries/point_xy.hpp"
+#include "3party/boost/boost/geometry/geometries/polygon.hpp"
+
 #include <cstdint>
+#include <sstream>
 #include <unordered_map>
 #include <utility>
 
@@ -63,11 +69,42 @@ std::unordered_map<uint64_t, std::vector<feature::FeatureBuilder>> LoadNodeToBou
   return result;
 }
 
-// Note: temporary function.
-// TODO (@gmoryes) implementation.
+// Returns Well-Known-Text, for latlon polygon it is:
+// "POLYGON((lon1 lat1, lon2 lat2, ... ,lonN latN))
+std::string GetWKTString(std::vector<m2::PointD> const & points)
+{
+  std::string str = "POLYGON((0";
+  std::stringstream ss;
+  ss << "POLYGON((";
+  ss << std::setprecision(20);
+
+  auto const writePoint = [&ss](auto const & point, bool isEnd) {
+    auto const latlon = mercator::ToLatLon(point);
+    ss << latlon.m_lon << " " << latlon.m_lat;
+    if (!isEnd)
+      ss << ", ";
+  };
+
+  for (auto const & point : points)
+    writePoint(point, false /* isEnd */);
+
+  writePoint(points.front(), true /* isEnd */);
+
+  ss << "))";
+  return ss.str();
+}
+
 double AreaOnEarth(std::vector<m2::PointD> const & points)
 {
-  return std::numeric_limits<double>::max();
+  namespace bg = boost::geometry;
+  using LonLatCoords = bg::cs::spherical_equatorial<bg::degree>;
+  bg::model::polygon<bg::model::point<double, 2, LonLatCoords>> sphericalPolygon;
+  bg::read_wkt(GetWKTString(points), sphericalPolygon);
+
+  bg::strategy::area::spherical<> areaCalculationStrategy(ms::kEarthRadiusMeters);
+
+  double const area = bg::area(sphericalPolygon, areaCalculationStrategy);
+  return fabs(area);
 }
 
 std::pair<feature::FeatureBuilder, double> GetBoundaryWithSmallestArea(
@@ -107,7 +144,7 @@ void TransformPointToCircle(feature::FeatureBuilder & feature, m2::PointD const 
                             double radiusMeters)
 {
   auto circleGeometry = CreateCircleGeometry(
-      center, MercatorBounds::MetersToMercator(radiusMeters), 1.0 /* angleStepDegree */);
+      center, mercator::MetersToMercator(radiusMeters), 1.0 /* angleStepDegree */);
 
   feature.SetArea();
   feature.ResetGeometry();

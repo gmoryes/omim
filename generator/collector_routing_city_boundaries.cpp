@@ -157,7 +157,7 @@ void RoutingCityBoundariesCollector::Process(feature::FeatureBuilder & feature,
       return;
 
     uint64_t nodeOsmId = osmElement.m_id;
-    m2::PointD const center = MercatorBounds::FromLatLon(osmElement.m_lat, osmElement.m_lon);
+    m2::PointD const center = mercator::FromLatLon(osmElement.m_lat, osmElement.m_lon);
     m_writer->Process(nodeOsmId, LocalityData(population, placeType, center));
   }
 }
