@@ -481,10 +481,10 @@ void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
   dp::Color color = dp::Color::Red();
   std::vector<std::tuple<double, double, double, double, dp::Color>> points;
   std::vector<std::vector<m2::PointD>> groupPoints;
-  bool drawLines = false;
+  bool drawLines = true;
   bool drawPoints = false;
   bool drawPointsWithRadius = false;
-  bool drawPointWithColor = true;
+  bool drawPointWithColor = false;
 
   if (drawLines)
   {
@@ -496,7 +496,7 @@ void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
       for (size_t i = 0; i < n; ++i)
       {
         input >> lat >> lon;
-        groupPoints.back().emplace_back(MercatorBounds::FromLatLon(lat, lon));
+        groupPoints.back().emplace_back(mercator::FromLatLon(lat, lon));
       }
     }
   }
@@ -538,7 +538,7 @@ void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
   {
 
     std::tie(lat, lon, speed, acc, color) = point;
-    auto const pt = MercatorBounds::FromLatLon({lat, lon});
+    auto const pt = mercator::FromLatLon({lat, lon});
 
     if (drawPointsWithRadius)
     {
@@ -557,7 +557,7 @@ void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
 //      }
 
       //LOG(LINFO, ("acc =", acc));
-      acc = MercatorBounds::MetersToMercator(acc);
+      acc = mercator::MetersToMercator(acc);
       m2::PointD accuracyPoint(pt.x + acc, pt.y);
       //    screen.SetScale(15);
       auto const pixelAccuracy =
@@ -597,7 +597,7 @@ void RoutingManager::DrawPoints(Framework & framework, ScreenBase & screen)
     {
       std::tie(lat, lon, speed, acc, color) = point;
 
-      auto const pt = MercatorBounds::FromLatLon({lat, lon});
+      auto const pt = mercator::FromLatLon({lat, lon});
 
       auto mark = editSession.CreateUserMark<ColoredMarkPoint>(pt);
       mark->SetColor(color);
