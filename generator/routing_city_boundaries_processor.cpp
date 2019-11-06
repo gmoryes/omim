@@ -8,6 +8,7 @@
 #include "coding/file_reader.hpp"
 
 #include "geometry/area_on_earth.hpp"
+#include "geometry/circle_on_earth.hpp"
 #include "geometry/distance_on_sphere.hpp"
 #include "geometry/mercator.hpp"
 #include "geometry/point2d.hpp"
@@ -146,8 +147,8 @@ std::vector<m2::PointD> CreateCircleGeometry(m2::PointD const & center, double r
 void TransformPointToCircle(feature::FeatureBuilder & feature, m2::PointD const & center,
                             double radiusMeters)
 {
-  auto circleGeometry = CreateCircleGeometry(center, mercator::MetersToMercator(radiusMeters),
-                                             1.0 /* angleStepDegree */);
+  auto circleGeometry = ms::CreateCircleGeometryOnEarth(mercator::ToLatLon(center), radiusMeters,
+                                                        30.0 /* angleStepDegree */);
 
   feature.SetArea();
   feature.ResetGeometry();
