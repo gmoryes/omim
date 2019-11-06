@@ -103,6 +103,21 @@ string DebugPrint(HighwayClass const cls)
   return out.str();
 }
 
+std::string DebugPrint(LocalityType const localityType)
+{
+  switch (localityType)
+  {
+  case LocalityType::None: return "None";
+  case LocalityType::Country: return "Country";
+  case LocalityType::State: return "State";
+  case LocalityType::City: return "City";
+  case LocalityType::Town: return "Town";
+  case LocalityType::Village: return "Village";
+  case LocalityType::Count: return "Count";
+  }
+  UNREACHABLE();
+}
+
 HighwayClass GetHighwayClass(feature::TypesHolder const & types)
 {
   uint8_t constexpr kTruncLevel = 2;

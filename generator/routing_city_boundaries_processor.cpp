@@ -23,9 +23,11 @@
 #include <unordered_map>
 #include <utility>
 
-namespace
+namespace generator
 {
-using LocalityData = generator::RoutingCityBoundariesWriter::LocalityData;
+namespace routing_city_boundaries
+{
+using LocalityData = RoutingCityBoundariesWriter::LocalityData;
 
 std::unordered_map<uint64_t, LocalityData> LoadNodeToLocalityData(std::string const & filename)
 {
@@ -144,17 +146,20 @@ std::vector<m2::PointD> CreateCircleGeometry(m2::PointD const & center, double r
 void TransformPointToCircle(feature::FeatureBuilder & feature, m2::PointD const & center,
                             double radiusMeters)
 {
-  auto circleGeometry = CreateCircleGeometry(
-      center, mercator::MetersToMercator(radiusMeters), 1.0 /* angleStepDegree */);
+  auto circleGeometry = CreateCircleGeometry(center, mercator::MetersToMercator(radiusMeters),
+                                             1.0 /* angleStepDegree */);
 
   feature.SetArea();
   feature.ResetGeometry();
   feature.AddPolygon(circleGeometry);
 }
-}  // namespace
+}  // routing_city_boundaries
+}  // namespace generator
 
 namespace generator
 {
+using namespace routing_city_boundaries;
+
 RoutingCityBoundariesProcessor::RoutingCityBoundariesProcessor(std::string filename)
   : m_filename(std::move(filename))
 {

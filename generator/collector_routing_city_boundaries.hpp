@@ -54,8 +54,8 @@ public:
   void Merge(generator::CollectorInterface const & collector) override;
   void MergeInto(RoutingCityBoundariesCollector & collector) const override;
 
-private:
   void Process(feature::FeatureBuilder & feature, OsmElement const & osmElement);
+private:
 
   std::unique_ptr<RoutingCityBoundariesWriter> m_writer;
   std::shared_ptr<cache::IntermediateData> m_cache;

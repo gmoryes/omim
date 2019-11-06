@@ -13,6 +13,7 @@ set(
   cluster_finder_tests.cpp
   coasts_test.cpp
   collector_city_area_tests.cpp
+  collector_routing_city_boundaries_tests.cpp
   common.cpp
   common.hpp
   complex_loader_tests.cpp
