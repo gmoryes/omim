@@ -26,6 +26,7 @@
 namespace
 {
 using LocalityData = generator::RoutingCityBoundariesWriter::LocalityData;
+
 std::unordered_map<uint64_t, LocalityData> LoadNodeToLocalityData(std::string const & filename)
 {
   FileReader reader(filename);
@@ -49,7 +50,7 @@ std::unordered_map<uint64_t, LocalityData> LoadNodeToLocalityData(std::string co
 std::unordered_map<uint64_t, std::vector<feature::FeatureBuilder>> LoadNodeToBoundariesData(
     std::string const & filename)
 {
-  using MaxAccuracy = feature::serialization_policy::MaxAccuracy;
+  using MinAccuracy = feature::serialization_policy::MinSize;
   FileReader reader(filename);
   ReaderSource<FileReader> source(reader);
   uint64_t n = 0;
@@ -62,7 +63,7 @@ std::unordered_map<uint64_t, std::vector<feature::FeatureBuilder>> LoadNodeToBou
     source.Read(&nodeId, sizeof(nodeId));
 
     feature::FeatureBuilder featureBuilder;
-    feature::ReadFromSourceRawFormat<MaxAccuracy>(source, featureBuilder);
+    feature::ReadFromSourceRawFormat<MinAccuracy>(source, featureBuilder);
     result[nodeId].emplace_back(std::move(featureBuilder));
   }
 
@@ -167,7 +168,8 @@ void RoutingCityBoundariesProcessor::ProcessDataFromCollector()
   auto const nodeOsmIdToBoundaries = LoadNodeToBoundariesData(
       RoutingCityBoundariesWriter::GetNodeToBoundariesFilename(m_filename));
 
-  using FeatureWriter = feature::FeatureBuilderWriter<feature::serialization_policy::MaxAccuracy>;
+  using MinAccuracy = feature::serialization_policy::MinSize;
+  using FeatureWriter = feature::FeatureBuilderWriter<MinAccuracy>;
   FeatureWriter featuresWriter(RoutingCityBoundariesWriter::GetFeaturesBuilderFilename(m_filename),
                                FileWriter::Op::OP_APPEND);
 
@@ -224,9 +226,9 @@ void RoutingCityBoundariesProcessor::ProcessDataFromCollector()
 
 void RoutingCityBoundariesProcessor::DumpBoundaries(std::string const & dumpFilename)
 {
-  using MaxAccuracy = feature::serialization_policy::MaxAccuracy;
+  using MinAccuracy = feature::serialization_policy::MinSize;
 
-  auto const features = feature::ReadAllDatRawFormat<MaxAccuracy>(
+  auto const features = feature::ReadAllDatRawFormat<MinAccuracy>(
       RoutingCityBoundariesWriter::GetFeaturesBuilderFilename(m_filename));
 
   std::vector<m2::RectD> boundariesRects;

@@ -82,7 +82,8 @@ public:
   void Save(std::string const & finalFileName);
 
 private:
-  using FeatureWriter = feature::FeatureBuilderWriter<feature::serialization_policy::MaxAccuracy>;
+  using MinAccuracy = feature::serialization_policy::MinSize;
+  using FeatureWriter = feature::FeatureBuilderWriter<MinAccuracy>;
 
   std::string m_nodeOsmIdToLocalityDataFilename;
   std::string m_nodeOsmIdToBoundariesFilename;
