@@ -25,6 +25,7 @@ omim_link_libraries(
   indexer
   mwm_diff
   platform
+  kml
   geometry
   coding
   base

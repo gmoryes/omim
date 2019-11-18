@@ -5,6 +5,9 @@
 
 #include "indexer/classificator.hpp"
 
+#include "kml/serdes.hpp"
+#include "kml/types.hpp"
+
 #include "coding/file_reader.hpp"
 #include "coding/read_write_utils.hpp"
 
@@ -131,6 +134,17 @@ RoutingCityBoundariesProcessor::RoutingCityBoundariesProcessor(std::string tmpFi
 
 void RoutingCityBoundariesProcessor::ProcessDataFromCollector()
 {
+  CHECK(std::getenv("HOME_DIR"), ());
+  std::string home = std::string(std::getenv("HOME_DIR"));
+  std::ofstream rects(home + "/tmp/rects");
+  rects << std::setprecision(20);
+
+  std::ofstream populationOutput(home + "/tmp/population");
+  populationOutput << std::setprecision(20);
+
+  std::ofstream areaOutput(home + "/tmp/area");
+  areaOutput << std::setprecision(20);
+
   auto const nodeOsmIdToLocalityData = LoadNodeToLocalityData(
       RoutingCityBoundariesWriter::GetNodeToLocalityDataFilename(m_tmpFilename));
 
@@ -165,6 +179,46 @@ void RoutingCityBoundariesProcessor::ProcessDataFromCollector()
 
       if (bestFeatureBuilderArea <= areaUpperBound)
       {
+        m2::RectD rect;
+        for (auto const & point : feature.GetOuterGeometry())
+          rect.Add(point);
+        auto const leftBottomLatLon = mercator::ToLatLon(rect.LeftBottom());
+        auto const rightTopLatLon = mercator::ToLatLon(rect.RightTop());
+        rects << leftBottomLatLon.m_lat << "," << leftBottomLatLon.m_lon << ","
+              << rightTopLatLon.m_lat << "," << rightTopLatLon.m_lon << std::endl;
+
+        populationOutput << localityData.m_population << std::endl;
+
+        areaOutput << bestFeatureBuilderArea << std::endl;
+
+        kml::FileData kml;
+
+        static std::vector<uint32_t> const kColors = {
+            0xff0000ff,  // Red
+            0x0000ffff,  // Blue
+            0x00ff00ff,  // Green
+            0xffa500ff,  // Orange
+            0xa52a2aff   // Brown
+        };
+
+        size_t colorNumber = 0;
+        auto const addTrack = [&](kml::TrackData && track) {
+          CHECK_LESS(colorNumber, kColors.size(), ());
+          track.m_layers = {{5.0 /* lineWidth */, {kml::PredefinedColor::None, kColors[colorNumber++]}}};
+          kml.m_tracksData.emplace_back(std::move(track));
+        };
+
+        kml::TrackData mapsmeTrack;
+        mapsmeTrack.m_points = feature.GetOuterGeometry();
+        addTrack(std::move(mapsmeTrack));
+
+        auto kmlId = matchedBoundary + 1;
+        std::string kmlFile = home + "/tmp/kmls/" + std::to_string(kmlId) + ".kml";
+
+        kml::SerializerKml ser(kml);
+        FileWriter sink(kmlFile);
+        ser.Serialize(sink);
+
         ++matchedBoundary;
         rw::WriteVectorOfPOD(boundariesWriter, feature.GetOuterGeometry());
         continue;
