@@ -143,6 +143,9 @@ void RoutingCityBoundariesProcessor::ProcessDataFromCollector()
   std::ofstream areaOutput(home + "/tmp/area");
   areaOutput << std::setprecision(20);
 
+  std::ofstream coords(home + "/tmp/coords");
+  coords << std::setprecision(20);
+
   auto const nodeOsmIdToLocalityData = LoadNodeToLocalityData(
       RoutingCityBoundariesWriter::GetNodeToLocalityDataFilename(m_tmpFilename));
 
@@ -211,6 +214,9 @@ void RoutingCityBoundariesProcessor::ProcessDataFromCollector()
 
         populationOutput << localityData.m_population << std::endl;
         areaOutput << bestFeatureBuilderArea << std::endl;
+
+        auto centre = mercator::ToLatLon(localityData.m_position);
+        coords << centre.m_lat << " " << centre.m_lon << std::endl;
 
         kmlFile += std::to_string(kmlId) + ".kml";
 
