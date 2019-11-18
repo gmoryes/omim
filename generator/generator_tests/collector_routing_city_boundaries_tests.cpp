@@ -11,6 +11,7 @@
 #include "platform/platform.hpp"
 
 #include "coding/read_write_utils.hpp"
+#include "geometry/distance_on_sphere.hpp"
 
 #include "geometry/point2d.hpp"
 #include "geometry/area_on_earth.hpp"
@@ -326,4 +327,44 @@ UNIT_TEST(AreaOnEarth_Concave_Polygon)
   TEST(base::AlmostEqualRel(areaTriangulated,
                             areaOnEarth,
                             1e-6), ());
+}
+
+UNIT_TEST(MISHA_TEST)
+{
+  std::ifstream populationInput("/tmp/population");
+  std::ifstream areaInput("/tmp/area");
+  std::ifstream goodNumbersInput("/tmp/list");
+  std::ofstream output("/tmp/radius");
+  output << std::setprecision(20);
+
+  struct Info
+  {
+    Info(double p, double a) : m_p(p), m_a(a) {}
+
+    double m_p;
+    double m_a;
+  };
+
+  std::vector<Info> infos;
+  infos.emplace_back(0.0, 0.0);  // dummy
+  double p, a;
+  while (populationInput >> p)
+  {
+    areaInput >> a;
+    infos.emplace_back(p, a);
+  }
+
+  std::vector<size_t> goodNumbers;
+  size_t n;
+  while (goodNumbersInput >> n)
+    goodNumbers.emplace_back(n);
+
+  double R = ms::kEarthRadiusMeters;
+  double RSqr = R * R;
+  for (auto const goodN : goodNumbers)
+  {
+    double const area = infos[goodN].m_a;
+    double const r = 2 * R * asin(sqrt(area / (2.0 * 2.0 * math::pi * RSqr)));
+    output << r << std::endl;
+  }
 }

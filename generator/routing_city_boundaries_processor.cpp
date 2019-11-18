@@ -177,9 +177,7 @@ void RoutingCityBoundariesProcessor::ProcessDataFromCollector()
 
       if (bestFeatureBuilderArea <= areaUpperBound)
       {
-        populationOutput << localityData.m_population << std::endl;
 
-        areaOutput << bestFeatureBuilderArea << std::endl;
 
         kml::FileData kml;
 
@@ -208,10 +206,11 @@ void RoutingCityBoundariesProcessor::ProcessDataFromCollector()
           kmlFile += "city/";
         else if (localityData.m_place == ftypes::LocalityType::Town)
           kmlFile += "town/";
-        else if (localityData.m_place == ftypes::LocalityType::Village)
-          kmlFile += "village/";
         else
-          continue;
+          kmlFile += "village/";
+
+        populationOutput << localityData.m_population << std::endl;
+        areaOutput << bestFeatureBuilderArea << std::endl;
 
         kmlFile += std::to_string(kmlId) + ".kml";
 
