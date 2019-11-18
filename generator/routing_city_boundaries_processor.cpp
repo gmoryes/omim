@@ -136,8 +136,6 @@ void RoutingCityBoundariesProcessor::ProcessDataFromCollector()
 {
   CHECK(std::getenv("HOME_DIR"), ());
   std::string home = std::string(std::getenv("HOME_DIR"));
-  std::ofstream rects(home + "/tmp/rects");
-  rects << std::setprecision(20);
 
   std::ofstream populationOutput(home + "/tmp/population");
   populationOutput << std::setprecision(20);
@@ -179,14 +177,6 @@ void RoutingCityBoundariesProcessor::ProcessDataFromCollector()
 
       if (bestFeatureBuilderArea <= areaUpperBound)
       {
-        m2::RectD rect;
-        for (auto const & point : feature.GetOuterGeometry())
-          rect.Add(point);
-        auto const leftBottomLatLon = mercator::ToLatLon(rect.LeftBottom());
-        auto const rightTopLatLon = mercator::ToLatLon(rect.RightTop());
-        rects << leftBottomLatLon.m_lat << "," << leftBottomLatLon.m_lon << ","
-              << rightTopLatLon.m_lat << "," << rightTopLatLon.m_lon << std::endl;
-
         populationOutput << localityData.m_population << std::endl;
 
         areaOutput << bestFeatureBuilderArea << std::endl;
@@ -213,7 +203,17 @@ void RoutingCityBoundariesProcessor::ProcessDataFromCollector()
         addTrack(std::move(mapsmeTrack));
 
         auto kmlId = matchedBoundary + 1;
-        std::string kmlFile = home + "/tmp/kmls/" + std::to_string(kmlId) + ".kml";
+        std::string kmlFile = home + "/tmp/kmls/";
+        if (localityData.m_place == ftypes::LocalityType::City)
+          kmlFile += "city/";
+        else if (localityData.m_place == ftypes::LocalityType::Town)
+          kmlFile += "town/";
+        else if (localityData.m_place == ftypes::LocalityType::Village)
+          kmlFile += "village/";
+        else
+          continue;
+
+        kmlFile += std::to_string(kmlId) + ".kml";
 
         kml::SerializerKml ser(kml);
         FileWriter sink(kmlFile);
