@@ -1,6 +1,7 @@
 #include "routing/routes_builder/routes_builder.hpp"
 
 #include "routing/vehicle_mask.hpp"
+#include "routing/index_graph_loader.hpp"
 
 #include "storage/routing_helpers.hpp"
 
@@ -154,6 +155,8 @@ void RoutesBuilder::Result::Dump(Result const & result, std::string const & file
   FileWriter writer(filePath);
   WriteToSink(writer, static_cast<int>(result.m_code));
 
+  writer.Write(&result.m_buildTimeSeconds, sizeof(m_buildTimeSeconds));
+
   RoutesBuilder::Params::Dump(result.m_params, writer);
 
   size_t const routesNumber = result.m_routes.size();
@@ -171,6 +174,7 @@ RoutesBuilder::Result RoutesBuilder::Result::Load(std::string const & filePath)
 
   auto const code = ReadPrimitiveFromSource<int>(src);
   result.m_code = static_cast<RouterResultCode>(code);
+  result.m_buildTimeSeconds = ReadPrimitiveFromSource<double>(src);
   result.m_params = RoutesBuilder::Params::Load(src);
 
   auto const routesNumber = ReadPrimitiveFromSource<size_t>(src);
@@ -294,6 +298,7 @@ RoutesBuilder::Processor::operator()(Params const & params)
   m_delegate->SetTimeout(params.m_timeoutSeconds);
 
   CHECK(m_dataSource, ());
+  base::Timer timer;
   resultCode =
       m_router->CalculateRoute(params.m_checkpoints,
                                m2::PointD::Zero(),
@@ -304,6 +309,7 @@ RoutesBuilder::Processor::operator()(Params const & params)
   Result result;
   result.m_params.m_checkpoints = params.m_checkpoints;
   result.m_code = resultCode;
+  result.m_buildTimeSeconds = timer.ElapsedSeconds();
 
   RoutesBuilder::Route routeResult;
   routeResult.m_distance = route.GetTotalDistanceMeters();

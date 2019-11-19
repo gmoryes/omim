@@ -19,75 +19,40 @@
 #include <algorithm>
 #include <map>
 #include <unordered_map>
+#include <utility>
 
 namespace
 {
 using namespace routing;
 using namespace std;
 
-class IndexGraphLoaderImpl final : public IndexGraphLoader
+
+}  // namespace
+
+namespace routing
 {
-public:
-  IndexGraphLoaderImpl(VehicleType vehicleType, bool loadAltitudes, shared_ptr<NumMwmIds> numMwmIds,
-                       shared_ptr<VehicleModelFactoryInterface> vehicleModelFactory,
-                       shared_ptr<EdgeEstimator> estimator, DataSource & dataSource,
-                       RoutingOptions routingOptions = RoutingOptions());
-
-  // IndexGraphLoader overrides:
-  Geometry & GetGeometry(NumMwmId numMwmId) override;
-  IndexGraph & GetIndexGraph(NumMwmId numMwmId) override;
-  void LoadAll() override;
-  vector<RouteSegment::SpeedCamera> GetSpeedCameraInfo(Segment const & segment) override;
-  void Clear() override;
-
-private:
-  struct GraphAttrs
-  {
-    shared_ptr<Geometry> m_geometry;
-    unique_ptr<IndexGraph> m_indexGraph;
-  };
-
-  GraphAttrs & CreateGeometry(NumMwmId numMwmId);
-  GraphAttrs & CreateIndexGraph(NumMwmId numMwmId, GraphAttrs & graph);
-
-  VehicleType m_vehicleType;
-  bool m_loadAltitudes;
-  DataSource & m_dataSource;
-  shared_ptr<NumMwmIds> m_numMwmIds;
-  shared_ptr<VehicleModelFactoryInterface> m_vehicleModelFactory;
-  shared_ptr<EdgeEstimator> m_estimator;
-  bool m_loadAll = false;
-
-  unordered_map<NumMwmId, GraphAttrs> m_graphs;
-  unordered_map<NumMwmId, GraphAttrs> * m_graphsPreloaded;
-
-  unordered_map<NumMwmId, map<SegmentCoord, vector<RouteSegment::SpeedCamera>>> m_cachedCameras;
-  decltype(m_cachedCameras)::iterator ReceiveSpeedCamsFromMwm(NumMwmId numMwmId);
-
-  RoutingOptions m_avoidRoutingOptions = RoutingOptions();
-};
-
 IndexGraphLoaderImpl::IndexGraphLoaderImpl(
     VehicleType vehicleType, bool loadAltitudes, shared_ptr<NumMwmIds> numMwmIds,
     shared_ptr<VehicleModelFactoryInterface> vehicleModelFactory,
     shared_ptr<EdgeEstimator> estimator, DataSource & dataSource,
     RoutingOptions routingOptions)
-  : m_vehicleType(vehicleType)
-  , m_loadAltitudes(loadAltitudes)
-  , m_dataSource(dataSource)
-  , m_numMwmIds(numMwmIds)
-  , m_vehicleModelFactory(vehicleModelFactory)
-  , m_estimator(estimator)
-  , m_avoidRoutingOptions(routingOptions)
+    : m_vehicleType(vehicleType)
+    , m_loadAltitudes(loadAltitudes)
+    , m_dataSource(dataSource)
+    , m_numMwmIds(std::move(numMwmIds))
+    , m_vehicleModelFactory(std::move(vehicleModelFactory))
+    , m_estimator(std::move(estimator))
+    , m_avoidRoutingOptions(routingOptions)
 {
   CHECK(m_numMwmIds, ());
   CHECK(m_vehicleModelFactory, ());
   CHECK(m_estimator, ());
+  LoadGraph(m_numMwmIds, m_dataSource, m_vehicleModelFactory, m_estimator, m_loadAltitudes);
 }
 
 Geometry & IndexGraphLoaderImpl::GetGeometry(NumMwmId numMwmId)
 {
-  auto & graph = m_loadAll ? *m_graphsPreloaded : m_graphs;
+  auto & graph = m_loadAll ? kGraphs : m_graphs;
   auto it = graph.find(numMwmId);
   if (it != graph.end())
     return *it->second.m_geometry;
@@ -97,7 +62,7 @@ Geometry & IndexGraphLoaderImpl::GetGeometry(NumMwmId numMwmId)
 
 IndexGraph & IndexGraphLoaderImpl::GetIndexGraph(NumMwmId numMwmId)
 {
-  auto & graph = m_loadAll ? *m_graphsPreloaded : m_graphs;
+  auto & graph = m_loadAll ? kGraphs : m_graphs;
   auto it = graph.find(numMwmId);
   if (it != graph.end())
   {
@@ -105,6 +70,7 @@ IndexGraph & IndexGraphLoaderImpl::GetIndexGraph(NumMwmId numMwmId)
                                    : *CreateIndexGraph(numMwmId, it->second).m_indexGraph;
   }
 
+  CHECK(!m_loadAll, ());
   return *CreateIndexGraph(numMwmId, CreateGeometry(numMwmId)).m_indexGraph;
 }
 
@@ -148,18 +114,6 @@ auto IndexGraphLoaderImpl::ReceiveSpeedCamsFromMwm(NumMwmId numMwmId) -> decltyp
 void IndexGraphLoaderImpl::LoadAll()
 {
   m_loadAll = true;
-  static thread_local unordered_map<NumMwmId, GraphAttrs> kGraphs;
-  m_graphsPreloaded = &kGraphs;
-  if (kGraphs.empty())
-  {
-    base::Timer timer;
-    m_numMwmIds->ForEachId([&](NumMwmId id) {
-      LOG(LINFO, ("Load:", id));
-      CreateGeometry(id);
-      CreateIndexGraph(id, kGraphs[id]);
-    });
-    LOG_FORCE(LINFO, ("Loading all IndexGraph took:", timer.ElapsedSeconds(), "seconds."));
-  }
 }
 
 vector<RouteSegment::SpeedCamera> IndexGraphLoaderImpl::GetSpeedCameraInfo(Segment const & segment)
@@ -210,10 +164,44 @@ IndexGraphLoaderImpl::GraphAttrs & IndexGraphLoaderImpl::CreateGeometry(NumMwmId
   shared_ptr<VehicleModelInterface> vehicleModel =
       m_vehicleModelFactory->GetVehicleModelForCountry(file.GetName());
 
-  auto & graph = m_loadAll ? (*m_graphsPreloaded)[numMwmId] : m_graphs[numMwmId];
+  CHECK(!m_loadAll, ());
+  auto & graph = m_graphs[numMwmId];
   graph.m_geometry = make_shared<Geometry>(GeometryLoader::Create(
       m_dataSource, handle, vehicleModel, AttrLoader(m_dataSource, handle), m_loadAltitudes));
   return graph;
+}
+
+// static
+void IndexGraphLoaderImpl::LoadGraph(
+    shared_ptr<NumMwmIds> const & numMwmIds, DataSource & dataSource,
+    shared_ptr<VehicleModelFactoryInterface> const & vehicleModelFactory,
+    shared_ptr<EdgeEstimator> const & estimator, bool loadAltitudes)
+{
+  if (!kGraphs.empty())
+    return;
+
+  base::Timer timerMain;
+  numMwmIds->ForEachId([&](NumMwmId numMwmId) {
+    platform::CountryFile const & file = numMwmIds->GetFile(numMwmId);
+    MwmSet::MwmHandle handle = dataSource.GetMwmHandleByCountryFile(file);
+    if (!handle.IsAlive())
+      MYTHROW(RoutingException, ("Can't get mwm handle for", file));
+
+    shared_ptr<VehicleModelInterface> vehicleModel =
+        vehicleModelFactory->GetVehicleModelForCountry(file.GetName());
+
+    auto & graph = kGraphs[numMwmId];
+    graph.m_geometry = make_shared<Geometry>(GeometryLoader::Create(
+        dataSource, handle, vehicleModel, AttrLoader(dataSource, handle), loadAltitudes));
+
+    graph.m_indexGraph = make_unique<IndexGraph>(graph.m_geometry, estimator, RoutingOptions());
+    MwmValue const & mwmValue = *handle.GetValue();
+    base::Timer timer;
+    DeserializeIndexGraph(mwmValue, VehicleType::Car, *graph.m_indexGraph);
+    LOG(LINFO,
+        ("DeserializeIndexGraph():", file.GetName(), "in:", timer.ElapsedSeconds(), "seconds."));
+  });
+  LOG_FORCE(LINFO, (timerMain.ElapsedSeconds()));
 }
 
 IndexGraphLoaderImpl::GraphAttrs & IndexGraphLoaderImpl::CreateIndexGraph(
@@ -256,10 +244,7 @@ bool ReadRoadAccessFromMwm(MwmValue const & mwmValue, VehicleType vehicleType,
   }
   return true;
 }
-}  // namespace
 
-namespace routing
-{
 // static
 unique_ptr<IndexGraphLoader> IndexGraphLoader::Create(
     VehicleType vehicleType, bool loadAltitudes, shared_ptr<NumMwmIds> numMwmIds,
