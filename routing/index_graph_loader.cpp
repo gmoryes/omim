@@ -36,6 +36,7 @@ public:
   // IndexGraphLoader overrides:
   Geometry & GetGeometry(NumMwmId numMwmId) override;
   IndexGraph & GetIndexGraph(NumMwmId numMwmId) override;
+  void LoadAll() override;
   vector<RouteSegment::SpeedCamera> GetSpeedCameraInfo(Segment const & segment) override;
   void Clear() override;
 
@@ -55,8 +56,10 @@ private:
   shared_ptr<NumMwmIds> m_numMwmIds;
   shared_ptr<VehicleModelFactoryInterface> m_vehicleModelFactory;
   shared_ptr<EdgeEstimator> m_estimator;
+  bool m_loadAll = false;
 
   unordered_map<NumMwmId, GraphAttrs> m_graphs;
+  unordered_map<NumMwmId, GraphAttrs> * m_graphsPreloaded;
 
   unordered_map<NumMwmId, map<SegmentCoord, vector<RouteSegment::SpeedCamera>>> m_cachedCameras;
   decltype(m_cachedCameras)::iterator ReceiveSpeedCamsFromMwm(NumMwmId numMwmId);
@@ -84,8 +87,9 @@ IndexGraphLoaderImpl::IndexGraphLoaderImpl(
 
 Geometry & IndexGraphLoaderImpl::GetGeometry(NumMwmId numMwmId)
 {
-  auto it = m_graphs.find(numMwmId);
-  if (it != m_graphs.end())
+  auto & graph = m_loadAll ? *m_graphsPreloaded : m_graphs;
+  auto it = graph.find(numMwmId);
+  if (it != graph.end())
     return *it->second.m_geometry;
 
   return *CreateGeometry(numMwmId).m_geometry;
@@ -93,8 +97,9 @@ Geometry & IndexGraphLoaderImpl::GetGeometry(NumMwmId numMwmId)
 
 IndexGraph & IndexGraphLoaderImpl::GetIndexGraph(NumMwmId numMwmId)
 {
-  auto it = m_graphs.find(numMwmId);
-  if (it != m_graphs.end())
+  auto & graph = m_loadAll ? *m_graphsPreloaded : m_graphs;
+  auto it = graph.find(numMwmId);
+  if (it != graph.end())
   {
     return it->second.m_indexGraph ? *it->second.m_indexGraph
                                    : *CreateIndexGraph(numMwmId, it->second).m_indexGraph;
@@ -138,6 +143,20 @@ auto IndexGraphLoaderImpl::ReceiveSpeedCamsFromMwm(NumMwmId numMwmId) -> decltyp
   CHECK(it != m_cachedCameras.end(), ());
 
   return it;
+}
+
+void IndexGraphLoaderImpl::LoadAll()
+{
+  m_loadAll = true;
+  static unordered_map<NumMwmId, GraphAttrs> kGraphs;
+  if (kGraphs.empty())
+  {
+    m_graphsPreloaded = &kGraphs;
+    m_numMwmIds->ForEachId([&](NumMwmId id) {
+      CreateGeometry(id);
+      CreateIndexGraph(id, kGraphs[id]);
+    });
+  }
 }
 
 vector<RouteSegment::SpeedCamera> IndexGraphLoaderImpl::GetSpeedCameraInfo(Segment const & segment)
@@ -188,7 +207,7 @@ IndexGraphLoaderImpl::GraphAttrs & IndexGraphLoaderImpl::CreateGeometry(NumMwmId
   shared_ptr<VehicleModelInterface> vehicleModel =
       m_vehicleModelFactory->GetVehicleModelForCountry(file.GetName());
 
-  auto & graph = m_graphs[numMwmId];
+  auto & graph = m_loadAll ? (*m_graphsPreloaded)[numMwmId] : m_graphs[numMwmId];
   graph.m_geometry = make_shared<Geometry>(GeometryLoader::Create(
       m_dataSource, handle, vehicleModel, AttrLoader(m_dataSource, handle), m_loadAltitudes));
   return graph;

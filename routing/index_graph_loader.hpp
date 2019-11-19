@@ -23,6 +23,7 @@ public:
 
   virtual Geometry & GetGeometry(NumMwmId numMwmId) = 0;
   virtual IndexGraph & GetIndexGraph(NumMwmId mwmId) = 0;
+  virtual void LoadAll() {}
 
   // Because several cameras can lie on one segment we return vector of them.
   virtual std::vector<RouteSegment::SpeedCamera> GetSpeedCameraInfo(Segment const & segment) = 0;

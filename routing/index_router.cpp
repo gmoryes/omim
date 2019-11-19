@@ -404,7 +404,7 @@ RouterResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoints,
     return RouterResultCode::NeedMoreMaps;
 
   TrafficStash::Guard guard(m_trafficStash);
-  auto graph = MakeWorldGraph();
+  unique_ptr<WorldGraph> graph = MakeWorldGraph();
 
   vector<Segment> segments;
 
@@ -809,6 +809,11 @@ unique_ptr<WorldGraph> IndexRouter::MakeWorldGraph()
       m_vehicleType == VehicleType::Transit ? VehicleType::Pedestrian : m_vehicleType,
       m_loadAltitudes, m_numMwmIds, m_vehicleModelFactory, m_estimator, m_dataSource,
       routingOptions);
+
+  bool loadAll = std::getenv("LOAD_ALL") && !std::string(std::getenv("LOAD_ALL")).empty();
+  LOG(LINFO, ("LOAD_ALL, loadAll:", loadAll));
+  if (loadAll)
+    indexGraphLoader->LoadAll();
 
   if (m_vehicleType != VehicleType::Transit)
   {
