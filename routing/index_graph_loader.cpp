@@ -154,6 +154,7 @@ void IndexGraphLoaderImpl::LoadAll()
   {
     base::Timer timer;
     m_numMwmIds->ForEachId([&](NumMwmId id) {
+      LOG(LINFO, ("Load:", id));
       CreateGeometry(id);
       CreateIndexGraph(id, kGraphs[id]);
     });
