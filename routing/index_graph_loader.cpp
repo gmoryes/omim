@@ -148,7 +148,7 @@ auto IndexGraphLoaderImpl::ReceiveSpeedCamsFromMwm(NumMwmId numMwmId) -> decltyp
 void IndexGraphLoaderImpl::LoadAll()
 {
   m_loadAll = true;
-  static unordered_map<NumMwmId, GraphAttrs> kGraphs;
+  static thread_local unordered_map<NumMwmId, GraphAttrs> kGraphs;
   m_graphsPreloaded = &kGraphs;
   if (kGraphs.empty())
   {

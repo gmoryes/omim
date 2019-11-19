@@ -62,6 +62,7 @@ public:
   GeometryLoaderImpl(DataSource const & dataSource, MwmSet::MwmHandle const & handle,
                      shared_ptr<VehicleModelInterface> vehicleModel,
                      AttrLoader attrLoader, bool loadAltitudes);
+  ~GeometryLoaderImpl() = default;
 
   // GeometryLoader overrides:
   void Load(uint32_t featureId, RoadGeometry & road) override;
