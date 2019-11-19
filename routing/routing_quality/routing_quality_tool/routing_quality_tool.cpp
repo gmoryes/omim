@@ -28,9 +28,13 @@ DEFINE_string(save_result, "", "The directory where results of tool will be save
 DEFINE_double(kml_percent, 0.0, "The percent of routes for which kml file will be generated."
                                 "With kml files you can make screenshots with desktop app of MAPS.ME");
 
+DEFINE_bool(benchmark_stat, false, "Dump statistic about route time building.");
+
 namespace
 {
 static std::string const kPythonDistribution = "show_distribution.py";
+static std::string const kPythonDistTimeBuilding = "show_route_time_building_dist.py";
+
 double constexpr kBadETADiffPercent = std::numeric_limits<double>::max();
 } // namespace
 
@@ -58,7 +62,14 @@ void PrintResults(std::vector<Result> && results, RoutesSaver & routesSaver)
   LOG(LINFO, ("Average similarity:", sumSimilarity / results.size()));
   LOG(LINFO, ("Average eta difference by fullmathed routes:", sumETADiffPercent / goodETANumber, "%"));
 
-  CreatePythonScriptForDistribution(FLAGS_save_result, kPythonDistribution, results);
+  auto const pythonScriptPath = base::JoinPath(FLAGS_save_result, kPythonDistribution);
+
+  std::vector<double> values;
+  values.reserve(results.size());
+  for (auto const & result : results)
+    values.emplace_back(result.m_similarity);
+
+  CreatePythonScriptForDistribution(pythonScriptPath, "Simularity distribution", values);
 
   SimilarityCounter similarityCounter(routesSaver);
 
@@ -77,6 +88,11 @@ bool IsMapsmeVsApi()
 bool IsMapsmeVsMapsme()
 {
   return !FLAGS_mapsme_results.empty() && !FLAGS_mapsme_old_results.empty();
+}
+
+bool IsBenchmarkStat()
+{
+  return !FLAGS_mapsme_results.empty() && FLAGS_benchmark_stat;
 }
 
 void CheckDirExistence(std::string const & dir)
@@ -154,6 +170,28 @@ void RunComparison(std::vector<std::pair<RoutesBuilder::Result, std::string>> &&
   PrintResults(std::move(results), routesSaver);
 }
 
+void RunBenchmarkStat(std::vector<std::pair<RoutesBuilder::Result, std::string>> const & mapsmeResults)
+{
+  double averageTimeSeconds = 0.0;
+  std::unordered_map<double, double> distToTime;
+  std::vector<double> times;
+  times.reserve(mapsmeResults.size());
+
+  for (auto const & resultItem : mapsmeResults)
+  {
+    auto const & result = resultItem.first;
+    averageTimeSeconds += result.m_buildTimeSeconds;
+    distToTime[result.m_routes.back().m_distance] = result.m_buildTimeSeconds;
+    times.emplace_back(result.m_buildTimeSeconds);
+  }
+
+  auto const pythonScriptPath = base::JoinPath(FLAGS_save_result, kPythonDistTimeBuilding);
+  CreatePythonScriptForDistribution(pythonScriptPath, "Route building time", times);
+
+  averageTimeSeconds /= static_cast<double>(mapsmeResults.empty() ? 1.0 : mapsmeResults.size());
+  LOG(LINFO, ("Average route time building:", averageTimeSeconds, "seconds."));
+}
+
 int Main(int argc, char ** argv)
 {
   google::SetUsageMessage("This tool takes two paths to directory with routes, that were dumped"
@@ -208,6 +246,11 @@ int Main(int argc, char ** argv)
     auto oldMapsmeResults = LoadResults<RoutesBuilder::Result>(FLAGS_mapsme_old_results);
     LOG(LINFO, ("Receive:", oldMapsmeResults.size(), "routes from --mapsme_old_results."));
     RunComparison(std::move(mapsmeResults), std::move(oldMapsmeResults));
+  }
+  else if (IsBenchmarkStat())
+  {
+    LOG(LINFO, ("Running in benchmark stat mode."));
+    RunBenchmarkStat(mapsmeResults);
   }
   else
   {

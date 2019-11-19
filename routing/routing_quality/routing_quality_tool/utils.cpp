@@ -222,19 +222,17 @@ void RoutesSaver::WriteStartAndFinish(std::ofstream & output,
 }
 
 // This function creates python script that shows the distribution error.
-void CreatePythonScriptForDistribution(std::string const & targetDir, std::string const & filename,
-                                       std::vector<Result> const & results)
+void CreatePythonScriptForDistribution(std::string const & pythonScriptPath, std::string const & title,
+                                       std::vector<double> const & values)
 {
-  std::string const pythonScriptPath = base::JoinPath(targetDir, filename);
-
   std::ofstream python(pythonScriptPath);
   CHECK(python.good(), ("Can not open:", pythonScriptPath, "for writing."));
 
   std::string pythonArray = "[";
-  for (auto const & result : results)
-    pythonArray += std::to_string(result.m_similarity) + ",";
+  for (auto const & value : values)
+    pythonArray += std::to_string(value) + ",";
 
-  if (results.empty())
+  if (values.empty())
     pythonArray += "]";
   else
     pythonArray.back() = ']';
@@ -245,11 +243,11 @@ import matplotlib.pyplot as plt
 
 a = np.hstack()" + pythonArray + R"()
 plt.hist(a, bins='auto')  # arguments are passed to np.histogram
-plt.title("Similarity distribution")
+plt.title(")" + title + R"()
 plt.show()
 )";
 
-  LOG(LINFO, ("Run: python", pythonScriptPath, "to look at similarity distribution."));
+  LOG(LINFO, ("Run: python", pythonScriptPath, "to look at:", title));
 }
 
 /// \brief |SimilarityCounter| groups routes that we compare by similarity, here we tune these groups.

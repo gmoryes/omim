@@ -170,7 +170,7 @@ private:
   std::vector<Item> m_routesCounter;
 };
 
-void CreatePythonScriptForDistribution(std::string const & targetDir, std::string const & filename,
-                                       std::vector<Result> const & results);
+void CreatePythonScriptForDistribution(std::string const & pythonScriptPath, std::string const & title,
+                                       std::vector<double> const & values);
 }  // namespace routing_quality_tool
 }  // namespace routing_quality
