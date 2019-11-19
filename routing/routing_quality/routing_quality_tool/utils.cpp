@@ -250,7 +250,9 @@ plt.show()
   LOG(LINFO, ("Run: python", pythonScriptPath, "to look at:", title));
 }
 
-void CreatePythonGraphByPointsXY(std::string const & pythonScriptPath, std::string const & title,
+void CreatePythonGraphByPointsXY(std::string const & pythonScriptPath,
+                                 std::string const & xlabel,
+                                 std::string const & ylabel,
                                  std::vector<m2::PointD> const & points)
 {
   std::ofstream python(pythonScriptPath);
@@ -279,15 +281,16 @@ void CreatePythonGraphByPointsXY(std::string const & pythonScriptPath, std::stri
   python << R"(
 import pylab
 
-xlist = [)" + pythonArrayX + R"("]
-ylist = [)" + pythonArrayY + R"("]
+xlist = )" + pythonArrayX + R"(
+ylist = )" + pythonArrayY + R"(
 
 pylab.plot (xlist, ylist)
-pylab.title(")" + title + R"("")
+pylab.xlabel(")" + xlabel + R"(")
+pylab.ylabel(")" + ylabel + R"(")
 pylab.show()
 )";
 
-  LOG(LINFO, ("Run: python", pythonScriptPath, "to look at:", title));
+  LOG(LINFO, ("Run: python", pythonScriptPath, "to look at:", ylabel, "versus", xlabel));
 }
 
 /// \brief |SimilarityCounter| groups routes that we compare by similarity, here we tune these groups.

@@ -34,6 +34,8 @@ namespace
 {
 static std::string const kPythonDistribution = "show_distribution.py";
 static std::string const kPythonDistTimeBuilding = "show_route_time_building_dist.py";
+static std::string const kPythonGraphLenAndTime = "show_len_time_graph.py";
+static std::string const kPythonGraphTimeAndCount = "show_time_count_graph.py";
 
 double constexpr kBadETADiffPercent = std::numeric_limits<double>::max();
 } // namespace
@@ -173,7 +175,7 @@ void RunComparison(std::vector<std::pair<RoutesBuilder::Result, std::string>> &&
 void RunBenchmarkStat(std::vector<std::pair<RoutesBuilder::Result, std::string>> const & mapsmeResults)
 {
   double averageTimeSeconds = 0.0;
-  std::unordered_map<double, double> distToTime;
+  std::vector<m2::PointD> distToTime;
   std::vector<double> times;
   times.reserve(mapsmeResults.size());
 
@@ -181,15 +183,32 @@ void RunBenchmarkStat(std::vector<std::pair<RoutesBuilder::Result, std::string>>
   {
     auto const & result = resultItem.first;
     averageTimeSeconds += result.m_buildTimeSeconds;
-    distToTime[result.m_routes.back().m_distance] = result.m_buildTimeSeconds;
+    distToTime.emplace_back(result.m_routes.back().m_distance, result.m_buildTimeSeconds);
     times.emplace_back(result.m_buildTimeSeconds);
   }
 
   auto const pythonScriptPath = base::JoinPath(FLAGS_save_result, kPythonDistTimeBuilding);
   CreatePythonScriptForDistribution(pythonScriptPath, "Route building time", times);
 
+  auto pythonGraphLenTime = base::JoinPath(FLAGS_save_result, kPythonGraphLenAndTime);
+  std::sort(distToTime.begin(), distToTime.end(),
+            [](auto const & lhs, auto const & rhs) { return lhs.x < rhs.x; });
+  CreatePythonGraphByPointsXY(pythonGraphLenTime, "Distance", "Building time", distToTime);
+
   averageTimeSeconds /= static_cast<double>(mapsmeResults.empty() ? 1.0 : mapsmeResults.size());
   LOG(LINFO, ("Average route time building:", averageTimeSeconds, "seconds."));
+
+  std::sort(times.begin(), times.end());
+  std::vector<m2::PointD> countToTimes(times.size());
+  for (size_t i = 0; i < countToTimes.size(); ++i)
+  {
+    countToTimes[i].x = times[i];
+    countToTimes[i].y = static_cast<double>(i + 1) / times.size() * 100.0;
+  }
+
+  pythonGraphLenTime = base::JoinPath(FLAGS_save_result, kPythonGraphTimeAndCount);
+  CreatePythonGraphByPointsXY(pythonGraphLenTime, "Building time",
+                              "Percent of routes builded less than", countToTimes);
 }
 
 int Main(int argc, char ** argv)
