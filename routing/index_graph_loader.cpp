@@ -157,7 +157,7 @@ void IndexGraphLoaderImpl::LoadAll()
       CreateGeometry(id);
       CreateIndexGraph(id, kGraphs[id]);
     });
-    LOG(LINFO, ("Loading all IndexGraph took:", timer.ElapsedSeconds(), "seconds."));
+    LOG_FORCE(LINFO, ("Loading all IndexGraph took:", timer.ElapsedSeconds(), "seconds."));
   }
 }
 
