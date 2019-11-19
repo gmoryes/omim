@@ -204,7 +204,7 @@ void IndexGraphLoaderImpl::LoadGraph(
     LOG(LINFO,
         ("DeserializeIndexGraph():", file.GetName(), "in:", timer.ElapsedSeconds(), "seconds."));
   });
-  LOG_FORCE(LINFO, (timerMain.ElapsedSeconds()));
+  LOG_FORCE(LINFO, ("Load all IndexGraphs in:", timerMain.ElapsedSeconds(), "seconds."));
 }
 
 IndexGraphLoaderImpl::GraphAttrs & IndexGraphLoaderImpl::CreateIndexGraph(
