@@ -149,13 +149,15 @@ void IndexGraphLoaderImpl::LoadAll()
 {
   m_loadAll = true;
   static unordered_map<NumMwmId, GraphAttrs> kGraphs;
+  m_graphsPreloaded = &kGraphs;
   if (kGraphs.empty())
   {
-    m_graphsPreloaded = &kGraphs;
+    base::Timer timer;
     m_numMwmIds->ForEachId([&](NumMwmId id) {
       CreateGeometry(id);
       CreateIndexGraph(id, kGraphs[id]);
     });
+    LOG(LINFO, ("Loading all IndexGraph took:", timer.ElapsedSeconds(), "seconds."));
   }
 }
 
