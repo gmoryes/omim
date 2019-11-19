@@ -243,8 +243,48 @@ import matplotlib.pyplot as plt
 
 a = np.hstack()" + pythonArray + R"()
 plt.hist(a, bins='auto')  # arguments are passed to np.histogram
-plt.title(")" + title + R"()
+plt.title(")" + title + R"(")
 plt.show()
+)";
+
+  LOG(LINFO, ("Run: python", pythonScriptPath, "to look at:", title));
+}
+
+void CreatePythonGraphByPointsXY(std::string const & pythonScriptPath, std::string const & title,
+                                 std::vector<m2::PointD> const & points)
+{
+  std::ofstream python(pythonScriptPath);
+  CHECK(python.good(), ("Can not open:", pythonScriptPath, "for writing."));
+
+  std::string pythonArrayX = "[";
+  std::string pythonArrayY = "[";
+  for (auto const & point : points)
+  {
+    pythonArrayX += std::to_string(point.x) + ",";
+    pythonArrayY += std::to_string(point.y) + ",";
+
+  }
+
+  if (points.empty())
+  {
+    pythonArrayX += "]";
+    pythonArrayY += "]";
+  }
+  else
+  {
+    pythonArrayX.back() = ']';
+    pythonArrayY.back() = ']';
+  }
+
+  python << R"(
+import pylab
+
+xlist = [)" + pythonArrayX + R"("]
+ylist = [)" + pythonArrayY + R"("]
+
+pylab.plot (xlist, ylist)
+pylab.title(")" + title + R"("")
+pylab.show()
 )";
 
   LOG(LINFO, ("Run: python", pythonScriptPath, "to look at:", title));

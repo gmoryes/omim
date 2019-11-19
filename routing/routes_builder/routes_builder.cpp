@@ -298,6 +298,9 @@ RoutesBuilder::Processor::operator()(Params const & params)
   m_delegate->SetTimeout(params.m_timeoutSeconds);
 
   CHECK(m_dataSource, ());
+  if (std::getenv("LOAD_ALL") && !std::string(std::getenv("LOAD_ALL")).empty())
+    m_router->LoadAllIndexGraph();
+
   base::Timer timer;
   resultCode =
       m_router->CalculateRoute(params.m_checkpoints,

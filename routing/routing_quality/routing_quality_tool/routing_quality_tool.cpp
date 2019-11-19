@@ -198,11 +198,13 @@ int Main(int argc, char ** argv)
                           "by routes_builder_tool and calculate some metrics.");
   google::ParseCommandLineFlags(&argc, &argv, true);
 
-  CHECK(IsMapsmeVsApi() || IsMapsmeVsMapsme(),
+  CHECK(IsMapsmeVsApi() || IsMapsmeVsMapsme() || IsBenchmarkStat(),
         ("\n\n"
          "\t--mapsme_results and --api_results are required\n"
          "\tor\n"
          "\t--mapsme_results and --mapsme_old_results are required",
+         "\tor\n"
+         "\t--mapsme_results and --benchmark_stat are required",
          "\n\tFLAGS_mapsme_results.empty():", FLAGS_mapsme_results.empty(),
          "\n\tFLAGS_api_results.empty():", FLAGS_api_results.empty(),
          "\n\tFLAGS_mapsme_old_results.empty():", FLAGS_mapsme_old_results.empty(),
@@ -223,7 +225,7 @@ int Main(int argc, char ** argv)
     CheckDirExistence(FLAGS_api_results);
   else if (IsMapsmeVsMapsme())
     CheckDirExistence(FLAGS_mapsme_old_results);
-  else
+  else if (!IsBenchmarkStat())
     UNREACHABLE();
 
   CHECK(0.0 <= FLAGS_kml_percent && FLAGS_kml_percent <= 100.0,

@@ -75,6 +75,7 @@ public:
               std::shared_ptr<NumMwmIds> numMwmIds, std::unique_ptr<m4::Tree<NumMwmId>> numMwmTree,
               traffic::TrafficCache const & trafficCache, DataSource & dataSource);
 
+  void LoadAllIndexGraph();
   std::unique_ptr<WorldGraph> MakeSingleMwmWorldGraph();
   bool FindBestSegments(m2::PointD const & point, m2::PointD const & direction, bool isOutgoing,
                         WorldGraph & worldGraph, std::vector<Segment> & bestSegments);

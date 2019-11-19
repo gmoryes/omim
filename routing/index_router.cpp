@@ -305,6 +305,11 @@ IndexRouter::IndexRouter(VehicleType vehicleType, bool loadAltitudes,
   CHECK(m_directionsEngine, ());
 }
 
+void IndexRouter::LoadAllIndexGraph()
+{
+  MakeWorldGraph();
+}
+
 unique_ptr<WorldGraph> IndexRouter::MakeSingleMwmWorldGraph()
 {
   auto worldGraph = MakeWorldGraph();

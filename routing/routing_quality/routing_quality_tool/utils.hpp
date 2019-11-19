@@ -172,5 +172,8 @@ private:
 
 void CreatePythonScriptForDistribution(std::string const & pythonScriptPath, std::string const & title,
                                        std::vector<double> const & values);
+
+void CreatePythonGraphByPointsXY(std::string const & pythonScriptPath, std::string const & title,
+                                 std::vector<m2::PointD> const & points);
 }  // namespace routing_quality_tool
 }  // namespace routing_quality
