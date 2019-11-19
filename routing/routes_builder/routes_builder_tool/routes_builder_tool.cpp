@@ -95,10 +95,8 @@ int Main(int argc, char ** argv)
 
   if (IsLocalBuild())
   {
-    base::Timer timer;
-    BuildRoutes(FLAGS_routes_file, FLAGS_dump_path, FLAGS_start_from, FLAGS_threads, FLAGS_timeout, 
+    BuildRoutes(FLAGS_routes_file, FLAGS_dump_path, FLAGS_start_from, FLAGS_threads, FLAGS_timeout,
                 FLAGS_verbose);
-    LOG_FORCE(LINFO, ("BuildRoutes() took:", timer.ElapsedSeconds(), "seconds."));
   }
 
   if (IsApiBuild())

@@ -98,6 +98,7 @@ void BuildRoutes(std::string const & routesPath,
     }
 
     LOG_FORCE(LINFO, ("Created:", tasks.size(), "tasks"));
+    base::Timer timer;
     for (size_t i = 0; i < tasks.size(); ++i)
     {
       size_t shiftIndex = i + startFrom;
@@ -122,6 +123,7 @@ void BuildRoutes(std::string const & routesPath,
         LOG_FORCE(LINFO, ("Progress:", lastPercent, "%"));
       }
     }
+    LOG_FORCE(LINFO, ("BuildRoutes() took:", timer.ElapsedSeconds(), "seconds."));
   }
 }
 
