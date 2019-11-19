@@ -50,7 +50,6 @@ IndexGraphLoaderImpl::IndexGraphLoaderImpl(
   CHECK(m_numMwmIds, ());
   CHECK(m_vehicleModelFactory, ());
   CHECK(m_estimator, ());
-  LoadGraph(m_numMwmIds, m_dataSource, m_vehicleModelFactory, m_estimator, m_loadAltitudes);
 }
 
 Geometry & IndexGraphLoaderImpl::GetGeometry(NumMwmId numMwmId)
@@ -117,6 +116,7 @@ auto IndexGraphLoaderImpl::ReceiveSpeedCamsFromMwm(NumMwmId numMwmId) -> decltyp
 void IndexGraphLoaderImpl::LoadAll()
 {
   m_loadAll = true;
+  LoadGraph(m_numMwmIds, m_dataSource, m_vehicleModelFactory, m_estimator, m_loadAltitudes);
 }
 
 vector<RouteSegment::SpeedCamera> IndexGraphLoaderImpl::GetSpeedCameraInfo(Segment const & segment)
