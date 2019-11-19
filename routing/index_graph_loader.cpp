@@ -32,7 +32,7 @@ using namespace std;
 namespace routing
 {
 // static
-thread_local std::unordered_map<NumMwmId, IndexGraphLoaderImpl::GraphAttrs> kGraphs;
+thread_local std::unordered_map<NumMwmId, IndexGraphLoaderImpl::GraphAttrs> IndexGraphLoaderImpl::kGraphs;
 
 IndexGraphLoaderImpl::IndexGraphLoaderImpl(
     VehicleType vehicleType, bool loadAltitudes, shared_ptr<NumMwmIds> numMwmIds,
