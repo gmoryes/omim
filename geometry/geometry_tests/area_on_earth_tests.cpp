@@ -5,34 +5,31 @@
 #include "geometry/mercator.hpp"
 
 #include "base/math.hpp"
+#include "base/timer.hpp"
 
 #include <iostream>
+#include <sstream>
+#include <string>
 
-UNIT_TEST(AreaOnEarth_Circle)
+UNIT_TEST(benchmark)
 {
-  double const kEarthSurfaceArea = 4.0 * math::pi * ms::kEarthRadiusMeters * ms::kEarthRadiusMeters;
-  TEST_ALMOST_EQUAL_ABS(ms::CircleAreaOnEarth(math::pi * ms::kEarthRadiusMeters),
-                        kEarthSurfaceArea,
-                        1e-1, ());
+  CHECK(getenv("N"), ());
+  std::stringstream ss;
+  ss << std::string(getenv("N"));
+  size_t n;
+  ss >> n;
+  auto latlon1 = ms::LatLon(12.34, 56.78);
+  auto latlon2 = ms::LatLon(87.65, 43.21);
 
-  TEST_ALMOST_EQUAL_ABS(ms::CircleAreaOnEarth(2.0 /* radiusMeters */),
-                        math::pi * 2.0 * 2.0,
-                        1e-2, ());
+  auto point1 = mercator::FromLatLon(latlon1);
+  auto point2 = mercator::FromLatLon(latlon2);
 
-  TEST_ALMOST_EQUAL_ABS(ms::CircleAreaOnEarth(2000.0 /* radiusMeters */),
-                        math::pi * 2000.0 * 2000.0,
-                        1.0, ());
-}
-
-UNIT_TEST(AreaOnEarth_ThreePoints)
-{
-  double const kEarthSurfaceArea = 4.0 * math::pi * ms::kEarthRadiusMeters * ms::kEarthRadiusMeters;
-
-  TEST_ALMOST_EQUAL_ABS(ms::AreaOnEarth({90.0, 0.0}, {0.0, 0.0}, {0.0, 90.0}),
-                        kEarthSurfaceArea / 8.0,
-                        1e-2, ());
-
-  TEST_ALMOST_EQUAL_ABS(ms::AreaOnEarth({90.0, 0.0}, {0.0, 90.0}, {0.0, -90.0}),
-                        kEarthSurfaceArea / 4.0,
-                        1e-1, ());
+  LOG(LINFO, ("Current start. N =", n));
+  base::HighResTimer timer;
+  for (size_t i = 0; i < n; ++i)
+  {
+    auto const dist = mercator::DistanceOnEarth(point1, point2);
+    point1 += m2::PointD(1e-6, 1e-8);
+  }
+  LOG(LINFO, ("Current time:", timer.ElapsedNano() / 1e6, "ms."));
 }
