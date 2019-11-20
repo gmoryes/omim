@@ -11,6 +11,19 @@
 #include <sstream>
 #include <string>
 
+UNIT_TEST(benchmark_0)
+{
+  auto latlon1 = ms::LatLon(12.34, 56.78);
+  auto latlon2 = ms::LatLon(87.65, 43.21);
+
+  auto point1 = mercator::FromLatLon(latlon1);
+  auto point2 = mercator::FromLatLon(latlon2);
+
+  auto const distCur = mercator::DistanceOnEarth(point1, point2);
+  auto const distMisha = mercator::DistanceOnEarth2(latlon1, latlon2);
+  TEST_ALMOST_EQUAL_ABS(distCur, distMisha, 1e-5, ());
+}
+
 UNIT_TEST(benchmark_1)
 {
   CHECK(getenv("N"), ());

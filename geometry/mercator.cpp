@@ -58,9 +58,15 @@ m3::PointD GetPointOnSphere(ms::LatLon const & ll, double sphereRadius)
   double const latRad = base::DegToRad(ll.m_lat);
   double const lonRad = base::DegToRad(ll.m_lon);
 
-  double const x = sphereRadius * cos(latRad) * cos(lonRad);
-  double const y = sphereRadius * cos(latRad) * sin(lonRad);
-  double const z = sphereRadius * sin(latRad);
+  double const sinLatRad = sin(latRad);
+  double const cosLatRad = sqrt(1 - sinLatRad * sinLatRad);
+
+  double const sinLonRad = sin(lonRad);
+  double const cosLonRad = sqrt(1 - sinLonRad * sinLonRad);
+
+  double const x = sphereRadius * cosLatRad * cosLonRad;
+  double const y = sphereRadius * cosLatRad * sinLonRad;
+  double const z = sphereRadius * sinLatRad;
 
   return {x, y, z};
 }
