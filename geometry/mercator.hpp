@@ -66,6 +66,7 @@ m2::RectD RectByCenterLatLonAndSizeInMeters(double lat, double lon, double size)
 
 inline ms::LatLon ToLatLon(m2::PointD const & point) { return {YToLat(point.y), XToLon(point.x)}; }
 
+double DistanceOnEarth2(ms::LatLon const & ll1, ms::LatLon const & ll2);
 /// Converts lat lon rect to mercator one.
 m2::RectD FromLatLonRect(m2::RectD const & latLonRect);
 m2::RectD ToLatLonRect(m2::RectD const & mercatorRect);

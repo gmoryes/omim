@@ -50,6 +50,30 @@ double DistanceOnEarth(m2::PointD const & p1, m2::PointD const & p2)
   return ms::DistanceOnEarth(ToLatLon(p1), ToLatLon(p2));
 }
 
+m3::PointD GetPointOnSphere(ms::LatLon const & ll, double sphereRadius)
+{
+  ASSERT(ms::LatLon::kMinLat <= ll.m_lat && ll.m_lat <= ms::LatLon::kMaxLat, (ll));
+  ASSERT(ms::LatLon::kMinLon <= ll.m_lon && ll.m_lon <= ms::LatLon::kMaxLon, (ll));
+
+  double const latRad = base::DegToRad(ll.m_lat);
+  double const lonRad = base::DegToRad(ll.m_lon);
+
+  double const x = sphereRadius * cos(latRad) * cos(lonRad);
+  double const y = sphereRadius * cos(latRad) * sin(lonRad);
+  double const z = sphereRadius * sin(latRad);
+
+  return {x, y, z};
+}
+
+double DistanceOnEarth2(ms::LatLon const & ll1, ms::LatLon const & ll2)
+{
+  auto const p1 = GetPointOnSphere(ll1, 1.0);
+  auto const p2 = GetPointOnSphere(ll2, 1.0);
+
+  double cross = m3::DotProduct(p1, p2);
+  return acos(cross) * 6378000.0;
+}
+
 double AreaOnEarth(m2::PointD const & p1, m2::PointD const & p2, m2::PointD const & p3)
 {
   return ms::AreaOnEarth(ToLatLon(p1), ToLatLon(p2), ToLatLon(p3));
