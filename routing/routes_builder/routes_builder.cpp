@@ -292,7 +292,7 @@ RoutesBuilder::Processor::operator()(Params const & params)
     m_dataSourceStorage.PushDataSource(std::move(m_dataSource));
   });
 
-  RouterResultCode resultCode;
+  RouterResultCode resultCode = RouterResultCode::RouteNotFound;
   routing::Route route("" /* router */, 0 /* routeId */);
 
   m_delegate->SetTimeout(params.m_timeoutSeconds);
@@ -301,18 +301,22 @@ RoutesBuilder::Processor::operator()(Params const & params)
   if (std::getenv("LOAD_ALL") && !std::string(std::getenv("LOAD_ALL")).empty())
     m_router->LoadAllIndexGraph();
 
-  base::Timer timer;
-  resultCode =
-      m_router->CalculateRoute(params.m_checkpoints,
-                               m2::PointD::Zero(),
-                               false /* adjustToPrevRoute */,
-                               *m_delegate,
-                               route);
+  double timeSum = 0;
+  size_t numberOfBuilds = params.m_benchmarkMode ? 3 : 1;
+  for (size_t i = 0; i < numberOfBuilds; ++i)
+  {
+    base::Timer timer;
+    resultCode = m_router->CalculateRoute(params.m_checkpoints, m2::PointD::Zero(),
+                                          false /* adjustToPrevRoute */, *m_delegate, route);
+
+
+    timeSum += timer.ElapsedSeconds();
+  }
 
   Result result;
   result.m_params.m_checkpoints = params.m_checkpoints;
   result.m_code = resultCode;
-  result.m_buildTimeSeconds = timer.ElapsedSeconds();
+  result.m_buildTimeSeconds = timeSum / static_cast<double>(numberOfBuilds);
 
   RoutesBuilder::Route routeResult;
   routeResult.m_distance = route.GetTotalDistanceMeters();

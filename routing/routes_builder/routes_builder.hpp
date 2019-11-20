@@ -62,6 +62,7 @@ public:
     VehicleType m_type = VehicleType::Car;
     Checkpoints m_checkpoints;
     uint32_t m_timeoutSeconds = RouterDelegate::kNoTimeout;
+    bool m_benchmarkMode = false;
   };
 
   struct Route

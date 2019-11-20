@@ -25,7 +25,8 @@ namespace
 {
 // @TODO(bykoianko) Consider setting cache size based on available memory.
 // Maximum road geometry cache size in items.
-size_t constexpr kRoadsCacheSize = 5000;
+size_t constexpr kRoadsCacheSize = 1000;
+size_t constexpr kLastBitsNumber = 1;
 
 double CalcFerryDurationHours(string const & durationHours, double roadLenKm)
 {
@@ -255,24 +256,22 @@ double RoadGeometry::GetRoadLengthM() const
 // Geometry ----------------------------------------------------------------------------------------
 Geometry::Geometry(unique_ptr<GeometryLoader> loader)
     : m_loader(move(loader))
-    , m_featureIdToRoad_0(make_unique<FifoCache<uint32_t, RoadGeometry>>(
-        kRoadsCacheSize,
-        [this](uint32_t featureId, RoadGeometry & road) { m_loader->Load(featureId, road); }))
-    , m_featureIdToRoad_1(make_unique<FifoCache<uint32_t, RoadGeometry>>(
-        kRoadsCacheSize,
-        [this](uint32_t featureId, RoadGeometry & road) { m_loader->Load(featureId, road); }))
 {
   CHECK(m_loader, ());
+  size_t n = static_cast<size_t>(1) << kLastBitsNumber;
+  for (size_t i = 0; i < n; ++i)
+  {
+    m_featureIdToRoad[i] = make_unique<FifoCache<uint32_t, RoadGeometry>>(
+        kRoadsCacheSize,
+        [this](uint32_t featureId, RoadGeometry & road) { m_loader->Load(featureId, road); });
+  }
 }
 
 RoadGeometry const & Geometry::GetRoad(uint32_t featureId)
 {
-  ASSERT(m_featureIdToRoad_0, ());
-  ASSERT(m_featureIdToRoad_1, ());
   ASSERT(m_loader, ());
 
-  return featureId & 1 ? m_featureIdToRoad_1->GetValue(featureId)
-                       : m_featureIdToRoad_0->GetValue(featureId);
+  return m_featureIdToRoad[featureId & kLastBitsNumber]->GetValue(featureId);
 }
 
 // static
