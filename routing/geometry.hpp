@@ -148,6 +148,8 @@ public:
 
 private:
   std::unique_ptr<GeometryLoader> m_loader;
-  std::unique_ptr<FifoCache<uint32_t, RoadGeometry>> m_featureIdToRoad;
+  std::unique_ptr<FifoCache<uint32_t, RoadGeometry>> m_featureIdToRoad_0;
+  std::unique_ptr<FifoCache<uint32_t, RoadGeometry>> m_featureIdToRoad_1;
+
 };
 }  // namespace routing

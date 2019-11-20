@@ -255,7 +255,10 @@ double RoadGeometry::GetRoadLengthM() const
 // Geometry ----------------------------------------------------------------------------------------
 Geometry::Geometry(unique_ptr<GeometryLoader> loader)
     : m_loader(move(loader))
-    , m_featureIdToRoad(make_unique<FifoCache<uint32_t, RoadGeometry>>(
+    , m_featureIdToRoad_0(make_unique<FifoCache<uint32_t, RoadGeometry>>(
+        kRoadsCacheSize,
+        [this](uint32_t featureId, RoadGeometry & road) { m_loader->Load(featureId, road); }))
+    , m_featureIdToRoad_1(make_unique<FifoCache<uint32_t, RoadGeometry>>(
         kRoadsCacheSize,
         [this](uint32_t featureId, RoadGeometry & road) { m_loader->Load(featureId, road); }))
 {
@@ -264,10 +267,12 @@ Geometry::Geometry(unique_ptr<GeometryLoader> loader)
 
 RoadGeometry const & Geometry::GetRoad(uint32_t featureId)
 {
-  ASSERT(m_featureIdToRoad, ());
+  ASSERT(m_featureIdToRoad_0, ());
+  ASSERT(m_featureIdToRoad_1, ());
   ASSERT(m_loader, ());
 
-  return m_featureIdToRoad->GetValue(featureId);
+  return featureId & 1 ? m_featureIdToRoad_1->GetValue(featureId)
+                       : m_featureIdToRoad_0->GetValue(featureId);
 }
 
 // static
