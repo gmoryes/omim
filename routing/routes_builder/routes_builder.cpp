@@ -297,7 +297,6 @@ RoutesBuilder::Processor::operator()(Params const & params)
   RouterResultCode resultCode = RouterResultCode::RouteNotFound;
   routing::Route route("" /* router */, 0 /* routeId */);
 
-  m_delegate->SetTimeout(params.m_timeoutSeconds);
 
   CHECK(m_dataSource, ());
   if (std::getenv("LOAD_ALL") && !std::string(std::getenv("LOAD_ALL")).empty())
@@ -307,10 +306,13 @@ RoutesBuilder::Processor::operator()(Params const & params)
   size_t numberOfBuilds = params.m_benchmarkMode ? 3 : 1;
   for (size_t i = 0; i < numberOfBuilds; ++i)
   {
+    m_delegate->SetTimeout(params.m_timeoutSeconds);
     base::Timer timer;
     resultCode = m_router->CalculateRoute(params.m_checkpoints, m2::PointD::Zero(),
                                           false /* adjustToPrevRoute */, *m_delegate, route);
 
+    if (resultCode != RouterResultCode::NoError)
+      break;
 
     timeSum += timer.ElapsedSeconds();
   }
