@@ -47,7 +47,14 @@ m2::PointD GetSmPoint(m2::PointD const & pt, double lonMetersR, double latMeters
 
 double DistanceOnEarth(m2::PointD const & p1, m2::PointD const & p2)
 {
-  return ms::DistanceOnEarth(ToLatLon(p1), ToLatLon(p2));
+//  return DistanceOnEarth(ToLatLon(p1), ToLatLon(p2));
+//  auto tmp1 = DistanceOnEarth(ToLatLon(p1), ToLatLon(p2));
+//  auto tmp2 = DistanceOnEarth2(ToLatLon(p1), ToLatLon(p2));
+//  if (!base::AlmostEqualAbs(tmp1, tmp2, 100.0))
+//  {
+//    CHECK(false, (p1, p2, tmp1, tmp2));
+//  }
+  return DistanceOnEarth2(ToLatLon(p1), ToLatLon(p2));
 }
 
 m3::PointD GetPointOnSphere(ms::LatLon const & ll, double sphereRadius)
@@ -62,7 +69,9 @@ m3::PointD GetPointOnSphere(ms::LatLon const & ll, double sphereRadius)
   double const cosLatRad = sqrt(1 - sinLatRad * sinLatRad);
 
   double const sinLonRad = sin(lonRad);
-  double const cosLonRad = sqrt(1 - sinLonRad * sinLonRad);
+  double cosLonRad = sqrt(1 - sinLonRad * sinLonRad);
+  if (fabs(lonRad) > math::pi2)
+    cosLonRad = -cosLonRad;
 
   double const x = sphereRadius * cosLatRad * cosLonRad;
   double const y = sphereRadius * cosLatRad * sinLonRad;
@@ -71,13 +80,15 @@ m3::PointD GetPointOnSphere(ms::LatLon const & ll, double sphereRadius)
   return {x, y, z};
 }
 
-double DistanceOnEarth2(ms::LatLon const & ll1, ms::LatLon const & ll2)
+double DistanceOnEarth2(ms::LatLon const & ll1, ms::LatLon const & ll2, bool earth)
 {
   auto const p1 = GetPointOnSphere(ll1, 1.0);
   auto const p2 = GetPointOnSphere(ll2, 1.0);
 
   double cross = m3::DotProduct(p1, p2);
-  return acos(cross) * 6378000.0;
+  cross = base::Clamp(cross, -1.0, 1.0);
+  double angle = acos(cross);
+  return earth ? acos(cross) * 6378000.0 : angle;
 }
 
 double AreaOnEarth(m2::PointD const & p1, m2::PointD const & p2, m2::PointD const & p3)
