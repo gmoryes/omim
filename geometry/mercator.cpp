@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 
 using namespace std;
 
@@ -47,7 +48,15 @@ m2::PointD GetSmPoint(m2::PointD const & pt, double lonMetersR, double latMeters
 
 double DistanceOnEarth(m2::PointD const & p1, m2::PointD const & p2)
 {
-//  return DistanceOnEarth(ToLatLon(p1), ToLatLon(p2));
+//  static uint64_t cnt = 0;
+//  cnt++;
+//  if (cnt % 1000 == 0)
+//  {
+//    std::ofstream output("/tmp/points", std::ofstream::app);
+//    output << std::setprecision(20);
+//    output << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << std::endl;
+//  }
+  return DistanceOnEarth(ToLatLon(p1), ToLatLon(p2));
 //  auto tmp1 = DistanceOnEarth(ToLatLon(p1), ToLatLon(p2));
 //  auto tmp2 = DistanceOnEarth2(ToLatLon(p1), ToLatLon(p2));
 //  if (!base::AlmostEqualAbs(tmp1, tmp2, 100.0))
