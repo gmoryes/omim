@@ -292,6 +292,8 @@ RoutesBuilder::Processor::operator()(Params const & params)
     m_dataSourceStorage.PushDataSource(std::move(m_dataSource));
   });
 
+  LOG(LINFO, ("Start building route, checkpoints:", params.m_checkpoints));
+
   RouterResultCode resultCode = RouterResultCode::RouteNotFound;
   routing::Route route("" /* router */, 0 /* routeId */);
 

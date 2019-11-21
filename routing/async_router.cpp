@@ -307,6 +307,42 @@ void AsyncRouter::ResetDelegate()
   }
 }
 
+std::vector<std::pair<m2::PointD, m2::PointD>> GetPointsFrom(std::string const & file)
+{
+  std::vector<std::pair<m2::PointD, m2::PointD>> result;
+  std::ifstream input(file);
+  ms::LatLon ll1, ll2;
+  while (input >> ll1.m_lat >> ll1.m_lon >> ll2.m_lat >> ll2.m_lon)
+    result.emplace_back(mercator::FromLatLon(ll1), mercator::FromLatLon(ll2));
+  return result;
+}
+
+void AsyncRouter::RunTests(std::string const & file, size_t n)
+{
+  auto const longRoutes = GetPointsFrom(file);
+  size_t routeNumber = 0;
+  base::HighResTimer timerAll;
+  for (auto const & route : longRoutes)
+  {
+    ++routeNumber;
+    m_checkpoints = Checkpoints(route.first, route.second);
+    m_hasRequest = true;
+    {
+      base::ScopedLogLevelChanger changer(LERROR);
+      base::HighResTimer timer;
+      for (size_t i = 0; i < n; ++i)
+        CalculateRoute();
+      LOG_FORCE(LINFO, ("Route:", routeNumber,
+          "time:", timer.ElapsedNano() / 1e6 / static_cast<double>(n), "ms"));
+    }
+  }
+  double const sumTime = timerAll.ElapsedNano() / 1e6;
+  LOG_FORCE(LINFO, ("All routes from:", file,
+      "time:", sumTime, "ms,",
+      "average:", sumTime / static_cast<double>(longRoutes.size() * n), "ms."));
+}
+
+
 void AsyncRouter::ThreadFunc()
 {
   while (true)
@@ -328,7 +364,10 @@ void AsyncRouter::ThreadFunc()
         continue;
     }
 
-    CalculateRoute();
+    RunTests("/sdcard/MapsWithMe/long_routes", 3);
+    RunTests("/sdcard/MapsWithMe/middle_routes", 10);
+    RunTests("/sdcard/MapsWithMe/short_routes", 50);
+    m_hasRequest = false;
   }
 }
 

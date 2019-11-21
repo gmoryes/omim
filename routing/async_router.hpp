@@ -57,6 +57,7 @@ public:
 
   /// Interrupt routing and clear buffers
   void ClearState();
+  void RunTests(std::string const & file, size_t n);
 
 private:
   /// Worker thread function
