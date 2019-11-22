@@ -8,7 +8,7 @@ class LeapsGraph
 {
 public:
   LeapsGraph(WorldGraph & worldGraph)
-    : m_worldGraph(worldGraph), m_xxxxxxxxxxxxxxxx(), m_yyyyyyyyyyy(), m_zzzzzzz()
+: m_worldGraph(worldGraph), m_xxxxxxxxxxxxxxxx(), m_yyyyyyyyyyy(), m_zzzzzzz()
   {
   }
 
