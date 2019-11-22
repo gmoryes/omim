@@ -25,7 +25,7 @@ void WorldGraph::GetTwins(Segment const & segment, bool isOutgoing, bool useRout
       // Weight is usually zero because twins correspond the same feature
       // in different mwms. But if we have mwms with different versions and a feature
       // was moved in one of them the weight is greater than zero.
-      edges.emplace_back(twin, HeuristicCostEstimate(from, to));
+      edges.emplace_back(twin, RouteWeight(0.0));
     }
     return;
   }
