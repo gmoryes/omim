@@ -3,6 +3,7 @@
 #include "poly_borders/help_structures.hpp"
 
 #include "generator/borders.hpp"
+#include "generator/routing_city_boundaries_processor.hpp"
 
 #include "platform/platform.hpp"
 
@@ -119,6 +120,7 @@ void BordersData::Init(std::string const & bordersDir)
     auto const fullPath = base::JoinPath(bordersDir, file);
     auto fileCopy = file;
     size_t id = 1;
+    CHECK(strings::ReplaceFirst(fileCopy, ".poly", ""), (fileCopy));
 
     std::vector<m2::RegionD> borders;
     borders::LoadBorders(fullPath, borders);
@@ -200,7 +202,7 @@ void BordersData::Processor::operator()(size_t borderId)
     LOG(LINFO, ("Marking:", borderId + 1, "/", m_data.m_bordersPolygons.size()));
 
   auto & polygon = m_data.m_bordersPolygons[borderId];
-  for (int pointId = 0; pointId < polygon.m_points.size(); ++pointId)
+  for (size_t pointId = 0; pointId < polygon.m_points.size(); ++pointId)
   {
     auto & point = polygon.m_points[pointId];
     m_data.MarkPoint(borderId, point, pointId);
@@ -224,14 +226,16 @@ void BordersData::RemoveDuplicatePoints()
       }
     }
 
+    CHECK_GREATER_OR_EQUAL(polygon.m_points.size(), withoutDuplicates.size(), ());
     count += polygon.m_points.size() - withoutDuplicates.size();
     polygon.m_points = std::move(withoutDuplicates);
   }
 
+  m_dublicatePointsCount += count;
   LOG(LINFO, ("Remove:", count, "duplicate points."));
 }
 
-void BordersData::MarkPoint(size_t curBorderId, MarkedPoint & point, int pointId)
+void BordersData::MarkPoint(size_t curBorderId, MarkedPoint & point, size_t pointId)
 {
   for (size_t i = 0; i < m_bordersPolygons.size(); ++i)
   {
@@ -271,7 +275,7 @@ void PrintWithSpaces(std::string const & str, size_t maxN)
     return;
 
   maxN -= str.size();
-  for (int i = 0; i < maxN; ++i)
+  for (size_t i = 0; i < maxN; ++i)
     std::cout << " ";
 }
 
@@ -281,16 +285,19 @@ void BordersData::PrintDiff()
 
   std::set<Info> info;
 
+  size_t allNumberBeforeCount = 0;
   size_t maxMwmNameLength = 0;
   static double constexpr kAreaEpsMetersSqr = 1e-4;
   for (size_t i = 0; i < m_bordersPolygons.size(); ++i)
   {
     auto const & mwmName = m_indexToName[i];
 
-    size_t all = m_bordersPolygons[i].m_points.size();
-    size_t allBefore = m_prevCopy[i].m_points.size();
+    auto const all = static_cast<int32_t>(m_bordersPolygons[i].m_points.size());
+    auto const allBefore = static_cast<int32_t>(m_prevCopy[i].m_points.size());
 
-    m_numberOfAddPoints += all - allBefore;
+    CHECK_GREATER_OR_EQUAL(allBefore, all, ());
+    m_removePointsCount += allBefore - all;
+    allNumberBeforeCount += allBefore;
 
     static std::string const kEpsString = std::to_string(kAreaEpsMetersSqr);
     double area = 0.0;
@@ -310,14 +317,18 @@ void BordersData::PrintDiff()
 
     std::tie(area, name, allBefore, all) = item;
 
+    size_t diff = allBefore - all;
     PrintWithSpaces(name, maxMwmNameLength + 1);
-    PrintWithSpaces("+" + std::to_string(all - allBefore) +" new points", 17);
+    PrintWithSpaces("-" + std::to_string(diff) + " points", 17);
 
-    std::cout << " summary changed area: " << area << " m^2"
-              << std::endl;
+    std::cout << " summary changed area: " << area << " m^2" << std::endl;
   }
 
-  std::cout << "Number of added points: " << m_numberOfAddPoints << std::endl;
+  std::cout << "Number of removed points: " << m_removePointsCount << std::endl;
+  std::cout << "All amount of removed point (+duplicates): "
+            << m_removePointsCount + m_dublicatePointsCount << std::endl;
+  std::cout << "Points number before processing: " << allNumberBeforeCount << ", remove("
+            << static_cast<double>(m_removePointsCount + m_dublicatePointsCount) / allNumberBeforeCount * 100 << "%)" << std::endl;
 }
 
 void BordersData::RemoveEmptySpaceBetweenBorders()
@@ -333,7 +344,6 @@ void BordersData::RemoveEmptySpaceBetweenBorders()
 
     for (size_t i = 0; i < curPolygon.m_points.size(); ++i)
     {
-      // if point with index = i is frozen.
       if (curPolygon.IsFrozen(i, i))
         continue;
 
@@ -377,8 +387,8 @@ void BordersData::RemoveEmptySpaceBetweenBorders()
           continue;
 
         auto const currentIdsLength = shift + 1;
-        auto const anotherIdsLength = std::abs(static_cast<int32_t>(anotherCurPointId) -
-                                               static_cast<int32_t>(anotherPrevPointId)) + 1;
+        size_t const anotherIdsLength = std::abs(static_cast<int32_t>(anotherCurPointId) -
+                                                 static_cast<int32_t>(anotherPrevPointId)) + 1;
 
         auto const & anotherPoints = anotherPolygon.m_points;
 
@@ -388,26 +398,26 @@ void BordersData::RemoveEmptySpaceBetweenBorders()
         auto const curSubpolygon =
             CopyPointsWithAnyDirection(curPolygon.m_points, i, i + shift);
 
-        auto const anotherArea = FindPolygonArea(anotherSubpolygon);
-        auto const currentArea = FindPolygonArea(curSubpolygon);
+        auto const anotherArea = generator::routing_city_boundaries::AreaOnEarth(anotherSubpolygon);
+        auto const currentArea = generator::routing_city_boundaries::AreaOnEarth(curSubpolygon);
         auto const areaDiff = std::abs(anotherArea - currentArea);
 
         if (!NeedReplace(curSubpolygon.size(), anotherSubpolygon.size(), areaDiff))
           break;
 
-        static double constexpr kMaxAreaDiff = 2000;
-        if (areaDiff < kMaxAreaDiff && anotherIdsLength > 1)
+        double constexpr kMaxAreaDiff = 20000;
+        if (areaDiff < kMaxAreaDiff && anotherIdsLength > 1 && std::max(currentIdsLength, anotherIdsLength) < 10)
         {
-          bool const curLenIsMore = currentIdsLength > anotherIdsLength;
+          bool const curLenIsLess = currentIdsLength < anotherIdsLength;
 
-          size_t dstFrom = curLenIsMore ? anotherPrevPointId : i;
-          size_t dstTo   = curLenIsMore ? anotherCurPointId  : i + shift;
+          size_t dstFrom = curLenIsLess ? anotherPrevPointId : i;
+          size_t dstTo   = curLenIsLess ? anotherCurPointId  : i + shift;
 
-          size_t srcFrom = curLenIsMore ? i         : anotherPrevPointId;
-          size_t srcTo   = curLenIsMore ? i + shift : anotherCurPointId;
+          size_t srcFrom = curLenIsLess ? i         : anotherPrevPointId;
+          size_t srcTo   = curLenIsLess ? i + shift : anotherCurPointId;
 
-          size_t const areaChangeBorderId = curLenIsMore ? anotherBorderId : curBorderId;
-          size_t const srcBorderId        = curLenIsMore ? curBorderId     : anotherBorderId;
+          size_t const areaChangeBorderId = curLenIsLess ? anotherBorderId : curBorderId;
+          size_t const srcBorderId        = curLenIsLess ? curBorderId     : anotherBorderId;
 
           bool const reversed = ReplaceData::IsReversedIntervals(dstFrom, dstTo, srcFrom, srcTo);
 

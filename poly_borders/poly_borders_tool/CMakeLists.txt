@@ -10,14 +10,23 @@ omim_link_libraries(
   ${PROJECT_NAME}
   poly_borders
   generator
+  routing
+  traffic
+  routing_common
   storage
   indexer
   platform
   geometry
   coding
   base
+  icu
+  jansson
+  protobuf
   stats_client
+  tess2
   gflags
+  oauthcpp
+  sqlite3
   ${CMAKE_DL_LIBS}
   ${LIBZ}
 )

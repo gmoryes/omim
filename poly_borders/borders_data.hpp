@@ -37,9 +37,10 @@ private:
 
   void RemoveDuplicatePoints();
 
-  void MarkPoint(size_t curBorderId, MarkedPoint & point, int pointId);
+  void MarkPoint(size_t curBorderId, MarkedPoint & point, size_t pointId);
 
-  size_t m_numberOfAddPoints = 0;
+  size_t m_removePointsCount = 0;
+  size_t m_dublicatePointsCount = 0;
   std::map<size_t, double> m_additionalAreaMetersSqr;
   void DoReplace();
 

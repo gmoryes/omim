@@ -122,10 +122,10 @@ UNIT_TEST(PolyBordersPostprocessor_RemoveEmptySpaces_2)
   Process(bordersData, bordersDir);
 
   auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + kExt);
-  TEST(ConsistOf(bordersPolygon1, {a, b, c, d, e}), ());
+  TEST(ConsistOf(bordersPolygon1, {a, b, d, e}), ());
 
   auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + kExt);
-  TEST(ConsistOf(bordersPolygon2, {a, b, c, d, e}), ());
+  TEST(ConsistOf(bordersPolygon2, {a, b, d, e}), ());
 }
 
 // Like |PolyBordersPostprocessor_RemoveEmptySpaces_2| but two points will be
@@ -161,10 +161,10 @@ UNIT_TEST(PolyBordersPostprocessor_RemoveEmptySpaces_3)
   Process(bordersData, bordersDir);
 
   auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + kExt);
-  TEST(ConsistOf(bordersPolygon1, {a, b, c, d, e, f}), ());
+  TEST(ConsistOf(bordersPolygon1, {a, b, e, f}), ());
 
   auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + kExt);
-  TEST(ConsistOf(bordersPolygon2, {a, b, c, d, e, f}), ());
+  TEST(ConsistOf(bordersPolygon2, {a, b, e, f}), ());
 }
 
 // Do not add point |c| because changed area is too big.
@@ -201,7 +201,7 @@ UNIT_TEST(PolyBordersPostprocessor_RemoveEmptySpaces_4)
   TEST(ConsistOf(bordersPolygon2, {a, b, d, e}), ());
 }
 
-// Replace {c2, d2} -> {c1, d1, e1}.
+// Replace {c1, d1, e1} -> {c2, d2}.
 UNIT_TEST(PolyBordersPostprocessor_RemoveEmptySpaces_5)
 {
   ScopedDir const scopedDir(kTestDir);
@@ -233,10 +233,10 @@ UNIT_TEST(PolyBordersPostprocessor_RemoveEmptySpaces_5)
   Process(bordersData, bordersDir);
 
   auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + kExt);
-  TEST(ConsistOf(bordersPolygon1, {a, c1, d1, e1, b}), ());
+  TEST(ConsistOf(bordersPolygon1, {a, c2, d2, b}), ());
 
   auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + kExt);
-  TEST(ConsistOf(bordersPolygon2, {a, c1, d1, e1, b}), ());
+  TEST(ConsistOf(bordersPolygon2, {a, c2, d2, b}), ());
 }
 
 // Removes duplicates.

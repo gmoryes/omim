@@ -1,7 +1,5 @@
 #include "poly_borders/help_structures.hpp"
 
-#include "geometry/mercator.hpp"
-
 #include <algorithm>
 #include <cmath>
 #include <tuple>
@@ -90,33 +88,5 @@ std::set<ReplaceData>::const_iterator Polygon::FindReplaceData(size_t index)
   }
 
   return m_replaceData.cend();
-}
-
-double FindPolygonArea(std::vector<m2::PointD> const & points, bool convertToMeters /* = true */)
-{
-  if (points.empty())
-    return 0.0;
-
-  double result = 0.0;
-  for (size_t i = 0; i < points.size(); ++i)
-  {
-    auto const & prev = i == 0 ? points.back() : points[i - 1];
-    auto const & cur = points[i];
-
-    static m2::PointD const kZero = m2::PointD::Zero();
-    auto const prevLen =
-        convertToMeters ? MercatorBounds::DistanceOnEarth(kZero, prev) : prev.Length();
-    auto const curLen =
-        convertToMeters ? MercatorBounds::DistanceOnEarth(kZero, cur) : cur.Length();
-
-    if (base::AlmostEqualAbs(prevLen, 0.0, 1e-20) || base::AlmostEqualAbs(curLen, 0.0, 1e-20))
-      continue;
-
-    double sinAlpha = CrossProduct(prev, cur) / (prev.Length() * cur.Length());
-
-    result += prevLen * curLen * sinAlpha / 2.0;
-  }
-
-  return std::abs(result);
 }
 }  // namespace poly_borders

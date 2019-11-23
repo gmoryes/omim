@@ -17,7 +17,7 @@ using namespace platform::tests_support;
 
 namespace
 {
-std::vector<m2::RegionD> ConvertFromPointsVector(std::vector<vector<m2::PointD>> const & polygons)
+std::vector<m2::RegionD> ConvertFromPointsVector(std::vector<std::vector<m2::PointD>> const & polygons)
 {
   std::vector<m2::RegionD> res;
   res.reserve(polygons.size());
@@ -33,7 +33,7 @@ namespace poly_borders
 std::shared_ptr<ScopedFile>
 CreatePolyBorderFileByPolygon(std::string const & relativeDirPath,
                               std::string const & name,
-                              std::vector<vector<m2::PointD>> const & polygons)
+                              std::vector<std::vector<m2::PointD>> const & polygons)
 {
   std::string path = base::JoinPath(relativeDirPath, name + BordersData::kBorderExtension);
 
