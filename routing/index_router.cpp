@@ -617,8 +617,7 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
     using Edge = IndexGraphStarter::Edge;
     using Weight = IndexGraphStarter::Weight;
 
-    uint32_t visitCount = 0;
-    auto lastValue = progress.GetLastPercent();
+
     if (mode == WorldGraphMode::LeapsOnly)
     {
       AStarSubProgress leapsProgress(checkpoints.GetPoint(subrouteIdx),
@@ -627,6 +626,8 @@ RouterResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoints,
       progress.AppendSubProgress(leapsProgress);
     }
 
+    uint32_t visitCount = 0;
+    auto lastValue = progress.GetLastPercent();
     auto eachCount = mode == WorldGraphMode::LeapsOnly ? kVisitPeriodForLeaps : kVisitPeriod;
     auto onVisitJunction = [&](Segment const & from, Segment const & to) {
       if (++visitCount % eachCount != 0)

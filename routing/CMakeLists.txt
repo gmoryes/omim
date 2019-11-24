@@ -69,6 +69,8 @@ set(
   joint_index.hpp
   joint_segment.cpp
   joint_segment.hpp
+  leaps_graph.cpp
+  leaps_graph.hpp
   leaps_postprocessor.cpp
   leaps_postprocessor.hpp
   loaded_path_segment.hpp

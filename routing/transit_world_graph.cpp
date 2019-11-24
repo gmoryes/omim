@@ -148,6 +148,7 @@ RouteWeight TransitWorldGraph::CalcSegmentWeight(Segment const & segment,
 
 RouteWeight TransitWorldGraph::CalcLeapWeight(m2::PointD const & from, m2::PointD const & to) const
 {
+  UNREACHABLE();
   return RouteWeight(m_estimator->CalcLeapWeight(from, to));
 }
 

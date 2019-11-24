@@ -1,21 +1,22 @@
 #pragma once
 
-#include "routing/world_graph.hpp"
+#include "routing/base/astar_graph.hpp"
+
+#include "routing/index_graph_starter.hpp"
+#include "routing/segment.hpp"
+
+#include <vector>
 
 namespace routing
 {
-class LeapsGraph
+class LeapsGraph : AStarGraph<Segment, SegmentEdge, double>
 {
 public:
-  LeapsGraph(WorldGraph & worldGraph)
-: m_worldGraph(worldGraph), m_xxxxxxxxxxxxxxxx(), m_yyyyyyyyyyy(), m_zzzzzzz()
-  {
-  }
+  explicit LeapsGraph(IndexGraphStarter & starter) : m_starter(starter) {}
+
+  std::vector<Segment> FindPathWithLeaps(Segment const & start, Segment const & finsih);
 
 private:
-  WorldGraph & m_worldGraph;
-  int m_xxxxxxxxxxxxxxxx;
-  int m_yyyyyyyyyyy;
-  int m_zzzzzzz;
+  IndexGraphStarter & m_starter;
 };
 }  // namespace routing
