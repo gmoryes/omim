@@ -4,6 +4,8 @@
 
 #include "routing_common/num_mwm_id.hpp"
 
+#include "coding/point_coding.hpp"
+
 #include "geometry/mercator.hpp"
 
 #include <algorithm>
@@ -401,5 +403,13 @@ bool IndexGraphStarter::StartPassThroughAllowed()
 bool IndexGraphStarter::FinishPassThroughAllowed()
 {
   return EndingPassThroughAllowed(m_finish);
+}
+
+RouteWeight IndexGraphStarter::GetAStarWeightEpsilon()
+{
+  // We store points with |kMwmPointAccuracy|. In case of cross mwm routing we couldn't
+  // distinguish the point geometry changing in |kMwmPointAccuracy| radius of the same segments from
+  // mwms with different versions. So use such epsilon to maintain the A* invariant.
+  return m_graph.HeuristicCostEstimate(m2::PointD(0.0, 0.0), m2::PointD(kMwmPointAccuracy, 0.0));
 }
 }  // namespace routing

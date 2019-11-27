@@ -26,6 +26,8 @@ public:
   virtual bool AreWavesConnectible(Parents & forwardParents, Vertex const & commonVertex,
                                    Parents & backwardParents);
 
+  virtual Weight GetAStarWeightEpsilon();
+
   virtual ~AStarGraph() = default;
 };
 
@@ -42,5 +44,11 @@ bool AStarGraph<VertexType, EdgeType, WeightType>::AreWavesConnectible(AStarGrap
                                                                        AStarGraph::Parents & /* backwardParents */)
 {
   return true;
+}
+
+template <typename VertexType, typename EdgeType, typename WeightType>
+WeightType AStarGraph<VertexType, EdgeType, WeightType>::GetAStarWeightEpsilon()
+{
+  return static_cast<WeightType>(1e-6);
 }
 }  // namespace routing

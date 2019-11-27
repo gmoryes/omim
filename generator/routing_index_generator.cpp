@@ -191,6 +191,8 @@ public:
   {
     m_AStarParents = nullptr;
   }
+
+  RouteWeight GetAStarWeightEpsilon() { return RouteWeight(1e-6); }
   // @}
 
   m2::PointD const & GetPoint(Segment const & s, bool forward)
