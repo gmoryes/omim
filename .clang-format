@@ -21,7 +21,307 @@ IndentCaseLabels: false
 NamespaceIndentation: None
 PointerAlignment: Middle
 SortIncludes: true
-IncludeBlocks: Preserve
+IncludeBlocks: Regroup
+IncludeCategories:
+# Tests --------------------------------------------------------------------------------------------
+  - Regex:           '^"track_analyzing/track_analyzing_tests/'
+    Priority:        4740
+
+  - Regex:           '^"generator/generator_integration_tests/'
+    Priority:        4750
+  - Regex:           '^"generator/generator_tests/'
+    Priority:        4751
+  - Regex:           '^"generator/mwm_diff_tests/'
+    Priority:        4752
+
+  - Regex:           '^"map/style_tests/'
+    Priority:        4760
+  - Regex:           '^"map/mwm_tests/'
+    Priority:        4761
+  - Regex:           '^"map/map_tests/'
+    Priority:        4762
+  - Regex:           '^"map/map_integration_tests/'
+    Priority:        4763
+
+  - Regex:           '^"openlr/openlr_tests/'
+    Priority:        4770
+
+  - Regex:           '^"local_ads/local_ads_tests/'
+    Priority:        4780
+
+  - Regex:           '^"descriptions/descriptions_tests/'
+    Priority:        4790
+
+  - Regex:           '^"metrics/metrics_tests/'
+    Priority:        4800
+
+  - Regex:           '^"ugc/ugc_tests'
+    Priority:        4810
+
+  - Regex:           '^"search/search_integration_tests/'
+    Priority:        4820
+  - Regex:           '^"search/search_tests/'
+    Priority:        4821
+  - Regex:           '^"search/search_quality/search_quality_tests/'
+    Priority:        4822
+
+  - Regex:           '^"drape_frontend/drape_frontend_tests/'
+    Priority:        4830
+
+  - Regex:           '^"routing/routing_tests/'
+    Priority:        4840
+  - Regex:           '^"routing/routing_integration_tests/'
+    Priority:        4841
+  - Regex:           '^"routing/routing_quality/routing_quality_tests/'
+    Priority:        4842
+  - Regex:           '^"routing/routing_consistency_tests/'
+    Priority:        4843
+
+  - Regex:           '^"kml/kml_tests'
+    Priority:        4850
+
+  - Regex:           '^"tracking/tracking_tests/'
+    Priority:        4860
+
+  - Regex:           '^"partners_api/partners_api_tests/'
+    Priority:        4870
+
+  - Regex:           '^"traffic/traffic_tests/'
+    Priority:        4880
+
+  - Regex:           '^"storage/storage_tests/'
+    Priority:        4890
+  - Regex:           '^"storage/storage_integration_tests/'
+    Priority:        4891
+
+  - Regex:           '^"editor/editor_tests/'
+    Priority:        4900
+  - Regex:           '^"editor/osm_auth_tests/'
+    Priority:        4910
+
+  - Regex:           '^"drape/drape_tests/'
+    Priority:        4920
+
+  - Regex:           '^"transit/transit_tests'
+    Priority:        4930
+
+  - Regex:           '^"routing_common/routing_common_tests/'
+    Priority:        4940
+
+  - Regex:           '^"indexer/indexer_tests/'
+    Priority:        4950
+
+  - Regex:           '^"platform/platform_tests/'
+    Priority:        4960
+
+  - Regex:           '^"coding/coding_tests/'
+    Priority:        4970
+
+  - Regex:           '^"geometry/geometry_tests/'
+    Priority:        4980
+
+  - Regex:           '^"base/base_tests/'
+    Priority:        4990
+
+  - Regex:           '^"testing/'
+    Priority:        5000
+
+# Binaries, libraries --------------------------------------------------------------------------------------------
+
+  - Regex:           '^"generator_tool/'
+    Priority:        45200
+
+  - Regex:           '^"openlr/openlr_match_quality/openlr_assessment_tool/'
+    Priority:        45308
+  - Regex:           '^"search/search_quality/assessment_tool/'
+    Priority:        45309
+  - Regex:           '^"qt/'
+    Priority:        45310
+
+  - Regex:           '^"track_analyzing/track_analyzer/'
+    Priority:        45409
+  - Regex:           '^"track_analyzing/'
+    Priority:        45410
+
+  - Regex:           '^"generator/booking_quality_check/'
+    Priority:        45502
+  - Regex:           '^"generator/complex_generator/'
+    Priority:        45503
+  - Regex:           '^"generator/feature_segments_checker/'
+    Priority:        45504
+  - Regex:           '^"generator/srtm_coverage_checker/'
+    Priority:        45505
+  - Regex:           '^"generator/mwm_diff/pymwm_diff/'
+    Priority:        45506
+  - Regex:           '^"generator/mwm_diff/'
+    Priority:        45507
+  - Regex:           '^"generator/generator_tests_support/'
+    Priority:        45508
+  - Regex:           '^"generator/generator_tool/'
+    Priority:        45509
+  - Regex:           '^"generator/'
+    Priority:        45510
+
+  - Regex:           '^"map/extrapolation_benchmark/'
+    Priority:        45608
+  - Regex:           '^"map/benchmark_tool/'
+    Priority:        45609
+  - Regex:           '^"map/'
+    Priority:        45610
+
+  - Regex:           '^"openlr/openlr_stat/'
+    Priority:        45709
+  - Regex:           '^"openlr/'
+    Priority:        45710
+
+  - Regex:           '^"mapshot/'
+    Priority:        45800
+
+  - Regex:           '^"feature_list/'
+    Priority:        45900
+
+  - Regex:           '^"local_ads/pylocal_ads/'
+    Priority:        46009
+  - Regex:           '^"local_ads/'
+    Priority:        46010
+
+  - Regex:           '^"descriptions/'
+    Priority:        46100
+
+  - Regex:           '^"ugc/'
+    Priority:        46200
+
+  - Regex:           '^"search/search_quality/booking_dataset_generator/'
+    Priority:        46303
+  - Regex:           '^"search/search_quality/features_collector_tool/'
+    Priority:        46304
+  - Regex:           '^"search/search_quality/samples_generation_tool/'
+    Priority:        46305
+  - Regex:           '^"search/search_quality/search_quality_tool/'
+    Priority:        46306
+  - Regex:           '^"search/search_quality/'
+    Priority:        46307
+  - Regex:           '^"search/search_tests_support/'
+    Priority:        46308
+  - Regex:           '^"search/pysearch/'
+    Priority:        46309
+  - Regex:           '^"search/'
+    Priority:        46310
+
+  - Regex:           '^"track_generator/pytrack_generator/'
+    Priority:        46409
+  - Regex:           '^"track_generator/'
+    Priority:        46410
+
+  - Regex:           '^"routing/routing_quality/routing_quality_tool/'
+    Priority:        46504
+  - Regex:           '^"routing/routes_builder/routes_builder_tool/'
+    Priority:        46505
+  - Regex:           '^"routing/routing_benchmarks/'
+    Priority:        46506
+  - Regex:           '^"routing/routing_quality/api/'
+    Priority:        46507
+  - Regex:           '^"routing/routing_quality/'
+    Priority:        46508
+  - Regex:           '^"routing/routes_builder/'
+    Priority:        46509
+  - Regex:           '^"routing/'
+    Priority:        46510
+
+  - Regex:           '^"tracking/pytracking/'
+    Priority:        46609
+  - Regex:           '^"tracking/'
+    Priority:        46610
+
+  - Regex:           '^"partners_api/'
+    Priority:        46700
+
+  - Regex:           '^"metrics/metrics_tests_support/'
+    Priority:        46809
+  - Regex:           '^"metrics/'
+    Priority:        46810
+
+  - Regex:           '^"traffic/pytraffic/'
+    Priority:        47909
+  - Regex:           '^"traffic/'
+    Priority:        47910
+
+  - Regex:           '^"storage/'
+    Priority:        48000
+
+  - Regex:           '^"editor/editor_tests_support/'
+    Priority:        48109
+  - Regex:           '^"editor/'
+    Priority:        48110
+
+  - Regex:           '^"software_renderer/'
+    Priority:        48200
+
+  - Regex:           '^"drape_frontend/'
+    Priority:        48300
+
+  - Regex:           '^"shaders/'
+    Priority:        48400
+
+  - Regex:           '^"drape/'
+    Priority:        48500
+
+  - Regex:           '^"qt_tstfrm/'
+    Priority:        48600
+
+  - Regex:           '^"kml/pykmlib/'
+    Priority:        48709
+  - Regex:           '^"kml/'
+    Priority:        48710
+
+  - Regex:           '^"transit/'
+    Priority:        48800
+
+  - Regex:           '^"routing_common/'
+    Priority:        48900
+
+  - Regex:           '^"indexer/'
+    Priority:        49000
+
+  - Regex:           '^"web_api/'
+    Priority:        49100
+
+  - Regex:           '^"platform/platform_tests_support/'
+    Priority:        49209
+  - Regex:           '^"platform/'
+    Priority:        49210
+
+  - Regex:           '^"skin_generator/'
+    Priority:        49300
+
+  - Regex:           '^"coding/'
+    Priority:        49400
+
+  - Regex:           '^"geometry/'
+    Priority:        49500
+  
+  - Regex:           '^"base/'
+    Priority:        49600
+
+  - Regex:           '^"pyhelpers/'
+    Priority:        49600
+
+  - Regex:           '^"std/'
+    Priority:        49700
+  
+  - Regex:           '^"3party/(?!.*(boost))/'
+    Priority:        49800
+  
+  - Regex:           '^<.*>$' # TODO boost
+    Priority:        49900
+  
+  - Regex:           '^"(3party/boost/boost|boost|<boost)/'
+    Priority:        50000
+
+  - Regex:           '^build_version\.hpp$'
+    Priority:        99998
+  - Regex:           '^defines\.hpp$'
+    Priority:        99999
 Standard: Cpp11
 
 ---
