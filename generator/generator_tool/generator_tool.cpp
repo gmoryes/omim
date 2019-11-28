@@ -38,6 +38,8 @@
 #include "routing/cross_mwm_ids.hpp"
 #include "routing/speed_camera_prohibition.hpp"
 
+#include "storage/country_parent_getter.hpp"
+
 #include "indexer/classificator.hpp"
 #include "indexer/classificator_loader.hpp"
 #include "indexer/data_header.hpp"
@@ -48,8 +50,6 @@
 #include "indexer/map_style_reader.hpp"
 #include "indexer/rank_table.hpp"
 
-#include "storage/country_parent_getter.hpp"
-
 #include "platform/platform.hpp"
 
 #include "coding/endianness.hpp"
@@ -57,6 +57,9 @@
 
 #include "base/file_name_utils.hpp"
 #include "base/timer.hpp"
+
+#include "3party/gflags/src/gflags/gflags.h"
+#include "3party/boost/boost/optional.hpp"
 
 #include <csignal>
 #include <cstdlib>
@@ -67,8 +70,6 @@
 
 #include "build_version.hpp"
 #include "defines.hpp"
-
-#include "3party/gflags/src/gflags/gflags.h"
 
 using namespace std;
 
@@ -194,8 +195,7 @@ DEFINE_bool(verbose, false, "Provide more detailed output.");
 
 using namespace generator;
 
-MAIN_WITH_ERROR_HANDLING([](int argc, char ** argv)
-{
+MAIN_WITH_ERROR_HANDLING([](int argc, char ** argv) {
   CHECK(IsLittleEndian(), ("Only little-endian architectures are supported."));
 
   google::SetUsageMessage(
@@ -435,9 +435,8 @@ MAIN_WITH_ERROR_HANDLING([](int argc, char ** argv)
       if (!countryParentGetter)
       {
         // All the mwms should use proper VehicleModels.
-        LOG(LCRITICAL,
-            ("Countries file is needed. Please set countries file name (countries.txt). "
-             "File must be located in data directory."));
+        LOG(LCRITICAL, ("Countries file is needed. Please set countries file name (countries.txt). "
+                        "File must be located in data directory."));
         return EXIT_FAILURE;
       }
 
@@ -472,9 +471,8 @@ MAIN_WITH_ERROR_HANDLING([](int argc, char ** argv)
       if (!countryParentGetter)
       {
         // All the mwms should use proper VehicleModels.
-        LOG(LCRITICAL,
-            ("Countries file is needed. Please set countries file name (countries.txt). "
-             "File must be located in data directory."));
+        LOG(LCRITICAL, ("Countries file is needed. Please set countries file name (countries.txt). "
+                        "File must be located in data directory."));
         return EXIT_FAILURE;
       }
 

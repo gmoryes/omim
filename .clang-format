@@ -309,14 +309,16 @@ IncludeCategories:
   - Regex:           '^"std/'
     Priority:        49700
   
-  - Regex:           '^"3party/(?!.*(boost))/'
+  - Regex:           '^"(3party/boost|boost)/'
+    Priority:        50000
+  - Regex:           '^<boost'
+    Priority:        50000
+
+  - Regex:           '^"3party/.*'
     Priority:        49800
   
-  - Regex:           '^<.*>$' # TODO boost
+  - Regex:           '^<.*>$'
     Priority:        49900
-  
-  - Regex:           '^"(3party/boost/boost|boost|<boost)/'
-    Priority:        50000
 
   - Regex:           '^build_version\.hpp$'
     Priority:        99998
