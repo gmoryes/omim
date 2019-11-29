@@ -134,7 +134,7 @@ public:
       bool checker = SegmentsAreEqualByGeometry(s, *twinSeg);
       if (!checker)
         LOG(LINFO, ("Bad cross mwm feature, differ in geometry. Current:", s, ", twin:", *twinSeg));
-      checker = true;
+//      checker = true;
       if (checker)
         twins.push_back(*twinSeg);
       else
