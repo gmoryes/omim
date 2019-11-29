@@ -131,7 +131,11 @@ public:
       // There are same in common, but in case of different version of mwms
       // their's geometry can differ from each other. Because of this we can not
       // build the route, because we fail in astar_algorithm.hpp CHECK(invariant) sometimes.
-      if (SegmentsAreEqualByGeometry(s, *twinSeg))
+      bool checker = SegmentsAreEqualByGeometry(s, *twinSeg);
+      if (!checker)
+        LOG(LINFO, ("Bad cross mwm feature, differ in geometry. Current:", s, ", twin:", *twinSeg));
+      checker = true;
+      if (checker)
         twins.push_back(*twinSeg);
       else
         LOG(LINFO, ("Bad cross mwm feature, differ in geometry. Current:", s, ", twin:", *twinSeg));
