@@ -77,10 +77,11 @@ void LeapsGraph::GetEdgesListForStart(LeapSegment const & segment, bool isOutgoi
     if (seen.insert(mwmId).second)
     {
       // Connect start to all exits (|isEnter| == false).
-      for (auto const & s : m_starter.GetGraph().GetTransitions(mwmId, false /* isEnter */))
+      for (auto const & transition : m_starter.GetGraph().GetTransitions(mwmId, false /* isEnter */))
       {
-        edges.emplace_back(
-            s, m_starter.GetGraph().CalcLeapWeight(segmentPoint, GetPoint(s, true /* front */)));
+        auto const & transitionFrontPoint = GetPoint(transition, true /* front */);
+        auto const weight = m_starter.GetGraph().CalcLeapWeight(segmentPoint, transitionFrontPoint);
+        edges.emplace_back(transition, weight);
       }
     }
   }

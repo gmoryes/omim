@@ -37,8 +37,8 @@ bool IndexGraphStarter::Ending::OverlapsWithMwm(NumMwmId mwmId) const
 
 void IndexGraphStarter::Ending::FillMwmIds()
 {
-  for (auto const & s : m_real)
-    m_mwmIds.emplace(s.GetMwmId());
+  for (auto const & segment : m_real)
+    m_mwmIds.emplace(segment.GetMwmId());
 }
 
 // IndexGraphStarter -------------------------------------------------------------------------------
