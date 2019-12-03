@@ -1,5 +1,7 @@
 #pragma once
 
+#include "routing/base/astar_weight.hpp"
+
 #include <map>
 #include <vector>
 
@@ -49,6 +51,6 @@ bool AStarGraph<VertexType, EdgeType, WeightType>::AreWavesConnectible(AStarGrap
 template <typename VertexType, typename EdgeType, typename WeightType>
 WeightType AStarGraph<VertexType, EdgeType, WeightType>::GetAStarWeightEpsilon()
 {
-  return static_cast<WeightType>(1e-6);
+  return routing::GetAStarWeightEpsilon<WeightType>();
 }
 }  // namespace routing

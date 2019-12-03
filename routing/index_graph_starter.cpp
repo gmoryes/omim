@@ -407,9 +407,12 @@ bool IndexGraphStarter::FinishPassThroughAllowed()
 
 RouteWeight IndexGraphStarter::GetAStarWeightEpsilon()
 {
+  // Epsilon for double calculations.
+  auto constexpr kEps = RouteWeight(1e-6);
   // We store points with |kMwmPointAccuracy|. In case of cross mwm routing we couldn't
   // distinguish the point geometry changing in |kMwmPointAccuracy| radius of the same segments from
-  // mwms with different versions. So use such epsilon to maintain the A* invariant.
-  return m_graph.HeuristicCostEstimate(m2::PointD(0.0, 0.0), m2::PointD(kMwmPointAccuracy, 0.0));
+  // mwms with different versions. So let's use such epsilon to maintain the A* invariant.
+  return kEps +
+         m_graph.HeuristicCostEstimate(m2::PointD(0.0, 0.0), m2::PointD(kMwmPointAccuracy, 0.0));
 }
 }  // namespace routing
