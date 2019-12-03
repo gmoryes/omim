@@ -8,23 +8,22 @@ namespace routing
 {
 LeapsGraph::LeapsGraph(IndexGraphStarter & starter) : m_starter(starter) {}
 
-void LeapsGraph::GetOutgoingEdgesList(Segment const & segment, std::vector<SegmentEdge> & edges)
+void LeapsGraph::GetOutgoingEdgesList(LeapSegment const & segment, std::vector<LeapEdge> & edges)
 {
   GetEdgesList(segment, true /* isOutgoing */, edges);
 }
 
-void LeapsGraph::GetIngoingEdgesList(Segment const & segment, std::vector<SegmentEdge> & edges)
+void LeapsGraph::GetIngoingEdgesList(LeapSegment const & segment, std::vector<LeapEdge> & edges)
 {
   GetEdgesList(segment, false /* isOutgoing */, edges);
 }
 
-RouteWeight LeapsGraph::HeuristicCostEstimate(Segment const & from, Segment const & to)
+RouteWeight LeapsGraph::HeuristicCostEstimate(LeapSegment const & from, LeapSegment const & to)
 {
-  return m_starter.HeuristicCostEstimate(from, to);
+  return m_starter.HeuristicCostEstimate(from.GetGate(false /* isEnter */), to.GetGate(false /* isEnter */));
 }
 
-void LeapsGraph::GetEdgesList(Segment const & segment, bool isOutgoing,
-                              std::vector<SegmentEdge> & edges)
+void LeapsGraph::GetEdgesList(LeapSegment const & segment, bool isOutgoing, std::vector<LeapEdge> & edges)
 {
   // Ingoing edges listing is not supported in LeapsOnly mode because we do not have enough
   // information to calculate |segment| weight. See https://jira.mail.ru/browse/MAPSME-5743 for
@@ -68,8 +67,8 @@ void LeapsGraph::GetEdgesList(Segment const & segment, bool isOutgoing,
   }
 }
 
-void LeapsGraph::GetEdgesListForStart(Segment const & segment, bool isOutgoing,
-                                      std::vector<SegmentEdge> & edges)
+void LeapsGraph::GetEdgesListForStart(LeapSegment const & segment, bool isOutgoing,
+                                      std::vector<LeapEdge> & edges)
 {
   auto const & segmentPoint = GetPoint(segment, true /* front */);
   std::set<NumMwmId> seen;
@@ -87,8 +86,8 @@ void LeapsGraph::GetEdgesListForStart(Segment const & segment, bool isOutgoing,
   }
 }
 
-void LeapsGraph::GetEdgesListForFinish(Segment const & segment, bool isOutgoing,
-                                       std::vector<SegmentEdge> & edges)
+void LeapsGraph::GetEdgesListForFinish(LeapSegment const & segment, bool isOutgoing,
+                                       std::vector<LeapEdge> & edges)
 {
   auto const & segmentPoint = GetPoint(segment, true /* front */);
   edges.emplace_back(m_starter.GetFinishSegment(),
@@ -96,7 +95,7 @@ void LeapsGraph::GetEdgesListForFinish(Segment const & segment, bool isOutgoing,
                          segmentPoint, GetPoint(m_starter.GetFinishSegment(), true /* front */)));
 }
 
-m2::PointD const & LeapsGraph::GetPoint(Segment const & segment, bool front) const
+m2::PointD const & LeapsGraph::GetPoint(LeapSegment const & segment, bool front) const
 {
   return m_starter.GetPoint(segment, front);
 }
