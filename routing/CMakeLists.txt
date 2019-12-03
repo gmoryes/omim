@@ -70,8 +70,6 @@ set(
   joint_segment.cpp
   joint_segment.hpp
   junction_visitor.hpp
-  leap_segment.cpp
-  leap_segment.hpp
   leaps_graph.cpp
   leaps_graph.hpp
   leaps_postprocessor.cpp

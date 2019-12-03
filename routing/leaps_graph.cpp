@@ -2,73 +2,79 @@
 
 #include "routing_common/num_mwm_id.hpp"
 
+#include "base/assert.hpp"
+
 #include <set>
 
 namespace routing
 {
 LeapsGraph::LeapsGraph(IndexGraphStarter & starter) : m_starter(starter) {}
 
-void LeapsGraph::GetOutgoingEdgesList(LeapSegment const & segment, std::vector<LeapEdge> & edges)
+void LeapsGraph::GetOutgoingEdgesList(Segment const & Segment,
+                                      std::vector<SegmentEdge> & edges)
 {
-  GetEdgesList(segment, true /* isOutgoing */, edges);
+  GetEdgesList(Segment, true /* isOutgoing */, edges);
 }
 
-void LeapsGraph::GetIngoingEdgesList(LeapSegment const & segment, std::vector<LeapEdge> & edges)
+void LeapsGraph::GetIngoingEdgesList(Segment const & Segment,
+                                     std::vector<SegmentEdge> & edges)
 {
-  GetEdgesList(segment, false /* isOutgoing */, edges);
+  GetEdgesList(Segment, false /* isOutgoing */, edges);
 }
 
-RouteWeight LeapsGraph::HeuristicCostEstimate(LeapSegment const & from, LeapSegment const & to)
+RouteWeight LeapsGraph::HeuristicCostEstimate(Segment const & from, Segment const & to)
 {
-  return m_starter.HeuristicCostEstimate(from.GetGate(false /* isEnter */), to.GetGate(false /* isEnter */));
+  // Can not use two const & to m2::PointD at the same moment.
+  return m_starter.GetGraph().HeuristicCostEstimate(GetPoint(from, false /* isEnter */),
+                                                    GetPoint(to, false /* isEnter */));
 }
 
-void LeapsGraph::GetEdgesList(LeapSegment const & segment, bool isOutgoing, std::vector<LeapEdge> & edges)
+void LeapsGraph::GetEdgesList(Segment const & segment, bool isOutgoing,
+                              std::vector<SegmentEdge> & edges)
 {
-  // Ingoing edges listing is not supported in LeapsOnly mode because we do not have enough
-  // information to calculate |segment| weight. See https://jira.mail.ru/browse/MAPSME-5743 for
-  // details.
-  CHECK(isOutgoing, ("Ingoing edges listing is not supported in LeapsOnly mode."));
+  if (segment.IsRealSegment() && m_starter.IsRoutingOptionsGood(segment))
+    return;
 
   edges.clear();
 
-  if (segment.IsRealSegment() && !m_starter.IsRoutingOptionsGood(segment))
-    return;
-
   if (segment == m_starter.GetStartSegment())
-  {
-    GetEdgesListForStart(segment, isOutgoing, edges);
-    return;
-  }
+    return GetEdgesListForStart(segment, isOutgoing, edges);
 
   // Edge from finish mwm enter to finish.
   if (m_starter.GetFinishEnding().OverlapsWithMwm(segment.GetMwmId()))
-  {
-    GetEdgesListForFinish(segment, isOutgoing, edges);
-    return;
-  }
+    return GetEdgesListForFinish(segment, isOutgoing, edges);
 
   auto & crossMwmGraph = m_starter.GetGraph().GetCrossMwmGraph();
   if (crossMwmGraph.IsTransition(segment, isOutgoing))
-  {
-    std::vector<Segment> twins;
-    m_starter.GetGraph().GetTwinsInner(segment, isOutgoing, twins);
-    for (auto const & twin : twins)
-    {
-      // Weight is usually zero because twins correspond the same feature
-      // in different mwms. But if we have mwms with different versions and a feature
-      // was moved in one of them the weight is greater than zero.
-      edges.emplace_back(twin, HeuristicCostEstimate(segment, twin));
-    }
-  }
+    return GetEdgesForTwins(segment, isOutgoing, edges);
   else
+    return crossMwmGraph.GetOutgoingEdgeList(segment, edges);
+}
+
+void LeapsGraph::GetEdgesForTwins(Segment const & segment, bool isOutgoing,
+                                  std::vector<SegmentEdge> & edges)
+{
+  std::vector<Segment> twins;
+  m_starter.GetGraph().GetTwinsInner(segment, isOutgoing, twins);
+  for (auto const & twin : twins)
   {
-    crossMwmGraph.GetOutgoingEdgeList(segment, edges);
+    if (isOutgoing)
+    {
+      edges.emplace_back(twin, RouteWeight(0.0));
+    }
+    else
+    {
+      auto const it = m_weightCacheForBackwardWave.find(segment);
+      CHECK(it != m_weightCacheForBackwardWave.cend(), ());
+
+      edges.emplace_back(twin, it->second);
+      m_weightCacheForBackwardWave.erase(it);
+    }
   }
 }
 
-void LeapsGraph::GetEdgesListForStart(LeapSegment const & segment, bool isOutgoing,
-                                      std::vector<LeapEdge> & edges)
+void LeapsGraph::GetEdgesListForStart(Segment const & segment, bool isOutgoing,
+                                      std::vector<SegmentEdge> & edges)
 {
   auto const & segmentPoint = GetPoint(segment, true /* front */);
   std::set<NumMwmId> seen;
@@ -87,8 +93,8 @@ void LeapsGraph::GetEdgesListForStart(LeapSegment const & segment, bool isOutgoi
   }
 }
 
-void LeapsGraph::GetEdgesListForFinish(LeapSegment const & segment, bool isOutgoing,
-                                       std::vector<LeapEdge> & edges)
+void LeapsGraph::GetEdgesListForFinish(Segment const & segment, bool isOutgoing,
+                                       std::vector<SegmentEdge> & edges)
 {
   auto const & segmentPoint = GetPoint(segment, true /* front */);
   edges.emplace_back(m_starter.GetFinishSegment(),
@@ -96,8 +102,13 @@ void LeapsGraph::GetEdgesListForFinish(LeapSegment const & segment, bool isOutgo
                          segmentPoint, GetPoint(m_starter.GetFinishSegment(), true /* front */)));
 }
 
-m2::PointD const & LeapsGraph::GetPoint(LeapSegment const & segment, bool front) const
+m2::PointD const & LeapsGraph::GetPoint(Segment const & segment, bool front)
 {
   return m_starter.GetPoint(segment, front);
+}
+
+RouteWeight LeapsGraph::GetAStarWeightEpsilon()
+{
+  return m_starter.GetAStarWeightEpsilon();
 }
 }  // namespace routing

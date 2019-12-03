@@ -3,7 +3,6 @@
 #include "routing/base/astar_graph.hpp"
 
 #include "routing/index_graph_starter.hpp"
-#include "routing/leap_segment.hpp"
 #include "routing/route_weight.hpp"
 #include "routing/segment.hpp"
 
@@ -11,27 +10,32 @@
 
 namespace routing
 {
-class LeapsGraph : public AStarGraph<LeapSegment, LeapEdge, RouteWeight>
+class LeapsGraph : public AStarGraph<Segment, SegmentEdge, RouteWeight>
 {
 public:
   explicit LeapsGraph(IndexGraphStarter & starter);
 
-  // AStarGraph overridings:
+  // AStarGraph overrides:
   // @{
-  void GetOutgoingEdgesList(LeapSegment const & segment, std::vector<LeapEdge> & edges) override;
-  void GetIngoingEdgesList(LeapSegment const & segment, std::vector<LeapEdge> & edges) override;
-  RouteWeight HeuristicCostEstimate(LeapSegment const & from, LeapSegment const & to) override;
+  void GetOutgoingEdgesList(Segment const & segment, std::vector<SegmentEdge> & edges) override;
+  void GetIngoingEdgesList(Segment const & segment, std::vector<SegmentEdge> & edges) override;
+  RouteWeight HeuristicCostEstimate(Segment const & from, Segment const & to) override;
+  RouteWeight GetAStarWeightEpsilon() override;
   // @}
 
-  m2::PointD const & GetPoint(Segment const & segment, bool front) const;
+  m2::PointD const & GetPoint(Segment const & segment, bool front);
 
 private:
-  void GetEdgesList(LeapSegment const & segment, bool isOutgoing, std::vector<LeapEdge> & edges);
-  void GetEdgesListForStart(LeapSegment const & segment, bool isOutgoing,
-                            std::vector<LeapEdge> & edges);
-  void GetEdgesListForFinish(LeapSegment const & segment, bool isOutgoing,
-                             std::vector<LeapEdge> & edges);
+  void GetEdgesList(Segment const & segment, bool isOutgoing, std::vector<SegmentEdge> & edges);
+
+  void GetEdgesListForStart(Segment const & segment, bool isOutgoing,
+                            std::vector<SegmentEdge> & edges);
+  void GetEdgesListForFinish(Segment const & segment, bool isOutgoing,
+                             std::vector<SegmentEdge> & edges);
+
+  void GetEdgesForTwins(Segment const & segment, bool isOutgoing, std::vector<SegmentEdge> & edges);
 
   IndexGraphStarter & m_starter;
+  std::map<Segment, RouteWeight> m_weightCacheForBackwardWave;
 };
 }  // namespace
