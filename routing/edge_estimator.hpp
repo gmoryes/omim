@@ -12,6 +12,7 @@
 
 #include "indexer/mwm_set.hpp"
 
+#include "geometry/latlon.hpp"
 #include "geometry/point2d.hpp"
 
 #include <memory>
@@ -31,6 +32,7 @@ public:
   virtual ~EdgeEstimator() = default;
 
   double CalcHeuristic(m2::PointD const & from, m2::PointD const & to) const;
+  double CalcHeuristic(m2::PointD const & from, ms::LatLon const & to) const;
   // Estimates time in seconds it takes to go from point |from| to point |to| along a leap (fake)
   // edge |from|-|to| using real features.
   // Note 1. The result of the method should be used if it's necessary to add a leap (fake) edge

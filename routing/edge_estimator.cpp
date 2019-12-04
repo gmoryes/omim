@@ -33,6 +33,15 @@ double TimeBetweenSec(m2::PointD const & from, m2::PointD const & to, double spe
   return distanceM / speedMpS;
 }
 
+double TimeBetweenSec(m2::PointD const & from, ms::LatLon const & to, double speedMpS)
+{
+  CHECK_GREATER(speedMpS, 0.0,
+                ("from:", mercator::ToLatLon(from), "to:", to));
+
+  double const distanceM = mercator::DistanceOnEarth(from, to);
+  return distanceM / speedMpS;
+}
+
 double CalcTrafficFactor(SpeedGroup speedGroup)
 {
   if (speedGroup == SpeedGroup::TempBlock)
@@ -115,6 +124,11 @@ EdgeEstimator::EdgeEstimator(double maxWeightSpeedKMpH, SpeedKMpH const & offroa
 }
 
 double EdgeEstimator::CalcHeuristic(m2::PointD const & from, m2::PointD const & to) const
+{
+  return TimeBetweenSec(from, to, m_maxWeightSpeedMpS);
+}
+
+double EdgeEstimator::CalcHeuristic(m2::PointD const & from, ms::LatLon const & to) const
 {
   return TimeBetweenSec(from, to, m_maxWeightSpeedMpS);
 }

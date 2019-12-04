@@ -134,6 +134,11 @@ RouteWeight TransitWorldGraph::HeuristicCostEstimate(m2::PointD const & from, m2
   return RouteWeight(m_estimator->CalcHeuristic(from, to));
 }
 
+RouteWeight TransitWorldGraph::HeuristicCostEstimate(m2::PointD const & from, ms::LatLon const & to)
+{
+  return RouteWeight(m_estimator->CalcHeuristic(from, to));
+}
+
 RouteWeight TransitWorldGraph::CalcSegmentWeight(Segment const & segment,
                                                  EdgeEstimator::Purpose purpose)
 {

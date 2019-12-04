@@ -174,6 +174,12 @@ RouteWeight SingleVehicleWorldGraph::HeuristicCostEstimate(m2::PointD const & fr
   return RouteWeight(m_estimator->CalcHeuristic(from, to));
 }
 
+RouteWeight SingleVehicleWorldGraph::HeuristicCostEstimate(m2::PointD const & from,
+                                                           ms::LatLon const & to)
+{
+  return RouteWeight(m_estimator->CalcHeuristic(from, to));
+}
+
 RouteWeight SingleVehicleWorldGraph::CalcSegmentWeight(Segment const & segment,
                                                        EdgeEstimator::Purpose purpose)
 {
