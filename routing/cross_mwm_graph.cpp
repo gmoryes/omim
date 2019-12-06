@@ -129,7 +129,7 @@ void CrossMwmGraph::GetTwins(Segment const & s, bool isOutgoing, vector<Segment>
     CHECK_NOT_EQUAL(s.GetMwmId(), t.GetMwmId(), ());
 }
 
-void CrossMwmGraph::GetOutgoingEdgeList(Segment const & enter, vector<LeapEdge> & edges)
+void CrossMwmGraph::GetOutgoingEdgeList(Segment const & enter, vector<SegmentEdge> & edges)
 {
   ASSERT(
       IsTransition(enter, false /* isEnter */),
@@ -149,7 +149,7 @@ void CrossMwmGraph::GetOutgoingEdgeList(Segment const & enter, vector<LeapEdge> 
     m_crossMwmIndexGraph.GetOutgoingEdgeList(enter, edges);
 }
 
-void CrossMwmGraph::GetIngoingEdgeList(Segment const & exit, vector<LeapEdge> & edges)
+void CrossMwmGraph::GetIngoingEdgeList(Segment const & exit, vector<SegmentEdge> & edges)
 {
   ASSERT(
     IsTransition(exit, true /* isEnter */),

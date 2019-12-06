@@ -148,30 +148,27 @@ public:
     return &segment;
   }
 
-  void GetOutgoingEdgeList(Segment const & segment, std::vector<LeapEdge> & edges) const
+  void GetOutgoingEdgeList(Segment const & segment, std::vector<SegmentEdge> & edges) const
   {
     auto const & transition = GetTransition(segment);
     CHECK_NOT_EQUAL(transition.m_enterIdx, connector::kFakeIndex, ());
     auto const enterIdx = transition.m_enterIdx;
-    auto const mwmId = segment.GetMwmId();
     for (uint32_t exitIdx = 0; exitIdx < static_cast<uint32_t>(m_exits.size()); ++exitIdx)
     {
       auto const weight = GetWeight(enterIdx, exitIdx);
-      AddEdge(mwmId, enterIdx, exitIdx, weight, edges);
+      AddEdge(m_exits[exitIdx], weight, edges);
     }
   }
 
-  void GetIngoingEdgeList(Segment const & segment, std::vector<LeapEdge> & edges) const
+  void GetIngoingEdgeList(Segment const & segment, std::vector<SegmentEdge> & edges) const
   {
     auto const & transition = GetTransition(segment);
     CHECK_NOT_EQUAL(transition.m_exitIdx, connector::kFakeIndex, ());
     auto const exitIdx = transition.m_exitIdx;
-//    LOG(LINFO, ("exitId:", exitIdx, segment));
-    auto const mwmId = segment.GetMwmId();
     for (uint32_t enterIdx = 0; enterIdx < static_cast<uint32_t>(m_enters.size()); ++enterIdx)
     {
       auto const weight = GetWeight(enterIdx, exitIdx);
-      AddEdge(mwmId, enterIdx, exitIdx, weight, edges);
+      AddEdge(m_enters[enterIdx], weight, edges);
     }
   }
 
@@ -277,15 +274,12 @@ private:
 
   friend class CrossMwmConnectorSerializer;
 
-  void AddEdge(NumMwmId mwmId, uint32_t enterId, uint32_t exitId, connector::Weight weight,
-               std::vector<LeapEdge> & edges) const
+  void AddEdge(Segment const & segment, connector::Weight weight,
+               std::vector<SegmentEdge> & edges) const
   {
     // @TODO Double and uint32_t are compared below. This comparison should be fixed.
     if (weight != connector::kNoRoute)
-    {
-      edges.emplace_back(LeapSegment(mwmId, enterId, exitId),
-                         RouteWeight::FromCrossMwmWeight(weight));
-    }
+      edges.emplace_back(segment, RouteWeight::FromCrossMwmWeight(weight));
   }
 
   CrossMwmConnector<CrossMwmId>::Transition<CrossMwmId> const & GetTransition(

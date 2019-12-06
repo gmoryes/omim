@@ -147,13 +147,13 @@ public:
     }
   }
 
-  void GetOutgoingEdgeList(Segment const & s, std::vector<LeapEdge> & edges)
+  void GetOutgoingEdgeList(Segment const & s, std::vector<SegmentEdge> & edges)
   {
     CrossMwmConnector<CrossMwmId> const & c = GetCrossMwmConnectorWithWeights(s.GetMwmId());
     c.GetOutgoingEdgeList(s, edges);
   }
 
-  void GetIngoingEdgeList(Segment const & s, std::vector<LeapEdge> & edges)
+  void GetIngoingEdgeList(Segment const & s, std::vector<SegmentEdge> & edges)
   {
     CrossMwmConnector<CrossMwmId> const & c = GetCrossMwmConnectorWithWeights(s.GetMwmId());
     c.GetIngoingEdgeList(s, edges);

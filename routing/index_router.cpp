@@ -656,16 +656,16 @@ RouterResultCode IndexRouter::CalculateSubrouteLeapsOnlyMode(
   if (result != RouterResultCode::NoError)
     return result;
 
-//  vector<Segment> subrouteWithoutPostprocessing;
-//  RouterResultCode const leapsResult =
-//      ProcessLeapsJoints(routingResult.m_path, delegate, starter.GetGraph().GetMode(), starter,
-//                         progress, subrouteWithoutPostprocessing);
-//
-//  if (leapsResult != RouterResultCode::NoError)
-//    return leapsResult;
-//
-//  LeapsPostProcessor leapsPostProcessor(subrouteWithoutPostprocessing, starter);
-//  subroute = leapsPostProcessor.GetProcessedPath();
+  vector<Segment> subrouteWithoutPostprocessing;
+  RouterResultCode const leapsResult =
+      ProcessLeapsJoints(routingResult.m_path, delegate, starter.GetGraph().GetMode(), starter,
+                         progress, subrouteWithoutPostprocessing);
+
+  if (leapsResult != RouterResultCode::NoError)
+    return leapsResult;
+
+  LeapsPostProcessor leapsPostProcessor(subrouteWithoutPostprocessing, starter);
+  subroute = leapsPostProcessor.GetProcessedPath();
 
   return RouterResultCode::NoError;
 }

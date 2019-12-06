@@ -599,7 +599,7 @@ AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
     params.m_onVisitedVertexCallback(stateV.vertex,
                                      cur->forward ? cur->finalVertex : cur->startVertex);
 
-    LOG(LINFO, ("search edges, isOutgoing:", cur->forward, "from:", stateV.vertex));
+//    LOG(LINFO, ("search edges, isOutgoing:", cur->forward, "from:", stateV.vertex));
     cur->GetAdjacencyList(stateV.vertex, adj);
     auto const & pV = stateV.heuristic;
     for (auto const & edge : adj)

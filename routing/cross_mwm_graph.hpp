@@ -87,9 +87,9 @@ public:
   /// Weight of each edge is equal to weight of the route form |s| to |SegmentEdge::m_target|.
   /// Getting ingoing edges is not supported because we do not have enough information
   /// to calculate |segment| weight.
-  void GetOutgoingEdgeList(Segment const & s, std::vector<LeapEdge> & edges);
+  void GetOutgoingEdgeList(Segment const & s, std::vector<SegmentEdge> & edges);
 
-  void GetIngoingEdgeList(Segment const & s, std::vector<LeapEdge> & edges);
+  void GetIngoingEdgeList(Segment const & s, std::vector<SegmentEdge> & edges);
 
   void Clear();
 
