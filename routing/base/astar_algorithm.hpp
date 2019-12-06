@@ -6,6 +6,7 @@
 
 #include "base/assert.hpp"
 #include "base/cancellable.hpp"
+#include "base/logging.hpp"
 
 #include <algorithm>
 #include <functional>
@@ -51,15 +52,15 @@ public:
   {
     switch (result)
     {
-      case Result::OK:
-        os << "OK";
-        break;
-      case Result::NoPath:
-        os << "NoPath";
-        break;
-      case Result::Cancelled:
-        os << "Cancelled";
-        break;
+    case Result::OK:
+      os << "OK";
+      break;
+    case Result::NoPath:
+      os << "NoPath";
+      break;
+    case Result::Cancelled:
+      os << "Cancelled";
+      break;
     }
     return os;
   }
@@ -68,20 +69,20 @@ public:
   // edge itself) before adding the edge to AStar queue. Can be used to clip some path which does
   // not meet restrictions.
   template <typename Visitor = DefaultVisitor<Vertex>,
-            typename LengthChecker = DefaultLengthChecker<Weight>>
+      typename LengthChecker = DefaultLengthChecker<Weight>>
   struct Params
   {
     Params(Graph & graph, Vertex const & startVertex, Vertex const & finalVertex,
            std::vector<Edge> const * prevRoute, base::Cancellable const & cancellable,
            Visitor && onVisitedVertexCallback = DefaultVisitor<Vertex>(),
            LengthChecker && checkLengthCallback = DefaultLengthChecker<Weight>())
-      : m_graph(graph)
-      , m_startVertex(startVertex)
-      , m_finalVertex(finalVertex)
-      , m_prevRoute(prevRoute)
-      , m_cancellable(cancellable)
-      , m_onVisitedVertexCallback(std::forward<Visitor>(onVisitedVertexCallback))
-      , m_checkLengthCallback(std::forward<LengthChecker>(checkLengthCallback))
+        : m_graph(graph)
+        , m_startVertex(startVertex)
+        , m_finalVertex(finalVertex)
+        , m_prevRoute(prevRoute)
+        , m_cancellable(cancellable)
+        , m_onVisitedVertexCallback(std::forward<Visitor>(onVisitedVertexCallback))
+        , m_checkLengthCallback(std::forward<LengthChecker>(checkLengthCallback))
     {
     }
 
@@ -103,11 +104,11 @@ public:
     ParamsForTests(Graph & graph, Vertex const & startVertex, Vertex const & finalVertex,
                    std::vector<Edge> const * prevRoute,
                    LengthChecker && checkLengthCallback = DefaultLengthChecker<Weight>())
-      : m_graph(graph)
-      , m_startVertex(startVertex)
-      , m_finalVertex(finalVertex)
-      , m_prevRoute(prevRoute)
-      , m_checkLengthCallback(std::forward<LengthChecker>(checkLengthCallback))
+        : m_graph(graph)
+        , m_startVertex(startVertex)
+        , m_finalVertex(finalVertex)
+        , m_prevRoute(prevRoute)
+        , m_checkLengthCallback(std::forward<LengthChecker>(checkLengthCallback))
     {
     }
 
@@ -240,7 +241,7 @@ private:
   struct State
   {
     State(Vertex const & vertex, Weight const & distance, Weight const & heuristic)
-      : vertex(vertex), distance(distance), heuristic(heuristic)
+        : vertex(vertex), distance(distance), heuristic(heuristic)
     {
     }
     State(Vertex const & vertex, Weight const & distance) : State(vertex, distance, Weight()) {}
@@ -259,10 +260,10 @@ private:
   {
     BidirectionalStepContext(bool forward, Vertex const & startVertex, Vertex const & finalVertex,
                              Graph & graph)
-      : forward(forward)
-      , startVertex(startVertex)
-      , finalVertex(finalVertex)
-      , graph(graph)
+        : forward(forward)
+        , startVertex(startVertex)
+        , finalVertex(finalVertex)
+        , graph(graph)
     {
       bestVertex = forward ? startVertex : finalVertex;
       pS = ConsistentHeuristic(bestVertex);
@@ -348,11 +349,11 @@ constexpr Weight AStarAlgorithm<Vertex, Edge, Weight>::kZeroDistance;
 template <typename Vertex, typename Edge, typename Weight>
 template <typename VisitVertex, typename AdjustEdgeWeight, typename FilterStates>
 void AStarAlgorithm<Vertex, Edge, Weight>::PropagateWave(
-  Graph & graph, Vertex const & startVertex,
-  VisitVertex && visitVertex,
-  AdjustEdgeWeight && adjustEdgeWeight,
-  FilterStates && filterStates,
-  AStarAlgorithm<Vertex, Edge, Weight>::Context & context) const
+    Graph & graph, Vertex const & startVertex,
+    VisitVertex && visitVertex,
+    AdjustEdgeWeight && adjustEdgeWeight,
+    FilterStates && filterStates,
+    AStarAlgorithm<Vertex, Edge, Weight>::Context & context) const
 {
   auto const epsilon = graph.GetAStarWeightEpsilon();
 
@@ -404,8 +405,8 @@ void AStarAlgorithm<Vertex, Edge, Weight>::PropagateWave(
 template <typename Vertex, typename Edge, typename Weight>
 template <typename VisitVertex>
 void AStarAlgorithm<Vertex, Edge, Weight>::PropagateWave(Graph & graph, Vertex const & startVertex,
-                                          VisitVertex && visitVertex,
-                                          AStarAlgorithm<Vertex, Edge, Weight>::Context & context) const
+                                                         VisitVertex && visitVertex,
+                                                         AStarAlgorithm<Vertex, Edge, Weight>::Context & context) const
 {
   auto const adjustEdgeWeight = [](Vertex const & /* vertex */, Edge const & edge) {
     return edge.GetWeight();
@@ -598,12 +599,13 @@ AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
     params.m_onVisitedVertexCallback(stateV.vertex,
                                      cur->forward ? cur->finalVertex : cur->startVertex);
 
+    LOG(LINFO, ("search edges, isOutgoing:", cur->forward, "from:", stateV.vertex));
     cur->GetAdjacencyList(stateV.vertex, adj);
     auto const & pV = stateV.heuristic;
     for (auto const & edge : adj)
     {
       State stateW(edge.GetTarget(), kZeroDistance);
-
+//      LOG(LINFO, (stateV.vertex, "=>", stateW.vertex));
       if (stateV.vertex == stateW.vertex)
         continue;
 
@@ -666,8 +668,8 @@ AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
 template <typename Vertex, typename Edge, typename Weight>
 template <typename P>
 typename AStarAlgorithm<Vertex, Edge, Weight>::Result
-  AStarAlgorithm<Vertex, Edge, Weight>::AdjustRoute(P & params, RoutingResult<Vertex,
-                                                    Weight> & result) const
+AStarAlgorithm<Vertex, Edge, Weight>::AdjustRoute(P & params, RoutingResult<Vertex,
+Weight> & result) const
 {
   CHECK(params.m_prevRoute, ());
   auto & graph = params.m_graph;
@@ -754,7 +756,7 @@ typename AStarAlgorithm<Vertex, Edge, Weight>::Result
   }
 
   CHECK(found, ("Can't find", returnVertex, ", prev:", prevRoute.size(),
-                ", adjust:", result.m_path.size()));
+      ", adjust:", result.m_path.size()));
 
   auto const & it = remainingDistances.find(returnVertex);
   CHECK(it != remainingDistances.end(), ());

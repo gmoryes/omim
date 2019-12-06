@@ -3,6 +3,7 @@
 #include "routing/cross_mwm_connector.hpp"
 #include "routing/cross_mwm_connector_serialization.hpp"
 #include "routing/fake_feature_ids.hpp"
+#include "routing/leap_segment.hpp"
 #include "routing/routing_exceptions.hpp"
 #include "routing/segment.hpp"
 #include "routing/vehicle_mask.hpp"
@@ -146,10 +147,16 @@ public:
     }
   }
 
-  void GetOutgoingEdgeList(Segment const & s, std::vector<SegmentEdge> & edges)
+  void GetOutgoingEdgeList(Segment const & s, std::vector<LeapEdge> & edges)
   {
     CrossMwmConnector<CrossMwmId> const & c = GetCrossMwmConnectorWithWeights(s.GetMwmId());
     c.GetOutgoingEdgeList(s, edges);
+  }
+
+  void GetIngoingEdgeList(Segment const & s, std::vector<LeapEdge> & edges)
+  {
+    CrossMwmConnector<CrossMwmId> const & c = GetCrossMwmConnectorWithWeights(s.GetMwmId());
+    c.GetIngoingEdgeList(s, edges);
   }
 
   void Clear() { m_connectors.clear(); }
