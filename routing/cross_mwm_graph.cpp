@@ -159,7 +159,7 @@ void CrossMwmGraph::GetIngoingEdgeList(Segment const & exit, vector<SegmentEdge>
   if (TransitGraph::IsTransitSegment(enter))
   {
     if (TransitCrossMwmSectionExists(enter.GetMwmId()))
-      m_crossMwmTransitGraph.GetIngoingEdgeList(enter, edges);
+      m_crossMwmTransitGraph.GetIngoingEdgeList(exit, edges);
     return;
   }
   */
