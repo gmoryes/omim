@@ -6,6 +6,7 @@
 
 #include "base/assert.hpp"
 #include "base/cancellable.hpp"
+#include "base/logging.hpp"
 
 #include <algorithm>
 #include <functional>
@@ -536,8 +537,9 @@ AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
   // changing the end we are searching from.
   BidirectionalStepContext * cur = &forward;
   BidirectionalStepContext * nxt = &backward;
-
+  int sum = 0;
   auto const getResult = [&]() {
+    LOG(LINFO, ("sum =", sum));
     if (!params.m_checkLengthCallback(bestPathRealLength))
       return Result::NoPath;
 
@@ -592,14 +594,20 @@ AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
     State const stateV = cur->queue.top();
     cur->queue.pop();
 
-    if (stateV.distance > cur->bestDistance[stateV.vertex])
-      continue;
+    {
+      auto const it = cur->bestDistance.find(stateV.vertex);
+      if (it != cur->bestDistance.end() && stateV.distance > it->second)
+        continue;
+    }
 
     params.m_onVisitedVertexCallback(stateV.vertex,
                                      cur->forward ? cur->finalVertex : cur->startVertex);
 
     cur->GetAdjacencyList(stateV.vertex, adj);
     auto const & pV = stateV.heuristic;
+//    std::sort(adj.begin(), adj.end());
+//    auto prevBestDistanceIt = cur->bestDistance.begin();
+//    auto prevParentIt = cur->parent.begin();
     for (auto const & edge : adj)
     {
       State stateW(edge.GetTarget(), kZeroDistance);
@@ -626,8 +634,14 @@ AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
 
       stateW.distance = newReducedDist;
       stateW.heuristic = pW;
+      int prev = Vertex::kCmp;
       cur->bestDistance[stateW.vertex] = newReducedDist;
       cur->parent[stateW.vertex] = stateV.vertex;
+//      prevBestDistanceIt = cur->bestDistance.emplace_hint(prevBestDistanceIt, stateW.vertex, newReducedDist);
+//      prevBestDistanceIt->second = newReducedDist;
+//      prevParentIt = cur->parent.emplace_hint(prevParentIt, stateW.vertex, stateV.vertex);
+//      prevParentIt->second = stateV.vertex;
+      sum += Vertex::kCmp - prev;
 
       auto const itNxt = nxt->bestDistance.find(stateW.vertex);
       if (itNxt != nxt->bestDistance.end())

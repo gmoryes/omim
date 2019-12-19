@@ -26,6 +26,7 @@ class Segment final
 public:
   Segment() = default;
 
+  inline static int kCmp = 0;
   constexpr Segment(NumMwmId mwmId, uint32_t featureId, uint32_t segmentIdx, bool forward)
     : m_featureId(featureId), m_segmentIdx(segmentIdx), m_mwmId(mwmId), m_forward(forward)
   {
@@ -60,6 +61,20 @@ public:
       return m_mwmId < seg.m_mwmId;
 
     return m_forward < seg.m_forward;
+  }
+
+  bool operator>(Segment const & seg) const
+  {
+    if (m_featureId != seg.m_featureId)
+      return m_featureId > seg.m_featureId;
+
+    if (m_segmentIdx != seg.m_segmentIdx)
+      return m_segmentIdx > seg.m_segmentIdx;
+
+    if (m_mwmId != seg.m_mwmId)
+      return m_mwmId > seg.m_mwmId;
+
+    return m_forward > seg.m_forward;
   }
 
   uint32_t GetStartSegmentId() const { return 0; }
@@ -118,6 +133,13 @@ public:
     if (m_target != edge.m_target)
       return m_target < edge.m_target;
     return m_weight < edge.m_weight;
+  }
+
+  bool operator>(SegmentEdge const & edge) const
+  {
+    if (m_target != edge.m_target)
+      return m_target > edge.m_target;
+    return m_weight > edge.m_weight;
   }
 
 private:

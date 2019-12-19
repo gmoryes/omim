@@ -16,6 +16,7 @@ class JointSegment
 {
 public:
   static uint32_t constexpr kInvalidId = std::numeric_limits<uint32_t>::max();
+  inline static int kCmp = 0;
 
   JointSegment() = default;
   JointSegment(Segment const & from, Segment const & to);
@@ -39,6 +40,7 @@ public:
   }
 
   bool operator<(JointSegment const & rhs) const;
+  bool operator>(JointSegment const & rhs) const;
   bool operator==(JointSegment const & rhs) const;
 
   bool operator!=(JointSegment const & rhs) const
@@ -58,7 +60,12 @@ class JointEdge
 {
 public:
   JointEdge(JointSegment const & target, RouteWeight const & weight)
-    : m_target(target), m_weight(weight) {}
+    : m_target(target), m_weight(weight)
+  {
+  }
+
+  bool operator<(JointEdge const & rhs) const { return m_target < rhs.m_target; }
+  bool operator>(JointEdge const & rhs) const { return m_target > rhs.m_target; }
 
   JointSegment const & GetTarget() const { return m_target; }
   JointSegment & GetTarget() { return m_target; }

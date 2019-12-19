@@ -58,11 +58,9 @@ bool JointSegment::IsFake() const
 
 bool JointSegment::operator<(JointSegment const & rhs) const
 {
+  kCmp++;
   if (m_featureId != rhs.GetFeatureId())
     return m_featureId < rhs.GetFeatureId();
-
-  if (m_forward != rhs.IsForward())
-    return m_forward < rhs.IsForward();
 
   if (m_startSegmentId != rhs.m_startSegmentId)
     return m_startSegmentId < rhs.m_startSegmentId;
@@ -70,7 +68,28 @@ bool JointSegment::operator<(JointSegment const & rhs) const
   if (m_endSegmentId != rhs.m_endSegmentId)
     return m_endSegmentId < rhs.m_endSegmentId;
 
+  if (m_forward != rhs.IsForward())
+    return m_forward < rhs.IsForward();
+
   return m_numMwmId < rhs.GetMwmId();
+}
+
+bool JointSegment::operator>(JointSegment const & rhs) const
+{
+  kCmp++;
+  if (m_featureId != rhs.GetFeatureId())
+    return m_featureId > rhs.GetFeatureId();
+
+  if (m_forward != rhs.IsForward())
+    return m_forward > rhs.IsForward();
+
+  if (m_startSegmentId != rhs.m_startSegmentId)
+    return m_startSegmentId > rhs.m_startSegmentId;
+
+  if (m_endSegmentId != rhs.m_endSegmentId)
+    return m_endSegmentId > rhs.m_endSegmentId;
+
+  return m_numMwmId > rhs.GetMwmId();
 }
 
 bool JointSegment::operator==(JointSegment const & rhs) const
