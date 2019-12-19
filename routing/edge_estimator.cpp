@@ -6,6 +6,7 @@
 #include "traffic/traffic_info.hpp"
 
 #include "geometry/mercator.hpp"
+#include "geometry/distance_on_sphere.hpp"
 
 #include "indexer/feature_altitude.hpp"
 
@@ -84,7 +85,12 @@ double CalcClimbSegment(EdgeEstimator::Purpose purpose, Segment const & segment,
   geometry::PointWithAltitude const & to = road.GetJunction(segment.GetPointId(true /* front */));
   SpeedKMpH const & speed = road.GetSpeed(segment.IsForward());
 
-  double const distance = mercator::DistanceOnEarth(from.GetPoint(), to.GetPoint());
+  double distance;
+  if (purpose == EdgeEstimator::Purpose::Weight)
+    distance = mercator::DistanceOnEarth(from.GetPoint(), to.GetPoint());
+  else
+    distance = ms::DistanceOnEarth(mercator::ToLatLon(from.GetPoint()), mercator::ToLatLon(to.GetPoint()));
+  
   double const speedMpS = KMPH2MPS(purpose == EdgeEstimator::Purpose::Weight ? speed.m_weight : speed.m_eta);
   CHECK_GREATER(speedMpS, 0.0,
                 ("from:", mercator::ToLatLon(from.GetPoint()),

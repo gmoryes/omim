@@ -10,6 +10,19 @@
 
 using namespace std;
 
+namespace
+{
+double constexpr kRadPerDeg = base::DegToRad(1.0);
+
+double LonScalePerLat(double lat) {
+  return cos(lat * kRadPerDeg);
+}
+
+double MetersPerLonDegree(double lat) {
+  return LonScalePerLat(lat) * ms::kMetersPerLat;
+}
+}  // namespace
+
 namespace ms
 {
 double DistanceOnSphere(double lat1Deg, double lon1Deg, double lat2Deg, double lon2Deg)
@@ -30,5 +43,12 @@ double DistanceOnEarth(double lat1Deg, double lon1Deg, double lat2Deg, double lo
 double DistanceOnEarth(LatLon const & ll1, LatLon const & ll2)
 {
   return DistanceOnEarth(ll1.m_lat, ll1.m_lon, ll2.m_lat, ll2.m_lon);
+}
+
+double DistanceOnEarth2(LatLon const & ll1, LatLon const & ll2)
+{
+  double const latm = (ll1.m_lat- ll2.m_lat) * kMetersPerLat;
+  double const lonm = (ll1.m_lat - ll2.m_lat) * MetersPerLonDegree((ll1.m_lat + ll2.m_lat) * 0.5);
+  return std::sqrt(latm * latm + lonm * lonm);
 }
 }  // namespace ms

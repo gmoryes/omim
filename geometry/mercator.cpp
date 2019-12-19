@@ -47,7 +47,7 @@ m2::PointD GetSmPoint(m2::PointD const & pt, double lonMetersR, double latMeters
 
 double DistanceOnEarth(m2::PointD const & p1, m2::PointD const & p2)
 {
-  return ms::DistanceOnEarth(ToLatLon(p1), ToLatLon(p2));
+  return ms::DistanceOnEarth2(ToLatLon(p1), ToLatLon(p2));
 }
 
 double AreaOnEarth(m2::PointD const & p1, m2::PointD const & p2, m2::PointD const & p3)

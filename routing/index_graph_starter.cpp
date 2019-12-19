@@ -407,6 +407,7 @@ bool IndexGraphStarter::FinishPassThroughAllowed()
 
 RouteWeight IndexGraphStarter::GetAStarWeightEpsilon()
 {
+  return RouteWeight(0.03);
   // Epsilon for double calculations.
   auto constexpr kEps = RouteWeight(1e-6);
   // We store points with |kMwmPointAccuracy|. In case of cross mwm routing we couldn't

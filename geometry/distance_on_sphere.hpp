@@ -9,6 +9,8 @@
 namespace ms
 {
 double const kEarthRadiusMeters = 6378000.0;
+double const kMetersPerLat = 2 * math::pi * kEarthRadiusMeters / 360.0;
+
 // Distance on unit sphere between (lat1, lon1) and (lat2, lon2).
 // lat1, lat2, lon1, lon2 - in degrees.
 double DistanceOnSphere(double lat1Deg, double lon1Deg, double lat2Deg, double lon2Deg);
@@ -17,4 +19,5 @@ double DistanceOnSphere(double lat1Deg, double lon1Deg, double lat2Deg, double l
 // lat1, lat2, lon1, lon2 - in degrees.
 double DistanceOnEarth(double lat1Deg, double lon1Deg, double lat2Deg, double lon2Deg);
 double DistanceOnEarth(LatLon const & ll1, LatLon const & ll2);
+double DistanceOnEarth2(LatLon const & ll1, LatLon const & ll2);
 }  // namespace ms
