@@ -326,8 +326,15 @@ private:
     Graph & graph;
 
     std::priority_queue<State, std::vector<State>, std::greater<State>> queue;
-    std::map<Vertex, Weight> bestDistance;
-    std::map<Vertex, Vertex> parent;
+
+    struct VertexData
+    {
+      Weight m_bestDistance;
+      Vertex m_parent;
+    };
+    
+    std::map<Vertex, VertexData> data;
+
     Vertex bestVertex;
 
     Weight pS;
@@ -537,9 +544,8 @@ AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
   // changing the end we are searching from.
   BidirectionalStepContext * cur = &forward;
   BidirectionalStepContext * nxt = &backward;
-  int sum = 0;
+
   auto const getResult = [&]() {
-    LOG(LINFO, ("sum =", sum));
     if (!params.m_checkLengthCallback(bestPathRealLength))
       return Result::NoPath;
 
@@ -605,9 +611,9 @@ AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
 
     cur->GetAdjacencyList(stateV.vertex, adj);
     auto const & pV = stateV.heuristic;
-//    std::sort(adj.begin(), adj.end());
-//    auto prevBestDistanceIt = cur->bestDistance.begin();
-//    auto prevParentIt = cur->parent.begin();
+    std::sort(adj.begin(), adj.end());
+    auto prevBestDistanceIt = cur->bestDistance.begin();
+    auto prevParentIt = cur->parent.begin();
     for (auto const & edge : adj)
     {
       State stateW(edge.GetTarget(), kZeroDistance);
@@ -634,14 +640,20 @@ AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
 
       stateW.distance = newReducedDist;
       stateW.heuristic = pW;
-      int prev = Vertex::kCmp;
+      if (itCur == cur->bestDistance.end())
+        prevBestDistanceIt = cur->bestDistance.emplace_hint(prevBestDistanceIt, stateW.vertex, newReducedDist);
+      else
+      {
+        itCur->second = newReducedDist;
+        prevBestDistanceIt = itCur;
+      }
       cur->bestDistance[stateW.vertex] = newReducedDist;
-      cur->parent[stateW.vertex] = stateV.vertex;
+      itCur->second = newReducedDist;
+//      cur->parent[stateW.vertex] = stateV.vertex;
 //      prevBestDistanceIt = cur->bestDistance.emplace_hint(prevBestDistanceIt, stateW.vertex, newReducedDist);
 //      prevBestDistanceIt->second = newReducedDist;
-//      prevParentIt = cur->parent.emplace_hint(prevParentIt, stateW.vertex, stateV.vertex);
-//      prevParentIt->second = stateV.vertex;
-      sum += Vertex::kCmp - prev;
+      prevParentIt = cur->parent.emplace_hint(prevParentIt, stateW.vertex, stateV.vertex);
+      prevParentIt->second = stateV.vertex;
 
       auto const itNxt = nxt->bestDistance.find(stateW.vertex);
       if (itNxt != nxt->bestDistance.end())
