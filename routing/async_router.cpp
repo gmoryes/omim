@@ -381,6 +381,38 @@ void AsyncRouter::CalculateRoute()
     if (absentFetcher)
       absentFetcher->GenerateRequest(checkpoints);
 
+    bool fromFile = false;
+    if (fromFile)
+    {
+      auto const readFromFile = []() {
+        std::ifstream input("/sdcard/MapsWithMe/routes");
+        CHECK(input.good(), ());
+        std::vector<Checkpoints> res;
+        double slat, slon, flat, flon;
+        while (input >> slat >> slon >> flat >> flon)
+          res.emplace_back(Checkpoints(mercator::FromLatLon(slat, slon), mercator::FromLatLon(flat, flon)));
+        return res;
+      };
+
+      std::ofstream output("/sdcard/MapsWithMe/result_profile");
+      std::vector<Checkpoints> routes = readFromFile();
+      for (auto const & points : routes)
+      {
+        base::HighResTimer timer;
+        double res;
+        size_t kN = 3;
+        for (size_t i = 0; i < kN; ++i)
+        {
+          code = router->CalculateRoute(points, startDirection, adjustToPrevRoute,
+                                        delegateProxy->GetDelegate(), *route);
+        }
+        res = timer.ElapsedMillis();
+        res /= static_cast<double>(kN);
+        output << res << std::endl;
+        LOG(LINFO, (res));
+      }
+    }
+
     // Run basic request.
     code = router->CalculateRoute(checkpoints, startDirection, adjustToPrevRoute,
                                   delegateProxy->GetDelegate(), *route);
