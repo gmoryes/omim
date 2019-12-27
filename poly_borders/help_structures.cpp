@@ -16,13 +16,6 @@ bool Link::operator<(Link const & rhs) const
 }
 
 // ReplaceData -------------------------------------------------------------------------------------
-
-//static
-bool ReplaceData::IsReversedIntervals(size_t fromDst, size_t toDst, size_t fromSrc, size_t toSrc)
-{
-  return (fromDst > toDst) != (fromSrc > toSrc);
-}
-
 bool ReplaceData::operator<(ReplaceData const & rhs) const
 {
   return std::tie(m_dstFrom, m_dstTo) < std::tie(rhs.m_dstFrom, rhs.m_dstTo);
@@ -35,17 +28,16 @@ void MarkedPoint::AddLink(size_t borderId, size_t pointId)
   m_links.emplace(borderId, pointId);
 }
 
-bool MarkedPoint::GetLink(size_t curBorderId, Link & linkToSave)
+std::optional<Link> MarkedPoint::GetLink(size_t curBorderId)
 {
-  if (m_links.empty() || m_links.size() > 1)
-    return false;
+  if (m_links.size() != 1)
+    return std::nullopt;
 
   size_t anotherBorderId = m_links.begin()->m_borderId;
   if (anotherBorderId == curBorderId)
-    return false;
+    return std::nullopt;
 
-  linkToSave = *m_links.begin();
-  return true;
+  return *m_links.begin();
 }
 
 // Polygon -----------------------------------------------------------------------------------------

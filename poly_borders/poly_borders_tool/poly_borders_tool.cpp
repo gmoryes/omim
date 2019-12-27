@@ -34,8 +34,8 @@ int main(int argc, char ** argv)
     return 0;
   }
 
-  CHECK(Platform::IsDirectory(FLAGS_borders_path), ("Can not find directory:", FLAGS_borders_path));
-  CHECK(Platform::IsDirectory(FLAGS_output_path), ("Can not find directory:", FLAGS_output_path));
+  CHECK(Platform::IsDirectory(FLAGS_borders_path), ("Cannot find directory:", FLAGS_borders_path));
+  CHECK(Platform::IsDirectory(FLAGS_output_path), ("Cannot find directory:", FLAGS_output_path));
 
   try
   {

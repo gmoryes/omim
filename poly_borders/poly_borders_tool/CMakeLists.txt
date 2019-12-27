@@ -23,6 +23,7 @@ omim_link_libraries(
   jansson
   protobuf
   stats_client
+  succinct
   tess2
   gflags
   oauthcpp

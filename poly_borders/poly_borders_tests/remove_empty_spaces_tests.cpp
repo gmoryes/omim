@@ -24,10 +24,7 @@ using namespace std;
 namespace
 {
 string const kTestDir = "borders_poly_dir";
-string const & kExt = BordersData::kBorderExtension;
-
 auto constexpr kSmallShift = 1e-9;
-
 auto constexpr kSmallPointShift = m2::PointD(kSmallShift, kSmallShift);
 
 void Process(BordersData & bordersData, string const & bordersDir)
@@ -85,10 +82,10 @@ UNIT_TEST(PolyBordersPostprocessor_RemoveEmptySpaces_1)
   BordersData bordersData;
   Process(bordersData, bordersDir);
 
-  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + kExt);
+  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension + "1");
   TEST(ConsistOf(bordersPolygon1, {a, b, c, d, e}), ());
 
-  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + kExt);
+  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension + "1");
   TEST(ConsistOf(bordersPolygon2, {a, b, c, d, e}), ());
 }
 
@@ -121,10 +118,10 @@ UNIT_TEST(PolyBordersPostprocessor_RemoveEmptySpaces_2)
   BordersData bordersData;
   Process(bordersData, bordersDir);
 
-  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + kExt);
+  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension + "1");
   TEST(ConsistOf(bordersPolygon1, {a, b, d, e}), ());
 
-  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + kExt);
+  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension + "1");
   TEST(ConsistOf(bordersPolygon2, {a, b, d, e}), ());
 }
 
@@ -160,10 +157,10 @@ UNIT_TEST(PolyBordersPostprocessor_RemoveEmptySpaces_3)
   BordersData bordersData;
   Process(bordersData, bordersDir);
 
-  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + kExt);
+  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension + "1");
   TEST(ConsistOf(bordersPolygon1, {a, b, e, f}), ());
 
-  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + kExt);
+  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension + "1");
   TEST(ConsistOf(bordersPolygon2, {a, b, e, f}), ());
 }
 
@@ -194,10 +191,10 @@ UNIT_TEST(PolyBordersPostprocessor_RemoveEmptySpaces_4)
   BordersData bordersData;
   Process(bordersData, bordersDir);
 
-  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + kExt);
+  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension + "1");
   TEST(ConsistOf(bordersPolygon1, {a, b, c, d, e}), ());
 
-  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + kExt);
+  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension + "1");
   TEST(ConsistOf(bordersPolygon2, {a, b, d, e}), ());
 }
 
@@ -232,10 +229,10 @@ UNIT_TEST(PolyBordersPostprocessor_RemoveEmptySpaces_5)
   BordersData bordersData;
   Process(bordersData, bordersDir);
 
-  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + kExt);
+  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension + "1");
   TEST(ConsistOf(bordersPolygon1, {a, c2, d2, b}), ());
 
-  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + kExt);
+  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension + "1");
   TEST(ConsistOf(bordersPolygon2, {a, c2, d2, b}), ());
 }
 
@@ -266,10 +263,10 @@ UNIT_TEST(PolyBordersPostprocessor_RemoveEmptySpaces_6)
   BordersData bordersData;
   Process(bordersData, bordersDir);
 
-  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + kExt);
+  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension + "1");
   TEST(ConsistOf(bordersPolygon1, {a, b, c, d, e}), ());
 
-  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + kExt);
+  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension + "1");
   TEST(ConsistOf(bordersPolygon2, {a, d, e}), ());
 }
 }  // namespace

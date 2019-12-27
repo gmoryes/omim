@@ -10,6 +10,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <string>
 #include <utility>
@@ -56,8 +57,6 @@ struct ReplaceData
     , m_srcBorderId(borderIdSrc)
     , m_reversed(reversed) {}
 
-  static bool IsReversedIntervals(size_t fromDst, size_t toDst, size_t fromSrc, size_t toSrc);
-
   bool operator<(ReplaceData const & rhs) const;
 
   size_t m_dstFrom;
@@ -74,14 +73,14 @@ struct ReplaceData
 struct MarkedPoint
 {
   MarkedPoint() = default;
-  MarkedPoint(m2::PointD const & point) : m_point(point) {}
+  explicit MarkedPoint(m2::PointD const & point) : m_point(point) {}
 
   void AddLink(size_t borderId, size_t pointId);
 
-  bool GetLink(size_t curBorderId, Link & linkToSave);
+  std::optional<Link> GetLink(size_t curBorderId);
 
-  m2::PointD m_point{};
-  AtomicBoolWrapper m_marked{};
+  m2::PointD m_point;
+  AtomicBoolWrapper m_marked;
   std::set<Link> m_links;
   std::unique_ptr<std::mutex> m_mutex = std::make_unique<std::mutex>();
 };

@@ -35,8 +35,7 @@ void TestNotMarked(Polygon const & polygon, size_t i)
   TEST(!polygon.m_points[i].m_marked, (i, "th must be not marked."));
 }
 
-void CheckByMask(Polygon const & polygons,
-                 vector<bool> markedMask)
+void CheckByMask(Polygon const & polygons, vector<bool> markedMask)
 {
   CHECK_EQUAL(polygons.m_points.size(), markedMask.size(), ());
   for (size_t i = 0; i < polygons.m_points.size(); ++i)
@@ -80,10 +79,10 @@ UNIT_TEST(PolyBordersPostprocessor_MarkPoints_1)
   bordersData.Init(bordersDir);
   bordersData.MarkPoints();
 
-  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension);
+  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension + "1");
   CheckByMask(bordersPolygon1, markedMask1[0]);
 
-  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension);
+  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension + "1");
   CheckByMask(bordersPolygon2, markedMask2[0]);
 }
 
@@ -116,10 +115,10 @@ UNIT_TEST(PolyBordersPostprocessor_MarkPoints_2)
   bordersData.Init(bordersDir);
   bordersData.MarkPoints();
 
-  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension);
+  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension + "1");
   CheckByMask(bordersPolygon1, markedMask1[0]);
 
-  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension);
+  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension + "1");
   CheckByMask(bordersPolygon2, markedMask2[0]);
 }
 
@@ -177,16 +176,16 @@ UNIT_TEST(PolyBordersPostprocessor_MarkPoints_3)
   bordersData.Init(bordersDir);
   bordersData.MarkPoints();
 
-  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension);
+  auto const & bordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension + "1");
   CheckByMask(bordersPolygon1, markedMask1[0]);
 
-  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension);
+  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension + "1");
   CheckByMask(bordersPolygon2, markedMask2[0]);
 
-  auto const & bordersPolygon3 = bordersData.GetBordersPolygonByName("Third" + BordersData::kBorderExtension);
+  auto const & bordersPolygon3 = bordersData.GetBordersPolygonByName("Third" + BordersData::kBorderExtension + "1");
   CheckByMask(bordersPolygon3, markedMask3[0]);
 
-  auto const & bordersPolygon4 = bordersData.GetBordersPolygonByName("Fourth" + BordersData::kBorderExtension);
+  auto const & bordersPolygon4 = bordersData.GetBordersPolygonByName("Fourth" + BordersData::kBorderExtension + "1");
   CheckByMask(bordersPolygon4, markedMask4[0]);
 }
 
@@ -224,13 +223,13 @@ UNIT_TEST(PolyBordersPostprocessor_MarkPoints_4)
   bordersData.Init(bordersDir);
   bordersData.MarkPoints();
 
-  auto const & firstBordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension);
+  auto const & firstBordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension + "1");
   CheckByMask(firstBordersPolygon1, markedMask1[0]);
 
-  auto const & secondBordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension + "1");
+  auto const & secondBordersPolygon1 = bordersData.GetBordersPolygonByName("First" + BordersData::kBorderExtension + "2");
   CheckByMask(secondBordersPolygon1, markedMask1[1]);
 
-  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension);
+  auto const & bordersPolygon2 = bordersData.GetBordersPolygonByName("Second" + BordersData::kBorderExtension + "1");
   CheckByMask(bordersPolygon2, markedMask2[0]);
 }
 }  // namespace
