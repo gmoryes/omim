@@ -19,7 +19,7 @@ public:
   /// \brief Adds new interval to set if it doesn't intersect with any that has been already added.
   /// \return true if there are no such intervals, that intersect the [left, right] interval.
   bool AddInterval(T left, T right);
-  bool Intersects(T left, T right);
+  bool Intersects(T left, T right) const;
 
 private:
   struct Interval
@@ -41,7 +41,7 @@ private:
 };
 
 template <typename T>
-bool NonIntersectingIntervals<T>::Intersects(T left, T right)
+bool NonIntersectingIntervals<T>::Intersects(T left, T right) const
 {
   Interval interval(left, right);
   auto it = m_leftEnds.lower_bound(interval);

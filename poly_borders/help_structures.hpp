@@ -77,7 +77,7 @@ struct MarkedPoint
 
   void AddLink(size_t borderId, size_t pointId);
 
-  std::optional<Link> GetLink(size_t curBorderId);
+  std::optional<Link> GetLink(size_t curBorderId) const;
 
   m2::PointD m_point;
   AtomicBoolWrapper m_marked;
@@ -94,7 +94,7 @@ struct Polygon
   // [a, b]
   // @{
   void MakeFrozen(size_t a, size_t b);
-  bool IsFrozen(size_t a, size_t b);
+  bool IsFrozen(size_t a, size_t b) const;
   // @}
 
   // [replaceFrom, replaceTo], [replaceFromSrc, replaceToSrc]

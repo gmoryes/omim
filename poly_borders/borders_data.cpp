@@ -136,6 +136,18 @@ void MakeSwapIfNeeded(size_t & a, size_t & b)
 
 namespace poly_borders
 {
+// BordersData::Processor --------------------------------------------------------------------------
+void BordersData::Processor::operator()(size_t borderId)
+{
+  if (ShouldLog(borderId, m_data.m_bordersPolygons.size()))
+    LOG(LINFO, ("Marking:", borderId + 1, "/", m_data.m_bordersPolygons.size()));
+
+  auto const & polygon = m_data.m_bordersPolygons[borderId];
+  for (size_t pointId = 0; pointId < polygon.m_points.size(); ++pointId)
+    m_data.MarkPoint(borderId, pointId);
+}
+
+// BordersData -------------------------------------------------------------------------------------
 void BordersData::Init(std::string const & bordersDir)
 {
   size_t prevIndex = 0;
@@ -181,7 +193,7 @@ void BordersData::MarkPoints()
   size_t const threadsNumber = std::thread::hardware_concurrency();
   LOG(LINFO, ("Start marking points, threads number:", threadsNumber));
 
-  base::thread_pool::computational::ThreadPool threadPool(1);
+  base::thread_pool::computational::ThreadPool threadPool(threadsNumber);
 
   std::vector<std::future<void>> tasks;
   for (size_t i = 0; i < m_bordersPolygons.size(); ++i)
@@ -222,16 +234,6 @@ void BordersData::DumpPolyFiles(std::string const & targetDir)
     CHECK(strings::ReplaceFirst(name, kBorderExtension, ""), (name));
     borders::DumpBorderToPolyFile(targetDir, name, regions);
   }
-}
-
-void BordersData::Processor::operator()(size_t borderId)
-{
-  if (ShouldLog(borderId, m_data.m_bordersPolygons.size()))
-    LOG(LINFO, ("Marking:", borderId + 1, "/", m_data.m_bordersPolygons.size()));
-
-  auto & polygon = m_data.m_bordersPolygons[borderId];
-  for (size_t pointId = 0; pointId < polygon.m_points.size(); ++pointId)
-    m_data.MarkPoint(borderId, pointId);
 }
 
 void BordersData::RemoveDuplicatePoints()
@@ -524,5 +526,4 @@ bool BordersData::HasLinkAt(size_t curBorderId, size_t pointId)
   auto & leftMarkedPoint = m_bordersPolygons[curBorderId].m_points[pointId];
   return leftMarkedPoint.GetLink(curBorderId).has_value();
 }
-
 }  // namespace poly_borders

@@ -9,10 +9,7 @@ namespace poly_borders
 // Link --------------------------------------------------------------------------------------------
 bool Link::operator<(Link const & rhs) const
 {
-  if (m_borderId != rhs.m_borderId)
-    return m_borderId < rhs.m_borderId;
-
-  return m_pointId < rhs.m_pointId;
+  return std::tie(m_borderId, m_pointId) < std::tie(rhs.m_borderId, rhs.m_pointId);
 }
 
 // ReplaceData -------------------------------------------------------------------------------------
@@ -28,7 +25,7 @@ void MarkedPoint::AddLink(size_t borderId, size_t pointId)
   m_links.emplace(borderId, pointId);
 }
 
-std::optional<Link> MarkedPoint::GetLink(size_t curBorderId)
+std::optional<Link> MarkedPoint::GetLink(size_t curBorderId) const
 {
   if (m_links.size() != 1)
     return std::nullopt;
@@ -49,7 +46,7 @@ void Polygon::MakeFrozen(size_t a, size_t b)
     m_replaced.AddInterval(a + 1, b - 1);
 }
 
-bool Polygon::IsFrozen(size_t a, size_t b)
+bool Polygon::IsFrozen(size_t a, size_t b) const
 {
   // We use LESS_OR_EQUAL because we want sometimes to check if
   // point i (associated with interval: [i, i]) is frozen.

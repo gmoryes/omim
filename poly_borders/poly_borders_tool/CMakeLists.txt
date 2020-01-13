@@ -33,4 +33,3 @@ omim_link_libraries(
 )
 
 link_qt5_core(${PROJECT_NAME})
-
