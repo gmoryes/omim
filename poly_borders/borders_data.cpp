@@ -7,7 +7,6 @@
 
 #include "platform/platform.hpp"
 
-#include "geometry/mercator.hpp"
 #include "geometry/point2d.hpp"
 #include "geometry/rect2d.hpp"
 #include "geometry/region2d.hpp"
@@ -18,10 +17,8 @@
 #include "base/scope_guard.hpp"
 #include "base/string_utils.hpp"
 #include "base/thread_pool_computational.hpp"
-#include "base/timer.hpp"
 
 #include <algorithm>
-#include <fstream>
 #include <future>
 #include <iostream>
 #include <iterator>
@@ -47,6 +44,7 @@ void PrintWithSpaces(std::string const & str, size_t maxN)
 std::string RemoveIndexFromMwmName(std::string const & mwmName)
 {
   auto const pos = mwmName.find(BordersData::kBorderExtension);
+  CHECK_NOT_EQUAL(pos, std::string::npos, ());
   auto const end = mwmName.begin() + pos + BordersData::kBorderExtension.size();
   std::string result(mwmName.cbegin(), end);
   return result;
@@ -73,9 +71,9 @@ std::vector<m2::PointD> CopyPointsWithAnyDirection(std::vector<MarkedPoint> cons
 double AbsAreaDiff(std::vector<m2::PointD> const & firstPolygon,
                    std::vector<m2::PointD> const & secondPolygon)
 {
-  auto const currentArea = generator::routing_city_boundaries::AreaOnEarth(firstPolygon);
-  auto const anotherArea = generator::routing_city_boundaries::AreaOnEarth(secondPolygon);
-  return std::abs(anotherArea - currentArea);
+  auto const firstArea = generator::routing_city_boundaries::AreaOnEarth(firstPolygon);
+  auto const secondArea = generator::routing_city_boundaries::AreaOnEarth(secondPolygon);
+  return std::abs(secondArea - firstArea);
 }
 
 bool NeedReplace(std::vector<m2::PointD> const & curSubpolygon,
@@ -91,10 +89,9 @@ bool NeedReplace(std::vector<m2::PointD> const & curSubpolygon,
 
   // We know that |curSize| is always greater than 1, because we construct it such way, but we know
   // nothing about |anotherSize|, and we do not want to replace current subpolygon of several points
-  // to subpolygon consists of one point.
+  // with a subpolygon consisting of one point or consisting of too many points.
   CHECK_GREATER(curSubpolygon.size(), 1, ());
-  return anotherSubpolygon.size() > 1 &&
-         std::max(curSubpolygon.size(), anotherSubpolygon.size()) < 10;
+  return 1 < anotherSubpolygon.size() && anotherSubpolygon.size() < 10;
 }
 
 bool ShouldLog(size_t i, size_t n)
@@ -102,9 +99,8 @@ bool ShouldLog(size_t i, size_t n)
   return (i % 100 == 0) || (i + 1 == n);
 }
 
-void CopyWithReversedOption(size_t from, size_t to, bool reversed,
-                            std::vector<MarkedPoint> const & copyFrom,
-                            std::vector<MarkedPoint> & copyTo)
+void Append(size_t from, size_t to, bool reversed, std::vector<MarkedPoint> const & copyFrom,
+            std::vector<MarkedPoint> & copyTo)
 {
   if (!reversed)
   {
@@ -118,7 +114,7 @@ void CopyWithReversedOption(size_t from, size_t to, bool reversed,
   }
 }
 
-m2::RectD FindRectForPolygon(std::vector<MarkedPoint> const & points)
+m2::RectD BoundingBox(std::vector<MarkedPoint> const & points)
 {
   m2::RectD rect;
   for (auto const & point : points)
@@ -150,37 +146,37 @@ void BordersData::Processor::operator()(size_t borderId)
 // BordersData -------------------------------------------------------------------------------------
 void BordersData::Init(std::string const & bordersDir)
 {
-  size_t prevIndex = 0;
+
   LOG(LINFO, ("Borders path:", bordersDir));
 
   std::vector<std::string> files;
   Platform::GetFilesByExt(bordersDir, kBorderExtension, files);
 
   LOG(LINFO, ("Start reading data from .poly files."));
+  size_t prevIndex = 0;
   for (auto const & file : files)
   {
     auto const fullPath = base::JoinPath(bordersDir, file);
-    auto fileCopy = file;
-    size_t id = 1;
+    size_t polygonId = 1;
 
     std::vector<m2::RegionD> borders;
     borders::LoadBorders(fullPath, borders);
     for (auto const & region : borders)
     {
       Polygon polygon;
-      // Some mwms could have several polygons, for example if Russia_Moscow have 2 polygons, we
-      // will name mwm such way:
-      // Russia_Moscow.poly1
-      // Russia_Moscow.poly2
-      fileCopy = file + std::to_string(id);
+      // Some mwms have several polygons. For example, for Japan_Kanto_Tokyo that has 2 polygons we
+      // will write 2 files:
+      // Japan_Kanto_Tokyo.poly1
+      // Japan_Kanto_Tokyo.poly2
+      auto const fileCopy = file + std::to_string(polygonId);
 
-      m_indexToMwmName[prevIndex] = fileCopy;
-      m_mwmNameToIndex[fileCopy] = prevIndex++;
+      m_indexToPolyFileName[prevIndex] = fileCopy;
+      m_polyFileNameToIndex[fileCopy] = prevIndex++;
       for (auto const & point : region.Data())
         polygon.m_points.emplace_back(point);
 
       polygon.m_rect = region.GetRect();
-      ++id;
+      ++polygonId;
       m_bordersPolygons.emplace_back(std::move(polygon));
     }
   }
@@ -209,26 +205,26 @@ void BordersData::MarkPoints()
 void BordersData::DumpPolyFiles(std::string const & targetDir)
 {
   size_t n = m_bordersPolygons.size();
-  for (size_t i = 0; i < n; ++i)
+  for (size_t i = 0; i < n; )
   {
-    if (ShouldLog(i, n))
-      LOG(LINFO, ("Dumping poly files:", i + 1, "/", n));
-
     // Russia_Moscow.poly1 -> Russia_Moscow.poly
-    auto name = RemoveIndexFromMwmName(m_indexToMwmName[i]);
+    auto name = RemoveIndexFromMwmName(m_indexToPolyFileName.at(i));
+
+    size_t j = i + 1;
+    while (j < n && name == RemoveIndexFromMwmName(m_indexToPolyFileName.at(j)))
+      ++j;
+
     std::vector<m2::RegionD> regions;
-    for (;;)
+    for (; i < j; i++)
     {
+      if (ShouldLog(i, n))
+        LOG(LINFO, ("Dumping poly files:", i + 1, "/", n));
+
       m2::RegionD region;
       for (auto const & markedPoint : m_bordersPolygons[i].m_points)
         region.AddPoint(markedPoint.m_point);
 
       regions.emplace_back(std::move(region));
-
-      if (i + 1 < n && name == RemoveIndexFromMwmName(m_indexToMwmName[i + 1]))
-        ++i;
-      else
-        break;
     }
 
     CHECK(strings::ReplaceFirst(name, kBorderExtension, ""), (name));
@@ -241,40 +237,33 @@ void BordersData::RemoveDuplicatePoints()
   size_t count = 0;
   for (auto & polygon : m_bordersPolygons)
   {
-    std::vector<MarkedPoint> withoutDuplicates;
-    CHECK(!polygon.m_points.empty(), ());
-    withoutDuplicates.emplace_back(polygon.m_points[0].m_point);
-    for (size_t i = 1; i < polygon.m_points.size(); ++i)
-    {
-      if (!base::AlmostEqualAbs(withoutDuplicates.back().m_point, polygon.m_points[i].m_point,
-                                kEqualityEpsilon))
-      {
-        withoutDuplicates.emplace_back(polygon.m_points[i].m_point);
-      }
-    }
+    auto const last = std::unique(
+        polygon.m_points.begin(), polygon.m_points.end(),
+        [](auto const & p1, auto const & p2) {
+          return base::AlmostEqualAbs(p1.m_point, p2.m_point, kEqualityEpsilon);
+        });
 
-    CHECK_GREATER_OR_EQUAL(polygon.m_points.size(), withoutDuplicates.size(), ());
-    count += polygon.m_points.size() - withoutDuplicates.size();
-    polygon.m_points = std::move(withoutDuplicates);
+    count += std::distance(last, polygon.m_points.end());
+    polygon.m_points.erase(last, polygon.m_points.end());
   }
 
-  m_dublicatePointsCount += count;
+  m_dublicatedPointsCount += count;
   LOG(LINFO, ("Remove:", count, "duplicate points."));
 }
 
-void BordersData::MarkPoint(size_t curBorderId, size_t pointId)
+void BordersData::MarkPoint(size_t curBorderId, size_t curPointId)
 {
-  MarkedPoint & markedPoint = m_bordersPolygons[curBorderId].m_points[pointId];
+  MarkedPoint & markedPoint = m_bordersPolygons[curBorderId].m_points[curPointId];
 
-  for (size_t borderId = 0; borderId < m_bordersPolygons.size(); ++borderId)
+  for (size_t anotherBorderId = 0; anotherBorderId < m_bordersPolygons.size(); ++anotherBorderId)
   {
-    if (curBorderId == borderId)
+    if (curBorderId == anotherBorderId)
       continue;
 
     if (markedPoint.m_marked)
       return;
 
-    Polygon & anotherPolygon = m_bordersPolygons[borderId];
+    Polygon & anotherPolygon = m_bordersPolygons[anotherBorderId];
 
     if (!anotherPolygon.m_rect.IsPointInside(markedPoint.m_point))
       continue;
@@ -288,11 +277,11 @@ void BordersData::MarkPoint(size_t curBorderId, size_t pointId)
         anotherMarkedPoint.m_marked = true;
         markedPoint.m_marked = true;
 
-        // We say to our point that border with id: |borderId| has the same point with id:
+        // Save info that border with id: |anotherBorderId| has the same point with id:
         // |anotherPointId|.
-        markedPoint.AddLink(borderId, anotherPointId);
+        markedPoint.AddLink(anotherBorderId, anotherPointId);
         // And vice versa.
-        anotherMarkedPoint.AddLink(curBorderId, pointId);
+        anotherMarkedPoint.AddLink(curBorderId, curPointId);
 
         return;
       }
@@ -308,20 +297,19 @@ void BordersData::PrintDiff()
 
   size_t allNumberBeforeCount = 0;
   size_t maxMwmNameLength = 0;
-  static double constexpr kAreaEpsMetersSqr = 1e-4;
   for (size_t i = 0; i < m_bordersPolygons.size(); ++i)
   {
-    auto const & mwmName = m_indexToMwmName[i];
+    auto const & mwmName = m_indexToPolyFileName[i];
 
     auto const all = static_cast<int32_t>(m_bordersPolygons[i].m_points.size());
     auto const allBefore = static_cast<int32_t>(m_prevCopy[i].m_points.size());
 
     CHECK_GREATER_OR_EQUAL(allBefore, all, ());
-    m_removePointsCount += allBefore - all;
+    m_removedPointsCount += allBefore - all;
     allNumberBeforeCount += allBefore;
 
-    static std::string const kEpsString = std::to_string(kAreaEpsMetersSqr);
     double area = 0.0;
+    double constexpr kAreaEpsMetersSqr = 1e-4;
     if (m_additionalAreaMetersSqr[i] >= kAreaEpsMetersSqr)
       area = m_additionalAreaMetersSqr[i];
 
@@ -345,11 +333,11 @@ void BordersData::PrintDiff()
     std::cout << " summary changed area: " << area << " m^2" << std::endl;
   }
 
-  std::cout << "Number of removed points: " << m_removePointsCount << std::endl;
+  std::cout << "Number of removed points: " << m_removedPointsCount << std::endl;
   std::cout << "All amount of removed point (+duplicates): "
-            << m_removePointsCount + m_dublicatePointsCount << std::endl;
+            << m_removedPointsCount + m_dublicatedPointsCount << std::endl;
   std::cout << "Points number before processing: " << allNumberBeforeCount << ", remove("
-            << static_cast<double>(m_removePointsCount + m_dublicatePointsCount) /
+            << static_cast<double>(m_removedPointsCount + m_dublicatedPointsCount) /
                    allNumberBeforeCount * 100.0
             << "%)" << std::endl;
 }
@@ -360,7 +348,7 @@ void BordersData::RemoveEmptySpaceBetweenBorders()
 
   for (size_t curBorderId = 0; curBorderId < m_bordersPolygons.size(); ++curBorderId)
   {
-    LOG(LDEBUG, ("Get:", m_indexToMwmName[curBorderId]));
+    LOG(LDEBUG, ("Get:", m_indexToPolyFileName[curBorderId]));
 
     if (ShouldLog(curBorderId, m_bordersPolygons.size()))
       LOG(LINFO, ("Removing empty spaces:", curBorderId + 1, "/", m_bordersPolygons.size()));
@@ -502,13 +490,13 @@ void BordersData::DoReplace()
 
       auto const & srcPolygon = m_bordersPolygons[srcBorderId];
 
-      CopyWithReversedOption(srcFrom, srcTo, reversed, srcPolygon.m_points, newPolygon.m_points);
+      Append(srcFrom, srcTo, reversed, srcPolygon.m_points, newPolygon.m_points);
 
       polygon.m_replaceData.erase(replaceDataIter);
       i = nextI - 1;
     }
 
-    newPolygon.m_rect = FindRectForPolygon(newPolygon.m_points);
+    newPolygon.m_rect = BoundingBox(newPolygon.m_points);
   }
 
   m_prevCopy = std::move(m_bordersPolygons);
@@ -517,7 +505,7 @@ void BordersData::DoReplace()
 
 Polygon const & BordersData::GetBordersPolygonByName(std::string const & name) const
 {
-  auto id = m_mwmNameToIndex.at(name);
+  auto id = m_polyFileNameToIndex.at(name);
   return m_bordersPolygons.at(id);
 }
 

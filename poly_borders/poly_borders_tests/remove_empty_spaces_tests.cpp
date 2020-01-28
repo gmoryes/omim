@@ -1,14 +1,11 @@
-#include "testing/testing.hpp"
-
 #include "poly_borders/poly_borders_tests/tools.hpp"
+
+#include "testing/testing.hpp"
 
 #include "poly_borders/borders_data.hpp"
 
 #include "platform/platform_tests_support/scoped_dir.hpp"
 #include "platform/platform_tests_support/scoped_file.hpp"
-#include "platform/platform_tests_support/writable_dir_changer.hpp"
-
-#include "platform/platform.hpp"
 
 #include "geometry/point2d.hpp"
 

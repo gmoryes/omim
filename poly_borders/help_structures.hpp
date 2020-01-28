@@ -37,13 +37,15 @@ struct AtomicBoolWrapper
 
 struct Link
 {
+  inline static auto constexpr kInvalidId = std::numeric_limits<size_t>::max();
+
   Link() = default;
   Link(size_t borderId, size_t pointId) : m_borderId(borderId), m_pointId(pointId) {}
 
   bool operator<(Link const & rhs) const;
 
-  size_t m_borderId = std::numeric_limits<size_t>::max();
-  size_t m_pointId = std::numeric_limits<size_t>::max();
+  size_t m_borderId = kInvalidId;
+  size_t m_pointId = kInvalidId;
 };
 
 struct ReplaceData

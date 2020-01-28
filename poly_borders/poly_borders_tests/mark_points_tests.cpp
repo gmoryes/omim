@@ -1,6 +1,6 @@
-#include "testing/testing.hpp"
-
 #include "poly_borders/poly_borders_tests/tools.hpp"
+
+#include "testing/testing.hpp"
 
 #include "poly_borders/borders_data.hpp"
 

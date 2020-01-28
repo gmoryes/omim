@@ -36,14 +36,14 @@ private:
     BordersData & m_data;
   };
 
-  /// \brief Some polygons could have sequentially same points - duplicates. Next method remove such
-  /// points and left only unique.
+  /// \brief Some polygons can have sequentially same points - duplicates. This method removes such
+  /// points and leaves only unique.
   void RemoveDuplicatePoints();
 
-  /// \brief Iterates through all points of all polygons and finds equals point on the other
-  /// polygon. If such point finds method will create link "some border with id: anotherBorderId has
-  /// the same point with id: anotherPointId".
-  void MarkPoint(size_t curBorderId, size_t pointId);
+  /// \brief Finds point on other polygons equals to point passed on argument. If such point is
+  /// found, the method will create link "some border (with id = anotherBorderId) has the same point
+  /// (with id = anotherPointId").
+  void MarkPoint(size_t curBorderId, size_t curPointId);
 
   /// \brief Checks whether we could replace points from segment: [curLeftPointId, curRightPointId]
   /// of |curBorderId| to another points from another border in order to get rid of empty space
@@ -57,12 +57,12 @@ private:
   /// |RemoveEmptySpaceBetweenBorders()|.
   void DoReplace();
 
-  size_t m_removePointsCount = 0;
-  size_t m_dublicatePointsCount = 0;
+  size_t m_removedPointsCount = 0;
+  size_t m_dublicatedPointsCount = 0;
   std::map<size_t, double> m_additionalAreaMetersSqr;
 
-  std::map<std::string, size_t> m_mwmNameToIndex;
-  std::map<size_t, std::string> m_indexToMwmName;
+  std::map<std::string, size_t> m_polyFileNameToIndex;
+  std::map<size_t, std::string> m_indexToPolyFileName;
   std::vector<Polygon> m_bordersPolygons;
   std::vector<Polygon> m_prevCopy;
 };

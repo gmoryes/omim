@@ -13,12 +13,20 @@ omim_link_libraries(
   routing
   traffic
   routing_common
+  descriptions
+  transit
+  ugc
+  search
   storage
+  editor
   indexer
+  mwm_diff
   platform
   geometry
   coding
   base
+  pugixml
+  opening_hours
   icu
   jansson
   protobuf
