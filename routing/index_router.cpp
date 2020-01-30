@@ -1419,8 +1419,8 @@ void IndexRouter::SetupAlgorithmMode(IndexGraphStarter & starter)
     starter.GetGraph().SetMode(WorldGraphMode::NoLeaps);
     break;
   case VehicleType::Car:
-    starter.GetGraph().SetMode(AreMwmsNear(starter) ? WorldGraphMode::Joints
-                                                    : WorldGraphMode::Joints);
+    starter.GetGraph().SetMode(AreMwmsNear(starter) ? WorldGraphMode::NoLeaps
+                                                    : WorldGraphMode::NoLeaps);
     break;
   case VehicleType::Count:
     CHECK(false, ("Unknown vehicle type:", m_vehicleType));
