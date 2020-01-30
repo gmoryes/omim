@@ -278,6 +278,7 @@ private:
 
     ~BidirectionalStepContext()
     {
+      LOG(LINFO, ("parents.size() =", parent.size()));
       graph.DropAStarParents();
     }
 
@@ -567,6 +568,8 @@ AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
   BidirectionalStepContext * cur = &forward;
   BidirectionalStepContext * nxt = &backward;
 
+  size_t maxVisited = 0;
+
   auto const getResult = [&]() {
     if (!params.m_checkLengthCallback(bestPathRealLength))
       return Result::NoPath;
@@ -578,6 +581,7 @@ AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
     if (!cur->forward)
       reverse(result.m_path.begin(), result.m_path.end());
 
+    LOG(LINFO, ("maxVisited =", maxVisited));
     return Result::OK;
   };
 
@@ -591,6 +595,7 @@ AStarAlgorithm<Vertex, Edge, Weight>::FindPathBidirectional(P & params,
 
   while (!cur->queue.empty() && !nxt->queue.empty())
   {
+    maxVisited = std::max(maxVisited, cur->queue.size() + nxt->queue.size());
     ++steps;
 
     if (periodicCancellable.IsCancelled())

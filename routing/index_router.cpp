@@ -1400,7 +1400,15 @@ void IndexRouter::FillSpeedCamProhibitedMwms(vector<Segment> const & segments,
 
 void IndexRouter::SetupAlgorithmMode(IndexGraphStarter & starter)
 {
+  bool no_leaps = std::getenv("NO_LEAPS") && !std::string(std::getenv("NO_LEAPS")).empty();
   // We use leaps for cars only. Other vehicle types do not have weights in their cross-mwm sections.
+
+  if (no_leaps)
+  {
+    starter.GetGraph().SetMode(WorldGraphMode::NoLeaps);
+    return;
+  }
+
   switch (m_vehicleType)
   {
   case VehicleType::Pedestrian:
@@ -1412,7 +1420,7 @@ void IndexRouter::SetupAlgorithmMode(IndexGraphStarter & starter)
     break;
   case VehicleType::Car:
     starter.GetGraph().SetMode(AreMwmsNear(starter) ? WorldGraphMode::Joints
-                                                    : WorldGraphMode::LeapsOnly);
+                                                    : WorldGraphMode::Joints);
     break;
   case VehicleType::Count:
     CHECK(false, ("Unknown vehicle type:", m_vehicleType));
