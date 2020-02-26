@@ -17,7 +17,7 @@ public:
   using Edge = EdgeType;
   using Weight = WeightType;
 
-  using Parents = ska::bytell_hash_map<Vertex, Vertex>;
+  using Parents = ska::flat_hash_map<Vertex, Vertex>;
 
   virtual Weight HeuristicCostEstimate(Vertex const & from, Vertex const & to) = 0;
 
